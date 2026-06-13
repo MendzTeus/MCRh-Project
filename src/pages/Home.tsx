@@ -4,30 +4,56 @@ import MediaImage from '../components/MediaImage';
 import { orderedProperties, type Property } from '../data/properties';
 
 function PropertyFeature({ property, reversed = false }: { property: Property; reversed?: boolean }) {
+  if (reversed) {
+    return (
+      <section className="bg-surface-container-low border-y border-outline-variant/30 py-section-gap px-margin-mobile md:px-margin-desktop">
+        <div className="max-w-[1280px] mx-auto grid grid-cols-1 md:grid-cols-12 gap-16 lg:gap-24 items-center">
+          <div className="md:col-span-5 order-2 md:order-1">
+            <span className="inline-block font-body text-label-caps text-secondary mb-6 tracking-widest uppercase">{property.eyebrow}</span>
+            <h2 className="font-display text-headline-md text-primary mb-6">{property.name}</h2>
+            <p className="font-body text-body-lg text-on-surface-variant mb-10 opacity-90 leading-relaxed">{property.description}</p>
+            <Link to={`/properties/${property.slug}`} className="inline-flex items-center justify-center border border-primary text-primary px-8 py-4 font-body text-label-caps tracking-widest uppercase hover:bg-surface-dim transition-colors duration-300">
+              Explore Details
+            </Link>
+          </div>
+
+          <div className="md:col-span-7 order-1 md:order-2">
+            <div className="grid grid-cols-2 gap-4 h-[500px] md:h-[700px]">
+              <div className="col-span-1 row-span-2 rounded-lg overflow-hidden bg-surface-dim">
+                <MediaImage src={property.gallery[0]} alt={property.imageAlt} />
+              </div>
+              <div className="col-span-1 row-span-1 rounded-lg overflow-hidden bg-surface-dim">
+                <MediaImage src={property.gallery[1] ?? property.gallery[0]} alt={`${property.name} detail`} />
+              </div>
+              <div className="col-span-1 row-span-1 rounded-lg overflow-hidden bg-surface-container-lowest flex items-center justify-center p-8 border border-outline-variant/30">
+                <p className="font-display text-2xl md:text-3xl text-primary text-center leading-snug">"{property.quote}"</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+    );
+  }
+
   return (
-    <section className={`${reversed ? 'bg-surface-container-low border-y border-outline-variant/30' : 'bg-surface'} py-section-gap px-margin-mobile md:px-margin-desktop`}>
+    <section className="bg-surface py-section-gap px-margin-mobile md:px-margin-desktop">
       <div className="max-w-[1280px] mx-auto grid grid-cols-1 md:grid-cols-12 gap-16 lg:gap-24 items-center">
-        <div className={`md:col-span-5 ${reversed ? 'order-2 md:order-1' : 'order-2 md:order-2'}`}>
+        <div className="md:col-span-7 relative h-[500px] md:h-[700px] order-1">
+          <div className="absolute top-0 left-0 w-[85%] h-[85%] rounded-lg overflow-hidden shadow-sm bg-surface-dim">
+            <MediaImage src={property.gallery[0]} alt={property.imageAlt} />
+          </div>
+          <div className="absolute bottom-0 right-0 w-[55%] h-[55%] rounded-lg overflow-hidden shadow-2xl z-10 bg-surface-dim border border-outline-variant/30">
+            <MediaImage src={property.gallery[1] ?? property.gallery[0]} alt={`${property.name} detail`} />
+          </div>
+        </div>
+
+        <div className="md:col-span-5 order-2">
           <span className="inline-block font-body text-label-caps text-secondary mb-6 tracking-widest uppercase">{property.eyebrow}</span>
           <h2 className="font-display text-headline-md text-primary mb-6">{property.name}</h2>
           <p className="font-body text-body-lg text-on-surface-variant mb-10 opacity-90 leading-relaxed">{property.description}</p>
           <Link to={`/properties/${property.slug}`} className="inline-flex items-center justify-center border border-primary text-primary px-8 py-4 font-body text-label-caps tracking-widest uppercase hover:bg-surface-dim transition-colors duration-300">
-            Explore Details
+            Book Now
           </Link>
-        </div>
-
-        <div className={`md:col-span-7 ${reversed ? 'order-1 md:order-2' : 'order-1 md:order-1'}`}>
-          <div className="grid grid-cols-2 gap-4 h-[500px] md:h-[700px]">
-            <div className="col-span-1 row-span-2 rounded-lg overflow-hidden bg-surface-dim">
-              <MediaImage src={property.gallery[0]} alt={property.imageAlt} />
-            </div>
-            <div className="col-span-1 row-span-1 rounded-lg overflow-hidden bg-surface-dim">
-              <MediaImage src={property.gallery[1] ?? property.gallery[0]} alt={`${property.name} detail`} />
-            </div>
-            <div className="col-span-1 row-span-1 rounded-lg overflow-hidden bg-surface-container-lowest flex items-center justify-center p-8 border border-outline-variant/30">
-              <p className="font-display text-2xl md:text-3xl text-primary text-center leading-snug">"{property.quote}"</p>
-            </div>
-          </div>
         </div>
       </div>
     </section>
