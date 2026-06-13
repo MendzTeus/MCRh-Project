@@ -1,7 +1,17 @@
+import { useState } from 'react';
 import { Plus, Minus, SlidersHorizontal as Tune, Quote } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { locationAreas, mapLocations, type LocationArea } from '../data/locations';
 
 export default function Home() {
+  const [filtersOpen, setFiltersOpen] = useState(false);
+  const [selectedArea, setSelectedArea] = useState<LocationArea>('all');
+  const [selectedLocationId, setSelectedLocationId] = useState(1);
+  const [mapZoom, setMapZoom] = useState(1);
+  const visibleLocations = mapLocations.filter(
+    (location) => selectedArea === 'all' || location.areaId === selectedArea,
+  );
+
   return (
     <div className="animate-in fade-in duration-500">
       {/* Hero Section */}
@@ -188,25 +198,59 @@ export default function Home() {
           <div className="w-full lg:w-1/2 flex flex-col h-full">
             <div className="flex justify-between items-center mb-8">
               <h2 className="font-display text-headline-md text-primary">Discover Our Locations</h2>
-              <div className="flex items-center gap-4">
-                <button className="flex items-center gap-2 border border-outline-variant/60 px-4 py-2 rounded-full font-body text-label-caps tracking-widest uppercase hover:bg-surface-dim transition-colors">
+              <div className="flex items-center gap-4 relative">
+                <button
+                  type="button"
+                  onClick={() => setFiltersOpen((open) => !open)}
+                  className="flex items-center gap-2 border border-outline-variant/60 px-4 py-2 rounded-full font-body text-label-caps tracking-widest uppercase hover:bg-surface-dim transition-colors"
+                >
                   <Tune className="w-4 h-4" /> Filters
                 </button>
+                {filtersOpen && (
+                  <div className="absolute right-0 top-full mt-3 z-20 w-48 rounded-lg border border-outline-variant/30 bg-surface p-2 shadow-xl">
+                    {locationAreas.map((area) => (
+                      <button
+                        key={area.id}
+                        type="button"
+                        onClick={() => {
+                          setSelectedArea(area.id);
+                          setFiltersOpen(false);
+                          const nextLocation = mapLocations.find(
+                            (location) => area.id === 'all' || location.areaId === area.id,
+                          );
+                          if (nextLocation) setSelectedLocationId(nextLocation.id);
+                        }}
+                        className={`block w-full rounded px-3 py-2 text-left font-body text-sm transition-colors ${
+                          selectedArea === area.id ? 'bg-surface-container text-primary' : 'text-on-surface-variant hover:bg-surface-dim'
+                        }`}
+                      >
+                        {area.label}
+                      </button>
+                    ))}
+                  </div>
+                )}
               </div>
             </div>
             
             <div className="overflow-y-auto pr-4 pb-4 space-y-6 flex-1 scrollbar-hide">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-                {[1, 2, 3, 4, 5, 6].map((item) => (
-                  <div key={item} className="bg-surface-container-lowest rounded-xl overflow-hidden shadow-sm border border-outline-variant/30 group cursor-pointer hover:border-primary transition-all duration-300">
+                {visibleLocations.map((location) => (
+                  <button
+                    type="button"
+                    key={location.id}
+                    onClick={() => setSelectedLocationId(location.id)}
+                    className={`bg-surface-container-lowest rounded-xl overflow-hidden shadow-sm border group cursor-pointer hover:border-primary transition-all duration-300 text-left ${
+                      selectedLocationId === location.id ? 'border-primary' : 'border-outline-variant/30'
+                    }`}
+                  >
                     <div className="aspect-[4/3] bg-surface-dim relative">
                        <div className="w-full h-full bg-surface-variant"></div>
                     </div>
                     <div className="p-6">
-                      <h3 className="font-display text-lg mb-1 text-primary">Premium Suite {item}</h3>
-                      <p className="font-body text-sm text-on-surface-variant">Central Manchester</p>
+                      <h3 className="font-display text-lg mb-1 text-primary">{location.name}</h3>
+                      <p className="font-body text-sm text-on-surface-variant">{location.area}</p>
                     </div>
-                  </div>
+                  </button>
                 ))}
               </div>
             </div>
@@ -216,27 +260,43 @@ export default function Home() {
             {/* Map placeholder visually */}
             <div className="absolute inset-0 bg-primary/5 mix-blend-multiply pointer-events-none"></div>
             
-            <div className="absolute top-6 left-6 flex flex-col gap-2">
-              <button className="w-10 h-10 bg-white rounded-lg shadow-sm flex items-center justify-center hover:bg-surface-dim transition-colors border border-outline-variant/30 text-primary">
+            <div className="absolute top-6 left-6 z-20 flex flex-col gap-2">
+              <button
+                type="button"
+                onClick={() => setMapZoom((zoom) => Math.min(3, zoom + 0.25))}
+                className="w-10 h-10 bg-white rounded-lg shadow-sm flex items-center justify-center hover:bg-surface-dim transition-colors border border-outline-variant/30 text-primary"
+              >
                 <Plus className="w-5 h-5" />
               </button>
-              <button className="w-10 h-10 bg-white rounded-lg shadow-sm flex items-center justify-center hover:bg-surface-dim transition-colors border border-outline-variant/30 text-primary">
+              <button
+                type="button"
+                onClick={() => setMapZoom((zoom) => Math.max(0.75, zoom - 0.25))}
+                className="w-10 h-10 bg-white rounded-lg shadow-sm flex items-center justify-center hover:bg-surface-dim transition-colors border border-outline-variant/30 text-primary"
+              >
                 <Minus className="w-5 h-5" />
               </button>
             </div>
             
-            {/* Mock Pins */}
-            <div className="absolute top-[40%] left-[45%] z-10 cursor-pointer">
-              <div className="w-4 h-4 bg-primary rounded-full shadow-md border hover:scale-110 transition-transform"></div>
-            </div>
-            <div className="absolute top-[60%] left-[30%] z-10 cursor-pointer">
-              <div className="w-4 h-4 bg-primary rounded-full shadow-md border hover:scale-110 transition-transform"></div>
-            </div>
-             <div className="absolute top-[35%] left-[65%] z-10 cursor-pointer">
-              <div className="w-4 h-4 bg-primary rounded-full shadow-md border hover:scale-110 transition-transform"></div>
-            </div>
-             <div className="absolute top-[75%] left-[55%] z-10 cursor-pointer">
-              <div className="w-4 h-4 bg-primary rounded-full shadow-md border hover:scale-110 transition-transform"></div>
+            <div
+              className="absolute inset-0 z-10 transition-transform duration-300 pointer-events-none"
+              style={{ transform: `scale(${mapZoom})` }}
+            >
+              {visibleLocations.map((location) => (
+                <button
+                  type="button"
+                  key={location.id}
+                  onClick={() => setSelectedLocationId(location.id)}
+                  className="absolute cursor-pointer pointer-events-auto"
+                  style={{ top: location.position.top, left: location.position.left }}
+                  aria-label={location.name}
+                >
+                  <span
+                    className={`block rounded-full shadow-md border transition-transform ${
+                      selectedLocationId === location.id ? 'h-5 w-5 bg-primary scale-125' : 'h-4 w-4 bg-primary hover:scale-110'
+                    }`}
+                  ></span>
+                </button>
+              ))}
             </div>
           </div>
         </div>

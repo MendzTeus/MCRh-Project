@@ -1,5 +1,6 @@
-import { ChevronDown, BedDouble, Bath, Calendar, PersonStanding } from 'lucide-react';
+import { BedDouble, Bath, PersonStanding } from 'lucide-react';
 import { Link, useParams } from 'react-router-dom';
+import AvailabilityWidget from '../components/AvailabilityWidget';
 
 export default function CollectionDetail() {
   const { id } = useParams();
@@ -24,40 +25,7 @@ export default function CollectionDetail() {
         </div>
       </section>
 
-      {/* Booking Widget */}
-      <div className="relative z-50 -mt-12 px-margin-mobile md:px-margin-desktop max-w-[1280px] mx-auto">
-        <div className="bg-surface border border-outline-variant/30 rounded-lg p-4 md:p-6 flex flex-col md:flex-row items-center gap-4 md:gap-6 shadow-lg bg-opacity-95 backdrop-blur">
-          <div className="flex-1 w-full">
-            <label className="font-body text-[10px] mb-1 block uppercase tracking-widest text-on-surface">Property</label>
-            <div className="font-body text-on-surface border-b border-outline-variant/30 pb-2 bg-transparent w-full pt-1">
-              Chambers Residence
-            </div>
-          </div>
-          <div className="flex-1 w-full relative">
-            <label className="font-body text-[10px] mb-1 block uppercase tracking-widest text-on-surface">Dates</label>
-            <div className="font-body text-on-surface border-b border-outline-variant/30 pb-2 flex justify-between items-center cursor-pointer pt-1 hover:border-primary transition-colors">
-              <span className="opacity-70">Select dates</span>
-              <Calendar className="w-4 h-4 text-on-surface" />
-            </div>
-          </div>
-          <div className="flex-1 w-full">
-            <label className="font-body text-[10px] mb-1 block uppercase tracking-widest text-on-surface">Guests</label>
-            <div className="font-body text-on-surface border-b border-outline-variant/30 pb-2 flex justify-between items-center cursor-pointer pt-1 hover:border-primary transition-colors">
-              <span>2 Guests</span>
-              <ChevronDown className="w-4 h-4 text-on-surface" />
-            </div>
-          </div>
-          <div className="flex flex-col items-center md:items-end gap-2 w-full md:w-auto">
-            <button className="bg-primary-container text-[#C8A45C] border border-[#C8A45C] px-8 py-3 font-body text-label-caps tracking-widest uppercase hover:bg-primary transition-all w-full md:w-auto rounded">
-              Check availability
-            </button>
-            <div className="flex items-center gap-2">
-              <span className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse"></span>
-              <span className="font-body text-[10px] text-primary tracking-widest uppercase">Available</span>
-            </div>
-          </div>
-        </div>
-      </div>
+      <AvailabilityWidget propertyName="Chambers Residence" />
 
       {/* Specs Row */}
       <section className="border-b border-outline-variant/30 py-6 mt-12 md:mt-16">
