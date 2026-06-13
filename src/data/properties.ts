@@ -385,7 +385,15 @@ export const orderedProperties = [...properties].sort(
 
 export function getPropertyBySlug(slug?: string) {
   if (!slug) return undefined;
-  const normalized = slug === "5" ? "old-trafford" : slug;
+  const legacyCollectionIds: Record<string, string> = {
+    "1": "chambers",
+    "2": "john-dalton-st",
+    "3": "wood-street",
+    "4": "ancoats",
+    "5": "old-trafford",
+    "6": "the-collective",
+  };
+  const normalized = legacyCollectionIds[slug] || slug;
   const numericIndex = Number(normalized);
 
   if (Number.isInteger(numericIndex) && numericIndex > 0) {

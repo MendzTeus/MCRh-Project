@@ -50,7 +50,7 @@ export default function Home() {
             <p className="font-body text-body-lg text-on-surface-variant mb-10 opacity-90 leading-relaxed">
               Experience the perfect blend of Manchester's rich industrial heritage and contemporary luxury. Located in the heart of the city, Chambers Residence offers a serene escape with bespoke furnishings, towering ceilings, and an atmosphere of curated calm.
             </p>
-            <Link to="/properties" className="inline-flex items-center justify-center border border-primary text-primary px-8 py-4 font-body text-label-caps tracking-widest uppercase hover:bg-surface-dim transition-colors duration-300">
+            <Link to="/collection/chambers" className="inline-flex items-center justify-center border border-primary text-primary px-8 py-4 font-body text-label-caps tracking-widest uppercase hover:bg-surface-dim transition-colors duration-300">
               BOOK NOW
             </Link>
           </div>
@@ -66,7 +66,7 @@ export default function Home() {
             <p className="font-body text-body-lg text-on-surface-variant mb-10 opacity-90 leading-relaxed">
                Set within a meticulously restored historic building, this residence celebrates architectural grandeur while providing uncompromising modern comfort. Expansive arched windows frame city views, while tactile brickwork and rich textiles create a deeply comforting environment.
             </p>
-            <Link to="/properties" className="inline-flex items-center justify-center border border-primary text-primary px-8 py-4 font-body text-label-caps tracking-widest uppercase hover:bg-surface-dim transition-colors duration-300">
+            <Link to="/collection/john-dalton-st" className="inline-flex items-center justify-center border border-primary text-primary px-8 py-4 font-body text-label-caps tracking-widest uppercase hover:bg-surface-dim transition-colors duration-300">
               EXPLORE DETAILS
             </Link>
           </div>
@@ -103,7 +103,7 @@ export default function Home() {
             <p className="font-body text-body-lg text-on-surface-variant mb-10 opacity-90 leading-relaxed">
               Situated in a vibrant, historic quarter, Wood Street properties offer an unmatched blend of privacy and proximity to Manchester's cultural landmarks. Featuring tailored interiors, warm wood tones, and expansive natural light.
             </p>
-            <Link to="/collection/3" className="inline-flex items-center justify-center border border-primary text-primary px-8 py-4 font-body text-label-caps tracking-widest uppercase hover:bg-surface-dim transition-colors duration-300">
+            <Link to="/collection/wood-street" className="inline-flex items-center justify-center border border-primary text-primary px-8 py-4 font-body text-label-caps tracking-widest uppercase hover:bg-surface-dim transition-colors duration-300">
               VIEW DETAILS
             </Link>
           </div>
@@ -119,7 +119,7 @@ export default function Home() {
             <p className="font-body text-body-lg text-on-surface-variant mb-10 opacity-90 leading-relaxed">
               Embrace the spirit of innovation in Ancoats. These residences lean into their industrial roots with polished concrete, exposed beams, and contemporary art, creating a dynamic yet refined living space for the modern traveler.
             </p>
-            <Link to="/collection/4" className="inline-flex items-center justify-center border border-primary text-primary px-8 py-4 font-body text-label-caps tracking-widest uppercase hover:bg-surface-dim transition-colors duration-300">
+            <Link to="/collection/ancoats" className="inline-flex items-center justify-center border border-primary text-primary px-8 py-4 font-body text-label-caps tracking-widest uppercase hover:bg-surface-dim transition-colors duration-300">
               EXPLORE DETAILS
             </Link>
           </div>
@@ -156,7 +156,7 @@ export default function Home() {
             <p className="font-body text-body-lg text-on-surface-variant mb-10 opacity-90 leading-relaxed">
               A collection of spacious, tranquil retreats on the outskirts of the city bustle. Trafford properties are defined by their generous proportions, lush surroundings, and uncompromising commitment to elegant comfort.
             </p>
-            <Link to="/collection/5" className="inline-flex items-center justify-center border border-primary text-primary px-8 py-4 font-body text-label-caps tracking-widest uppercase hover:bg-surface-dim transition-colors duration-300">
+            <Link to="/collection/old-trafford" className="inline-flex items-center justify-center border border-primary text-primary px-8 py-4 font-body text-label-caps tracking-widest uppercase hover:bg-surface-dim transition-colors duration-300">
               VIEW DETAILS
             </Link>
           </div>
@@ -172,7 +172,7 @@ export default function Home() {
             <p className="font-body text-body-lg text-on-surface-variant mb-10 opacity-90 leading-relaxed">
               An exclusive assortment of highly stylized and uniquely positioned properties. The Collective brings together the sharpest design, immersive aesthetics, and premier locations for the ultimate city escape.
             </p>
-            <Link to="/collection/6" className="inline-flex items-center justify-center border border-primary text-primary px-8 py-4 font-body text-label-caps tracking-widest uppercase hover:bg-surface-dim transition-colors duration-300">
+            <Link to="/collection/the-collective" className="inline-flex items-center justify-center border border-primary text-primary px-8 py-4 font-body text-label-caps tracking-widest uppercase hover:bg-surface-dim transition-colors duration-300">
               EXPLORE DETAILS
             </Link>
           </div>
@@ -235,8 +235,8 @@ export default function Home() {
             <div className="overflow-y-auto pr-4 pb-4 space-y-6 flex-1 scrollbar-hide">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                 {visibleLocations.map((location) => (
-                  <button
-                    type="button"
+                  <Link
+                    to={`/collection/${location.propertySlug}`}
                     key={location.id}
                     onClick={() => setSelectedLocationId(location.id)}
                     className={`bg-surface-container-lowest rounded-xl overflow-hidden shadow-sm border group cursor-pointer hover:border-primary transition-all duration-300 text-left ${
@@ -250,7 +250,7 @@ export default function Home() {
                       <h3 className="font-display text-lg mb-1 text-primary">{location.name}</h3>
                       <p className="font-body text-sm text-on-surface-variant">{location.area} - {location.postcode}</p>
                     </div>
-                  </button>
+                  </Link>
                 ))}
               </div>
             </div>

@@ -3,6 +3,7 @@ export type LocationArea = 'all' | 'city-centre' | 'deansgate' | 'ancoats' | 'ol
 export type MapLocation = {
   id: number;
   name: string;
+  propertySlug: string;
   area: string;
   areaId: Exclude<LocationArea, 'all'>;
   postcode: string;
@@ -44,6 +45,7 @@ const draftMapLocations: DraftMapLocation[] = [
   {
     id: 1,
     name: 'Chambers Residence',
+    propertySlug: 'chambers',
     area: 'Central Manchester',
     areaId: 'city-centre',
     postcode: 'M2 1HN',
@@ -52,6 +54,7 @@ const draftMapLocations: DraftMapLocation[] = [
   {
     id: 2,
     name: 'John Dalton Street',
+    propertySlug: 'john-dalton-st',
     area: 'Deansgate',
     areaId: 'deansgate',
     postcode: 'M2 6DS',
@@ -60,6 +63,7 @@ const draftMapLocations: DraftMapLocation[] = [
   {
     id: 3,
     name: 'Wood Street',
+    propertySlug: 'wood-street',
     area: 'Central Manchester',
     areaId: 'city-centre',
     postcode: 'M3 3EF',
@@ -68,6 +72,7 @@ const draftMapLocations: DraftMapLocation[] = [
   {
     id: 4,
     name: 'Ancoats',
+    propertySlug: 'ancoats',
     area: 'Ancoats',
     areaId: 'ancoats',
     postcode: 'M4 6DU',
@@ -76,6 +81,7 @@ const draftMapLocations: DraftMapLocation[] = [
   {
     id: 5,
     name: 'Old Trafford',
+    propertySlug: 'old-trafford',
     area: 'Old Trafford',
     areaId: 'old-trafford',
     postcode: 'M16 0RA',
@@ -84,6 +90,7 @@ const draftMapLocations: DraftMapLocation[] = [
   {
     id: 6,
     name: 'The Collective',
+    propertySlug: 'the-collective',
     area: 'Central Manchester',
     areaId: 'city-centre',
     postcode: 'M1 3LA',

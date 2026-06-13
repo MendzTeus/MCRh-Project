@@ -39,7 +39,7 @@ export default function Properties() {
             <p className="font-body text-body-md text-on-surface-variant mb-8 opacity-80 leading-relaxed">
               Experience the perfect blend of Manchester's rich industrial heritage and contemporary luxury. Located in the heart of the city, Chambers Residence offers a serene escape with bespoke furnishings, towering ceilings, and an atmosphere of curated calm.
             </p>
-            <Link to="/collection/1" className="inline-flex items-center justify-center border border-primary text-primary px-8 py-4 font-body text-label-caps hover:bg-surface-variant transition-colors duration-300 uppercase tracking-widest">
+            <Link to="/collection/chambers" className="inline-flex items-center justify-center border border-primary text-primary px-8 py-4 font-body text-label-caps hover:bg-surface-variant transition-colors duration-300 uppercase tracking-widest">
               BOOK NOW
             </Link>
           </div>
@@ -55,7 +55,7 @@ export default function Properties() {
             <p className="font-body text-body-md text-on-surface-variant mb-8 opacity-80 leading-relaxed">
               Set within a meticulously restored historic building, this residence celebrates architectural grandeur while providing uncompromising modern comfort. Expansive arched windows frame city views, while tactile brickwork and rich textiles create a deeply comforting environment.
             </p>
-            <Link to="/collection/2" className="inline-flex items-center justify-center border border-primary text-primary px-8 py-4 font-body text-label-caps hover:bg-surface-variant transition-colors duration-300 uppercase tracking-widest">
+            <Link to="/collection/john-dalton-st" className="inline-flex items-center justify-center border border-primary text-primary px-8 py-4 font-body text-label-caps hover:bg-surface-variant transition-colors duration-300 uppercase tracking-widest">
               EXPLORE DETAILS
             </Link>
           </div>
@@ -92,7 +92,7 @@ export default function Properties() {
             <p className="font-body text-body-md text-on-surface-variant mb-8 opacity-80 leading-relaxed">
               Situated in a vibrant, historic quarter, Wood Street properties offer an unmatched blend of privacy and proximity to Manchester's cultural landmarks. Featuring tailored interiors, warm wood tones, and expansive natural light.
             </p>
-            <Link to="/collection/3" className="inline-flex items-center justify-center border border-primary text-primary px-8 py-4 font-body text-label-caps hover:bg-surface-variant transition-colors duration-300 uppercase tracking-widest">
+            <Link to="/collection/wood-street" className="inline-flex items-center justify-center border border-primary text-primary px-8 py-4 font-body text-label-caps hover:bg-surface-variant transition-colors duration-300 uppercase tracking-widest">
               VIEW DETAILS
             </Link>
           </div>
@@ -108,7 +108,7 @@ export default function Properties() {
             <p className="font-body text-body-md text-on-surface-variant mb-8 opacity-80 leading-relaxed">
               Embrace the spirit of innovation in Ancoats. These residences lean into their industrial roots with polished concrete, exposed beams, and contemporary art, creating a dynamic yet refined living space for the modern traveler.
             </p>
-            <Link to="/collection/4" className="inline-flex items-center justify-center border border-primary text-primary px-8 py-4 font-body text-label-caps hover:bg-surface-variant transition-colors duration-300 uppercase tracking-widest">
+            <Link to="/collection/ancoats" className="inline-flex items-center justify-center border border-primary text-primary px-8 py-4 font-body text-label-caps hover:bg-surface-variant transition-colors duration-300 uppercase tracking-widest">
               EXPLORE DETAILS
             </Link>
           </div>
@@ -145,7 +145,7 @@ export default function Properties() {
             <p className="font-body text-body-md text-on-surface-variant mb-8 opacity-80 leading-relaxed">
               A collection of spacious, tranquil retreats on the outskirts of the city bustle. Trafford properties are defined by their generous proportions, lush surroundings, and uncompromising commitment to elegant comfort.
             </p>
-            <Link to="/collection/5" className="inline-flex items-center justify-center border border-primary text-primary px-8 py-4 font-body text-label-caps hover:bg-surface-variant transition-colors duration-300 uppercase tracking-widest">
+            <Link to="/collection/old-trafford" className="inline-flex items-center justify-center border border-primary text-primary px-8 py-4 font-body text-label-caps hover:bg-surface-variant transition-colors duration-300 uppercase tracking-widest">
               VIEW DETAILS
             </Link>
           </div>
@@ -161,7 +161,7 @@ export default function Properties() {
             <p className="font-body text-body-md text-on-surface-variant mb-8 opacity-80 leading-relaxed">
               An exclusive assortment of highly stylized and uniquely positioned properties. The Collective brings together the sharpest design, immersive aesthetics, and premier locations for the ultimate city escape.
             </p>
-            <Link to="/collection/6" className="inline-flex items-center justify-center border border-primary text-primary px-8 py-4 font-body text-label-caps hover:bg-surface-variant transition-colors duration-300 uppercase tracking-widest">
+            <Link to="/collection/the-collective" className="inline-flex items-center justify-center border border-primary text-primary px-8 py-4 font-body text-label-caps hover:bg-surface-variant transition-colors duration-300 uppercase tracking-widest">
               EXPLORE DETAILS
             </Link>
           </div>

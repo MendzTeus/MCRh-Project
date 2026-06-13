@@ -1,13 +1,23 @@
 import { useState } from 'react';
+import { useParams } from 'react-router-dom';
 import { Star, ChevronDown, BedDouble, Wifi, ChefHat, Coffee, Snowflake, Bath, ArrowRight, ArrowLeft } from 'lucide-react';
 import DateRangePicker, { formatShortDate } from '../components/DateRangePicker';
+import { getPropertyBySlug, getUnitBySlug } from '../data/properties';
 
 export default function PropertyDetail() {
+  const { propertySlug, id } = useParams();
+  const routedProperty = getPropertyBySlug(propertySlug);
+  const routedUnit = routedProperty?.units.find((item) => item.slug === id);
+  const legacyUnit = getUnitBySlug(id);
+  const property = routedProperty || legacyUnit?.property || getPropertyBySlug('chambers');
+  const unit = routedUnit || legacyUnit?.unit || property?.units[0];
   const [datesOpen, setDatesOpen] = useState(false);
   const [guestsOpen, setGuestsOpen] = useState(false);
   const [checkIn, setCheckIn] = useState('');
   const [checkOut, setCheckOut] = useState('');
   const [guests, setGuests] = useState(2);
+
+  if (!property || !unit) return null;
 
   return (
     <div className="animate-in fade-in duration-500">
@@ -19,9 +29,9 @@ export default function PropertyDetail() {
         
         <div className="relative z-10 w-full max-w-[1280px] mx-auto px-margin-mobile md:px-margin-desktop flex flex-col md:flex-row justify-between items-end gap-gutter">
           <div className="text-white w-full md:w-2/3">
-            <p className="font-body text-label-caps tracking-widest mb-4 opacity-80 uppercase">Penthouse Collection</p>
-            <h1 className="font-display text-display-lg-mobile md:text-display-lg mb-6 leading-tight">Chambers Apt. 01</h1>
-            <p className="font-body text-body-lg opacity-90 max-w-2xl">A sanctuary of quiet luxury high above the city. Impeccable design meets ultimate comfort in this exclusive residence.</p>
+            <p className="font-body text-label-caps tracking-widest mb-4 opacity-80 uppercase">{unit.label}</p>
+            <h1 className="font-display text-display-lg-mobile md:text-display-lg mb-6 leading-tight">{unit.title}</h1>
+            <p className="font-body text-body-lg opacity-90 max-w-2xl">{unit.description}</p>
           </div>
           
           <div className="relative w-full md:w-1/3 bg-surface p-8 rounded-xl shadow-2xl translate-y-1/2 md:translate-y-1/4 backdrop-blur-md bg-opacity-95 border border-outline-variant/20">
@@ -102,7 +112,7 @@ export default function PropertyDetail() {
                     <span className="min-w-6 text-center font-body text-body-md">{guests}</span>
                     <button
                       type="button"
-                      onClick={() => setGuests((value) => Math.min(8, value + 1))}
+                    onClick={() => setGuests((value) => Math.min(property.maxGuests, value + 1))}
                       className="h-10 w-10 rounded-full border border-outline-variant/50 text-primary"
                     >
                       +
@@ -134,8 +144,9 @@ export default function PropertyDetail() {
           <div>
             <h2 className="font-display text-headline-md text-primary mb-6">The Space</h2>
             <div className="font-body text-on-surface-variant text-body-lg space-y-6">
-              <p>Designed for the discerning traveler, Chambers Apt. 01 offers an unparalleled experience in the heart of Manchester. Every detail has been meticulously curated, from the bespoke Italian furnishings to the subtle ambient lighting that creates a calming atmosphere the moment you step inside.</p>
-              <p>The open-plan living area is framed by expansive windows, offering dramatic city views while maintaining a sense of profound privacy and quiet luxury. It's a space designed not just for staying, but for dwelling deeply.</p>
+              <p>{unit.description}</p>
+              <p>{property.description}</p>
+              <p>{unit.specs}{unit.squareFeet ? ` / ${unit.squareFeet}` : ''}</p>
             </div>
           </div>
           
@@ -143,12 +154,12 @@ export default function PropertyDetail() {
             <h3 className="font-display text-headline-sm text-primary mb-8">Curated Amenities</h3>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-y-6 gap-x-8">
               {[
-                { icon: BedDouble, label: "Premium King Bed" },
-                { icon: Wifi, label: "High-Speed Wi-Fi" },
-                { icon: ChefHat, label: "Chef's Kitchen" },
-                { icon: Coffee, label: "Nespresso Machine" },
-                { icon: Snowflake, label: "Climate Control" },
-                { icon: Bath, label: "Freestanding Tub" }
+                { icon: BedDouble, label: `${property.bedrooms} Bedroom${property.bedrooms === 1 ? '' : 's'}` },
+                { icon: Bath, label: `${property.bathrooms} Bathroom${property.bathrooms === 1 ? '' : 's'}` },
+                { icon: Wifi, label: property.amenities[0] || "Wi-Fi" },
+                { icon: ChefHat, label: property.amenities[1] || "Fully equipped kitchen" },
+                { icon: Coffee, label: property.amenities[2] || "Smart TV" },
+                { icon: Snowflake, label: property.amenities[3] || "Climate Control" }
               ].map((amenity, i) => (
                 <div key={i} className="flex items-center gap-4">
                   <amenity.icon className="w-8 h-8 text-on-surface-variant font-light" strokeWidth={1} />
@@ -259,13 +270,13 @@ export default function PropertyDetail() {
               <div className="w-4 h-4 bg-primary rounded-full"></div>
             </div>
             <div className="mt-2 bg-surface px-4 py-2 rounded-lg shadow-lg border border-outline-variant/20">
-              <span className="font-body text-label-caps text-primary tracking-widest uppercase font-semibold">Chambers Apt. 01</span>
+              <span className="font-body text-label-caps text-primary tracking-widest uppercase font-semibold">{unit.title}</span>
             </div>
           </div>
         </div>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mt-12">
           <div>
-            <h4 className="font-display text-headline-sm text-primary mb-2">Deansgate</h4>
+            <h4 className="font-display text-headline-sm text-primary mb-2">{property.area}</h4>
             <p className="font-body text-body-md text-on-surface-variant">5 minute walk</p>
           </div>
           <div>
