@@ -18,12 +18,21 @@ export default function App() {
         <Routes>
           <Route path="/" element={<Home />} />
           <Route path="/properties" element={<Properties />} />
+          <Route path="/propriedades" element={<Properties />} />
           <Route path="/collection/:id" element={<CollectionDetail />} />
+          <Route path="/properties/:id" element={<CollectionDetail />} />
+          <Route path="/propriedades/:id" element={<CollectionDetail />} />
           <Route path="/property/:id" element={<PropertyDetail />} />
+          <Route path="/properties/:propertySlug/:id" element={<PropertyDetail />} />
+          <Route path="/propriedades/:propertySlug/:id" element={<PropertyDetail />} />
           <Route path="/design-services" element={<DesignServices />} />
+          <Route path="/servicos/design" element={<DesignServices />} />
           <Route path="/management-services" element={<ManagementServices />} />
+          <Route path="/servicos/gestao" element={<ManagementServices />} />
           <Route path="/about" element={<About />} />
+          <Route path="/sobre" element={<About />} />
           <Route path="/contact" element={<Contact />} />
+          <Route path="/contacto" element={<Contact />} />
         </Routes>
       </main>
       <Footer />

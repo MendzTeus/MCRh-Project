@@ -1,5 +1,5 @@
-@import "tailwindcss";
 @import url('https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;600&family=Playfair+Display:wght@400;600;700&display=swap');
+@import "tailwindcss";
 
 @theme {
   --color-surface: #fdf9f3;
@@ -49,12 +49,12 @@
 @utility text-display-lg {
   font-size: 64px;
   line-height: 1.1;
-  letter-spacing: -0.02em;
+  letter-spacing: 0;
 }
 @utility text-display-lg-mobile {
   font-size: 40px;
   line-height: 1.2;
-  letter-spacing: -0.01em;
+  letter-spacing: 0;
 }
 @utility text-headline-md {
   font-size: 32px;
@@ -89,4 +89,3 @@ body {
     color: var(--color-on-surface);
     font-family: var(--font-body);
 }
-
