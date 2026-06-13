@@ -1,18 +1,11 @@
 import { useState } from 'react';
 import { Calendar, ChevronDown } from 'lucide-react';
+import DateRangePicker, { formatDateRangeLabel } from './DateRangePicker';
 
 type AvailabilityWidgetProps = {
   propertyName: string;
   maxGuests?: number;
 };
-
-function formatDate(value: string) {
-  if (!value) return '';
-  return new Intl.DateTimeFormat('en-GB', {
-    day: '2-digit',
-    month: 'short',
-  }).format(new Date(`${value}T00:00:00`));
-}
 
 export default function AvailabilityWidget({ propertyName, maxGuests = 8 }: AvailabilityWidgetProps) {
   const [datesOpen, setDatesOpen] = useState(false);
@@ -22,7 +15,7 @@ export default function AvailabilityWidget({ propertyName, maxGuests = 8 }: Avai
   const [guests, setGuests] = useState(2);
   const [status, setStatus] = useState('Available');
 
-  const dateLabel = checkIn && checkOut ? `${formatDate(checkIn)} - ${formatDate(checkOut)}` : 'Select dates';
+  const dateLabel = formatDateRangeLabel(checkIn, checkOut);
 
   function checkAvailability() {
     if (!checkIn || !checkOut) {
@@ -59,29 +52,16 @@ export default function AvailabilityWidget({ propertyName, maxGuests = 8 }: Avai
             <Calendar className="w-4 h-4 text-on-surface" />
           </button>
           {datesOpen && (
-            <div className="absolute left-0 right-0 top-full mt-3 rounded-lg border border-outline-variant/30 bg-surface p-4 shadow-xl z-50">
-              <div className="grid grid-cols-1 gap-4">
-                <label className="font-body text-[10px] uppercase tracking-widest text-on-surface-variant">
-                  Check-in
-                  <input
-                    type="date"
-                    value={checkIn}
-                    onChange={(event) => setCheckIn(event.target.value)}
-                    className="mt-2 w-full border border-outline-variant/40 bg-transparent px-3 py-2 font-body text-body-md text-primary focus:outline-none focus:border-primary"
-                  />
-                </label>
-                <label className="font-body text-[10px] uppercase tracking-widest text-on-surface-variant">
-                  Check-out
-                  <input
-                    type="date"
-                    value={checkOut}
-                    min={checkIn}
-                    onChange={(event) => setCheckOut(event.target.value)}
-                    className="mt-2 w-full border border-outline-variant/40 bg-transparent px-3 py-2 font-body text-body-md text-primary focus:outline-none focus:border-primary"
-                  />
-                </label>
-              </div>
-            </div>
+            <DateRangePicker
+              checkIn={checkIn}
+              checkOut={checkOut}
+              onChange={({ checkIn: nextCheckIn, checkOut: nextCheckOut }) => {
+                setCheckIn(nextCheckIn);
+                setCheckOut(nextCheckOut);
+              }}
+              onDone={() => setDatesOpen(false)}
+              className="absolute left-0 top-full z-50 mt-3 w-[min(92vw,420px)]"
+            />
           )}
         </div>
         <div className="flex-1 w-full relative">

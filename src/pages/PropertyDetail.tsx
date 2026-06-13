@@ -1,6 +1,14 @@
+import { useState } from 'react';
 import { Star, ChevronDown, BedDouble, Wifi, ChefHat, Coffee, Snowflake, Bath, ArrowRight, ArrowLeft } from 'lucide-react';
+import DateRangePicker, { formatShortDate } from '../components/DateRangePicker';
 
 export default function PropertyDetail() {
+  const [datesOpen, setDatesOpen] = useState(false);
+  const [guestsOpen, setGuestsOpen] = useState(false);
+  const [checkIn, setCheckIn] = useState('');
+  const [checkOut, setCheckOut] = useState('');
+  const [guests, setGuests] = useState(2);
+
   return (
     <div className="animate-in fade-in duration-500">
       <section className="relative w-full h-[819px] md:h-[921px] flex items-end pb-section-gap">
@@ -16,7 +24,7 @@ export default function PropertyDetail() {
             <p className="font-body text-body-lg opacity-90 max-w-2xl">A sanctuary of quiet luxury high above the city. Impeccable design meets ultimate comfort in this exclusive residence.</p>
           </div>
           
-          <div className="w-full md:w-1/3 bg-surface p-8 rounded-xl shadow-2xl translate-y-1/2 md:translate-y-1/4 backdrop-blur-md bg-opacity-95 border border-outline-variant/20">
+          <div className="relative w-full md:w-1/3 bg-surface p-8 rounded-xl shadow-2xl translate-y-1/2 md:translate-y-1/4 backdrop-blur-md bg-opacity-95 border border-outline-variant/20">
             <div className="flex justify-end items-center mb-6 border-b border-outline-variant/30 pb-4">
               <div className="flex items-center gap-1 text-on-surface-variant">
                 <Star className="w-4 h-4 fill-current text-secondary" />
@@ -25,24 +33,95 @@ export default function PropertyDetail() {
             </div>
             
             <div className="grid grid-cols-2 gap-px bg-outline-variant/30 border border-outline-variant/30 rounded-lg mb-6 overflow-hidden">
-              <div className="bg-surface p-3 cursor-pointer hover:bg-surface-container transition-colors">
+              <button
+                type="button"
+                onClick={() => {
+                  setDatesOpen((open) => !open);
+                  setGuestsOpen(false);
+                }}
+                className="bg-surface p-3 cursor-pointer hover:bg-surface-container transition-colors text-left"
+              >
                 <div className="font-body text-[10px] font-semibold text-on-surface-variant mb-1 uppercase">Check-in</div>
-                <div className="font-body text-body-md text-primary">Add date</div>
-              </div>
-              <div className="bg-surface p-3 cursor-pointer hover:bg-surface-container transition-colors">
+                <div className="font-body text-body-md text-primary">{formatShortDate(checkIn)}</div>
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setDatesOpen((open) => !open);
+                  setGuestsOpen(false);
+                }}
+                className="bg-surface p-3 cursor-pointer hover:bg-surface-container transition-colors text-left"
+              >
                 <div className="font-body text-[10px] font-semibold text-on-surface-variant mb-1 uppercase">Check-out</div>
-                <div className="font-body text-body-md text-primary">Add date</div>
-              </div>
-              <div className="bg-surface p-3 col-span-2 cursor-pointer hover:bg-surface-container transition-colors flex justify-between items-center">
+                <div className="font-body text-body-md text-primary">{formatShortDate(checkOut)}</div>
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setGuestsOpen((open) => !open);
+                  setDatesOpen(false);
+                }}
+                className="bg-surface p-3 col-span-2 cursor-pointer hover:bg-surface-container transition-colors flex justify-between items-center text-left"
+              >
                 <div>
                   <div className="font-body text-[10px] font-semibold text-on-surface-variant mb-1 uppercase">Guests</div>
-                  <div className="font-body text-body-md text-primary">2 guests</div>
+                  <div className="font-body text-body-md text-primary">{guests} {guests === 1 ? 'guest' : 'guests'}</div>
                 </div>
                 <ChevronDown className="w-5 h-5 text-on-surface-variant" />
-              </div>
+              </button>
             </div>
+
+            {datesOpen && (
+              <DateRangePicker
+                checkIn={checkIn}
+                checkOut={checkOut}
+                onChange={({ checkIn: nextCheckIn, checkOut: nextCheckOut }) => {
+                  setCheckIn(nextCheckIn);
+                  setCheckOut(nextCheckOut);
+                }}
+                onDone={() => setDatesOpen(false)}
+                className="absolute bottom-full left-4 right-4 z-50 mb-4"
+              />
+            )}
+
+            {guestsOpen && (
+              <div className="absolute left-8 right-8 top-[214px] z-50 rounded-xl border border-outline-variant/30 bg-surface p-5 shadow-2xl">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <div className="font-body text-body-md font-semibold text-primary">Guests</div>
+                    <div className="font-body text-sm text-on-surface-variant">Adults and children</div>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <button
+                      type="button"
+                      onClick={() => setGuests((value) => Math.max(1, value - 1))}
+                      className="h-10 w-10 rounded-full border border-outline-variant/50 text-primary"
+                    >
+                      -
+                    </button>
+                    <span className="min-w-6 text-center font-body text-body-md">{guests}</span>
+                    <button
+                      type="button"
+                      onClick={() => setGuests((value) => Math.min(8, value + 1))}
+                      className="h-10 w-10 rounded-full border border-outline-variant/50 text-primary"
+                    >
+                      +
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
             
-            <button className="w-full py-4 bg-primary text-on-primary font-body text-label-caps tracking-widest hover:opacity-90 transition-opacity uppercase rounded">
+            <button
+              type="button"
+              onClick={() => {
+                if (!checkIn || !checkOut) {
+                  setDatesOpen(true);
+                  setGuestsOpen(false);
+                }
+              }}
+              className="w-full py-4 bg-primary text-on-primary font-body text-label-caps tracking-widest hover:opacity-90 transition-opacity uppercase rounded"
+            >
               Reserve Now
             </button>
             <p className="text-center font-body text-sm text-on-surface-variant mt-4">You won't be charged yet</p>
