@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Plus, Minus, SlidersHorizontal as Tune, Quote } from 'lucide-react';
 import { Link } from 'react-router-dom';
-import { locationAreas, mapLocations, type LocationArea } from '../data/locations';
+import { locationAreas, manchesterMapEmbedUrl, mapLocations, type LocationArea } from '../data/locations';
 
 export default function Home() {
   const [filtersOpen, setFiltersOpen] = useState(false);
@@ -248,7 +248,7 @@ export default function Home() {
                     </div>
                     <div className="p-6">
                       <h3 className="font-display text-lg mb-1 text-primary">{location.name}</h3>
-                      <p className="font-body text-sm text-on-surface-variant">{location.area}</p>
+                      <p className="font-body text-sm text-on-surface-variant">{location.area} - {location.postcode}</p>
                     </div>
                   </button>
                 ))}
@@ -258,6 +258,12 @@ export default function Home() {
           
           <div className="w-full lg:w-1/2 h-[500px] lg:h-full rounded-2xl overflow-hidden relative border border-outline-variant/30 bg-surface-variant grayscale opacity-80">
             {/* Map placeholder visually */}
+            <iframe
+              title="Manchester locations map"
+              src={manchesterMapEmbedUrl}
+              className="absolute inset-0 h-full w-full border-0 pointer-events-none"
+              loading="lazy"
+            />
             <div className="absolute inset-0 bg-primary/5 mix-blend-multiply pointer-events-none"></div>
             
             <div className="absolute top-6 left-6 z-20 flex flex-col gap-2">
@@ -288,7 +294,8 @@ export default function Home() {
                   onClick={() => setSelectedLocationId(location.id)}
                   className="absolute cursor-pointer pointer-events-auto"
                   style={{ top: location.position.top, left: location.position.left }}
-                  aria-label={location.name}
+                  aria-label={`${location.name} ${location.postcode}`}
+                  title={`${location.name} - ${location.postcode}`}
                 >
                   <span
                     className={`block rounded-full shadow-md border transition-transform ${

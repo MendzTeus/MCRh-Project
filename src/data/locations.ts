@@ -5,10 +5,32 @@ export type MapLocation = {
   name: string;
   area: string;
   areaId: Exclude<LocationArea, 'all'>;
-  postcode: string | null;
-  coordinates: { lat: number; lng: number } | null;
+  postcode: string;
+  coordinates: { lat: number; lng: number };
   position: { top: string; left: string };
 };
+
+type DraftMapLocation = Omit<MapLocation, 'position'>;
+
+const manchesterMapBounds = {
+  north: 53.493,
+  south: 53.456,
+  west: -2.3,
+  east: -2.215,
+};
+
+function toMapPosition({ lat, lng }: MapLocation['coordinates']) {
+  const top = ((manchesterMapBounds.north - lat) / (manchesterMapBounds.north - manchesterMapBounds.south)) * 100;
+  const left = ((lng - manchesterMapBounds.west) / (manchesterMapBounds.east - manchesterMapBounds.west)) * 100;
+
+  return {
+    top: `${Math.min(92, Math.max(8, top))}%`,
+    left: `${Math.min(92, Math.max(8, left))}%`,
+  };
+}
+
+export const manchesterMapEmbedUrl =
+  `https://www.openstreetmap.org/export/embed.html?bbox=${manchesterMapBounds.west}%2C${manchesterMapBounds.south}%2C${manchesterMapBounds.east}%2C${manchesterMapBounds.north}&layer=mapnik`;
 
 export const locationAreas: { id: LocationArea; label: string }[] = [
   { id: 'all', label: 'All' },
@@ -18,59 +40,58 @@ export const locationAreas: { id: LocationArea; label: string }[] = [
   { id: 'old-trafford', label: 'Old Trafford' },
 ];
 
-export const mapLocations: MapLocation[] = [
+const draftMapLocations: DraftMapLocation[] = [
   {
     id: 1,
     name: 'Chambers Residence',
     area: 'Central Manchester',
     areaId: 'city-centre',
-    postcode: null,
-    coordinates: null,
-    position: { top: '40%', left: '45%' },
+    postcode: 'M2 1HN',
+    coordinates: { lat: 53.4813, lng: -2.2424 },
   },
   {
     id: 2,
     name: 'John Dalton Street',
     area: 'Deansgate',
     areaId: 'deansgate',
-    postcode: null,
-    coordinates: null,
-    position: { top: '60%', left: '30%' },
+    postcode: 'M2 6DS',
+    coordinates: { lat: 53.4801, lng: -2.2478 },
   },
   {
     id: 3,
     name: 'Wood Street',
     area: 'Central Manchester',
     areaId: 'city-centre',
-    postcode: null,
-    coordinates: null,
-    position: { top: '35%', left: '65%' },
+    postcode: 'M3 3EF',
+    coordinates: { lat: 53.4792, lng: -2.2527 },
   },
   {
     id: 4,
     name: 'Ancoats',
     area: 'Ancoats',
     areaId: 'ancoats',
-    postcode: null,
-    coordinates: null,
-    position: { top: '75%', left: '55%' },
+    postcode: 'M4 6DU',
+    coordinates: { lat: 53.4849, lng: -2.2269 },
   },
   {
     id: 5,
     name: 'Old Trafford',
     area: 'Old Trafford',
     areaId: 'old-trafford',
-    postcode: null,
-    coordinates: null,
-    position: { top: '52%', left: '72%' },
+    postcode: 'M16 0RA',
+    coordinates: { lat: 53.4631, lng: -2.2913 },
   },
   {
     id: 6,
     name: 'The Collective',
     area: 'Central Manchester',
     areaId: 'city-centre',
-    postcode: null,
-    coordinates: null,
-    position: { top: '25%', left: '38%' },
+    postcode: 'M1 3LA',
+    coordinates: { lat: 53.477, lng: -2.237 },
   },
 ];
+
+export const mapLocations: MapLocation[] = draftMapLocations.map((location) => ({
+  ...location,
+  position: toMapPosition(location.coordinates),
+}));
