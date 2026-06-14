@@ -1,4 +1,4 @@
-import { BedDouble, Bath, ExternalLink, PersonStanding, Star } from 'lucide-react';
+import { BedDouble, Bath, PersonStanding } from 'lucide-react';
 import { Link, useParams } from 'react-router-dom';
 import AvailabilityWidget from '../components/AvailabilityWidget';
 import { getExtractedAirbnbListing } from '../data/airbnbExtract';
@@ -20,10 +20,8 @@ export default function CollectionDetail() {
           title: extracted?.airbnbName || unit.unitName,
           label: unit.unitName,
           specs: unit.suppliedSpecs || extracted?.specsFromAirbnb?.join(' / ') || 'Specs to confirm',
-          rating: extracted?.rating,
-          airbnbUrl: extracted?.finalUrl || unit.airbnbUrl,
+          path: `/properties/${property.slug}/${unit.unitSlug}`,
           imageSrc: extracted?.primaryImage,
-          external: Boolean(extracted?.finalUrl || unit.airbnbUrl),
         };
       })
     : property.units.map((unit) => ({
@@ -31,10 +29,8 @@ export default function CollectionDetail() {
         title: unit.title,
         label: unit.label,
         specs: unit.specs,
-        rating: null,
-        airbnbUrl: `/properties/${property.slug}/${unit.slug}`,
+        path: `/properties/${property.slug}/${unit.slug}`,
         imageSrc: null,
-        external: false,
       }));
 
   return (
@@ -101,32 +97,18 @@ export default function CollectionDetail() {
                 <div>
                   <h3 className="font-display text-headline-sm text-primary">{apt.title}</h3>
                   <p className="font-body text-[10px] text-on-surface-variant tracking-widest uppercase">{apt.label} · {apt.specs}</p>
-                  {apt.rating && (
-                    <p className="mt-2 inline-flex items-center gap-1 font-body text-[10px] text-secondary tracking-widest uppercase">
-                      <Star className="h-3 w-3 fill-current" /> {apt.rating} Airbnb
-                    </p>
-                  )}
                 </div>
                 <span className="font-body text-label-caps text-primary border-b border-primary pb-1 group-hover:text-secondary group-hover:border-secondary transition-colors uppercase tracking-widest">
-                  {apt.external ? 'Book on Airbnb' : 'View Residence'}
-                  {apt.external && <ExternalLink className="ml-2 inline h-3 w-3" />}
+                  View Residence
                 </span>
               </div>
               </>
             );
 
-            return apt.external ? (
-              <a href={apt.airbnbUrl} target="_blank" rel="noreferrer" key={apt.slug} className="group cursor-pointer block">
-                {cardContent}
-              </a>
-            ) : apt.airbnbUrl ? (
-              <Link to={apt.airbnbUrl} key={apt.slug} className="group cursor-pointer block">
+            return (
+              <Link to={apt.path} key={apt.slug} className="group cursor-pointer block">
                 {cardContent}
               </Link>
-            ) : (
-              <div key={apt.slug} className="group block">
-                {cardContent}
-              </div>
             );
           })}
         </div>

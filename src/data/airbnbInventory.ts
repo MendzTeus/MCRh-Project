@@ -64,3 +64,8 @@ export function getInventoryForProperty(propertySlug: string) {
 
   return airbnbInventory.filter((unit) => propertySlugs.includes(unit.propertySlug));
 }
+
+export function getInventoryUnit(propertySlug: string | undefined, unitSlug: string | undefined) {
+  if (!propertySlug || !unitSlug) return undefined;
+  return getInventoryForProperty(propertySlug).find((unit) => unit.unitSlug === unitSlug);
+}

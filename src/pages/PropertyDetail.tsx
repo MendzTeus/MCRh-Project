@@ -2,7 +2,9 @@ import { useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { Star, ChevronDown, BedDouble, Wifi, ChefHat, Coffee, Snowflake, Bath, ArrowRight, ArrowLeft } from 'lucide-react';
 import DateRangePicker, { formatShortDate } from '../components/DateRangePicker';
-import { getPropertyBySlug, getUnitBySlug } from '../data/properties';
+import { getExtractedAirbnbListing } from '../data/airbnbExtract';
+import { getInventoryUnit } from '../data/airbnbInventory';
+import { getPropertyBySlug, getUnitBySlug, type PropertyUnit } from '../data/properties';
 
 export default function PropertyDetail() {
   const { propertySlug, id } = useParams();
@@ -10,7 +12,18 @@ export default function PropertyDetail() {
   const routedUnit = routedProperty?.units.find((item) => item.slug === id);
   const legacyUnit = getUnitBySlug(id);
   const property = routedProperty || legacyUnit?.property || getPropertyBySlug('chambers');
-  const unit = routedUnit || legacyUnit?.unit || property?.units[0];
+  const inventoryUnit = getInventoryUnit(propertySlug, id);
+  const extractedUnit = inventoryUnit ? getExtractedAirbnbListing(inventoryUnit.unitSlug) : undefined;
+  const inventoryBackedUnit: PropertyUnit | undefined = inventoryUnit
+    ? {
+        slug: inventoryUnit.unitSlug,
+        title: extractedUnit?.airbnbName || inventoryUnit.unitName,
+        label: inventoryUnit.unitName,
+        specs: inventoryUnit.suppliedSpecs || extractedUnit?.specsFromAirbnb?.join(' / ') || 'Specs to confirm',
+        description: `${inventoryUnit.propertyName}, ${inventoryUnit.postcode}.`,
+      }
+    : undefined;
+  const unit = routedUnit || legacyUnit?.unit || inventoryBackedUnit || property?.units[0];
   const [datesOpen, setDatesOpen] = useState(false);
   const [guestsOpen, setGuestsOpen] = useState(false);
   const [checkIn, setCheckIn] = useState('');
