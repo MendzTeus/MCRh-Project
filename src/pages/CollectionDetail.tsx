@@ -119,10 +119,14 @@ export default function CollectionDetail() {
               <a href={apt.airbnbUrl} target="_blank" rel="noreferrer" key={apt.slug} className="group cursor-pointer block">
                 {cardContent}
               </a>
-            ) : (
+            ) : apt.airbnbUrl ? (
               <Link to={apt.airbnbUrl} key={apt.slug} className="group cursor-pointer block">
                 {cardContent}
               </Link>
+            ) : (
+              <div key={apt.slug} className="group block">
+                {cardContent}
+              </div>
             );
           })}
         </div>

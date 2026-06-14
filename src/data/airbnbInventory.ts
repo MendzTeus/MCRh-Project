@@ -57,5 +57,10 @@ export const airbnbInventory: AirbnbInventoryUnit[] = [
 ];
 
 export function getInventoryForProperty(propertySlug: string) {
-  return airbnbInventory.filter((unit) => unit.propertySlug === propertySlug);
+  const groupedProperties: Record<string, string[]> = {
+    chambers: ['chambers-9', 'chambers-11'],
+  };
+  const propertySlugs = groupedProperties[propertySlug] || [propertySlug];
+
+  return airbnbInventory.filter((unit) => propertySlugs.includes(unit.propertySlug));
 }

@@ -5,13 +5,15 @@ import { fileURLToPath, pathToFileURL } from 'node:url';
 const rootDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const outputPath = path.join(rootDir, 'src/data/airbnbListings.generated.json');
 const inventoryModule = await import(pathToFileURL(path.join(rootDir, 'src/data/airbnbInventory.ts')).href);
-const inventory = inventoryModule.airbnbInventory.filter((unit) => unit.airbnbUrl);
-
 const args = new Map(process.argv.slice(2).map((arg) => {
   const [key, value = 'true'] = arg.replace(/^--/, '').split('=');
   return [key, value];
 }));
 
+const propertyFilter = args.get('property');
+const inventory = inventoryModule.airbnbInventory
+  .filter((unit) => unit.airbnbUrl)
+  .filter((unit) => !propertyFilter || unit.propertySlug === propertyFilter);
 const limit = args.has('limit') ? Number(args.get('limit')) : inventory.length;
 const delayMs = args.has('delay') ? Number(args.get('delay')) : 9000;
 
