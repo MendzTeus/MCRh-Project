@@ -1,6 +1,8 @@
-import { BedDouble, Bath, PersonStanding } from 'lucide-react';
+import { BedDouble, Bath, ExternalLink, PersonStanding, Star } from 'lucide-react';
 import { Link, useParams } from 'react-router-dom';
 import AvailabilityWidget from '../components/AvailabilityWidget';
+import { getExtractedAirbnbListing } from '../data/airbnbExtract';
+import { getInventoryForProperty } from '../data/airbnbInventory';
 import { getPropertyBySlug } from '../data/properties';
 
 export default function CollectionDetail() {
@@ -8,6 +10,32 @@ export default function CollectionDetail() {
   const property = getPropertyBySlug(id) || getPropertyBySlug('chambers');
 
   if (!property) return null;
+
+  const inventoryUnits = getInventoryForProperty(property.slug);
+  const collectionUnits = inventoryUnits.length
+    ? inventoryUnits.map((unit) => {
+        const extracted = getExtractedAirbnbListing(unit.unitSlug);
+        return {
+          slug: unit.unitSlug,
+          title: extracted?.airbnbName || unit.unitName,
+          label: unit.unitName,
+          specs: unit.suppliedSpecs || extracted?.specsFromAirbnb?.join(' / ') || 'Specs to confirm',
+          rating: extracted?.rating,
+          airbnbUrl: extracted?.finalUrl || unit.airbnbUrl,
+          imageSrc: extracted?.primaryImage,
+          external: Boolean(extracted?.finalUrl || unit.airbnbUrl),
+        };
+      })
+    : property.units.map((unit) => ({
+        slug: unit.slug,
+        title: unit.title,
+        label: unit.label,
+        specs: unit.specs,
+        rating: null,
+        airbnbUrl: `/properties/${property.slug}/${unit.slug}`,
+        imageSrc: null,
+        external: false,
+      }));
 
   return (
     <div className="animate-in fade-in duration-500">
@@ -59,22 +87,44 @@ export default function CollectionDetail() {
         </div>
         
         <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-12 mt-12">
-          {property.units.map((apt) => (
-            <Link to={`/properties/${property.slug}/${apt.slug}`} key={apt.slug} className="group cursor-pointer block">
+          {collectionUnits.map((apt) => {
+            const cardContent = (
+              <>
               <div className="aspect-[16/9] overflow-hidden rounded mb-4 bg-surface-dim">
-                <div className="w-full h-full bg-surface-variant"></div>
+                {apt.imageSrc ? (
+                  <img src={apt.imageSrc} alt={apt.title} className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105" loading="lazy" />
+                ) : (
+                  <div className="w-full h-full bg-surface-variant"></div>
+                )}
               </div>
               <div className="flex justify-between items-end">
                 <div>
                   <h3 className="font-display text-headline-sm text-primary">{apt.title}</h3>
-                  <p className="font-body text-[10px] text-on-surface-variant tracking-widest uppercase">{apt.label}</p>
+                  <p className="font-body text-[10px] text-on-surface-variant tracking-widest uppercase">{apt.label} · {apt.specs}</p>
+                  {apt.rating && (
+                    <p className="mt-2 inline-flex items-center gap-1 font-body text-[10px] text-secondary tracking-widest uppercase">
+                      <Star className="h-3 w-3 fill-current" /> {apt.rating} Airbnb
+                    </p>
+                  )}
                 </div>
                 <span className="font-body text-label-caps text-primary border-b border-primary pb-1 group-hover:text-secondary group-hover:border-secondary transition-colors uppercase tracking-widest">
-                  View Residence
+                  {apt.external ? 'Book on Airbnb' : 'View Residence'}
+                  {apt.external && <ExternalLink className="ml-2 inline h-3 w-3" />}
                 </span>
               </div>
-            </Link>
-          ))}
+              </>
+            );
+
+            return apt.external ? (
+              <a href={apt.airbnbUrl} target="_blank" rel="noreferrer" key={apt.slug} className="group cursor-pointer block">
+                {cardContent}
+              </a>
+            ) : (
+              <Link to={apt.airbnbUrl} key={apt.slug} className="group cursor-pointer block">
+                {cardContent}
+              </Link>
+            );
+          })}
         </div>
       </section>
 
