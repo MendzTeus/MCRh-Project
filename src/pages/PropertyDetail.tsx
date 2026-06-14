@@ -2,8 +2,9 @@ import { useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { Star, ChevronDown, BedDouble, Wifi, ChefHat, Coffee, Snowflake, Bath, ArrowRight, ArrowLeft } from 'lucide-react';
 import DateRangePicker, { formatShortDate } from '../components/DateRangePicker';
-import { getExtractedAirbnbListing } from '../data/airbnbExtract';
+import MediaImage from '../components/MediaImage';
 import { getInventoryUnit } from '../data/airbnbInventory';
+import { getListingMedia, getUnitGallery } from '../data/listingMedia';
 import { getPropertyBySlug, getUnitBySlug, type PropertyUnit } from '../data/properties';
 
 export default function PropertyDetail() {
@@ -13,17 +14,19 @@ export default function PropertyDetail() {
   const legacyUnit = getUnitBySlug(id);
   const property = routedProperty || legacyUnit?.property || getPropertyBySlug('chambers');
   const inventoryUnit = getInventoryUnit(propertySlug, id);
-  const extractedUnit = inventoryUnit ? getExtractedAirbnbListing(inventoryUnit.unitSlug) : undefined;
+  const listingMedia = getListingMedia(inventoryUnit?.unitSlug || id);
   const inventoryBackedUnit: PropertyUnit | undefined = inventoryUnit
     ? {
         slug: inventoryUnit.unitSlug,
-        title: extractedUnit?.airbnbName || inventoryUnit.unitName,
+        title: listingMedia?.title || inventoryUnit.unitName,
         label: inventoryUnit.unitName,
-        specs: inventoryUnit.suppliedSpecs || extractedUnit?.specsFromAirbnb?.join(' / ') || 'Specs to confirm',
+        specs: inventoryUnit.suppliedSpecs || 'Specs to confirm',
         description: `${inventoryUnit.propertyName}, ${inventoryUnit.postcode}.`,
       }
     : undefined;
   const unit = routedUnit || legacyUnit?.unit || inventoryBackedUnit || property?.units[0];
+  const unitGallery = getUnitGallery(unit?.slug, property?.slug);
+  const displayRating = listingMedia?.rating || '4.98';
   const [datesOpen, setDatesOpen] = useState(false);
   const [guestsOpen, setGuestsOpen] = useState(false);
   const [checkIn, setCheckIn] = useState('');
@@ -36,7 +39,7 @@ export default function PropertyDetail() {
     <div className="animate-in fade-in duration-500">
       <section className="relative w-full h-[819px] md:h-[921px] flex items-end pb-section-gap">
         <div className="absolute inset-0 z-0 bg-surface-dim">
-          <div className="w-full h-full bg-surface-variant"></div>
+          <MediaImage src={unitGallery[0]} propertySlug={property.slug} alt={unit.title} loading="eager" />
           <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent"></div>
         </div>
         
@@ -51,7 +54,7 @@ export default function PropertyDetail() {
             <div className="flex justify-end items-center mb-6 border-b border-outline-variant/30 pb-4">
               <div className="flex items-center gap-1 text-on-surface-variant">
                 <Star className="w-4 h-4 fill-current text-secondary" />
-                <span className="font-body text-body-md font-semibold">4.98</span>
+                <span className="font-body text-body-md font-semibold">{displayRating}</span>
               </div>
             </div>
             
@@ -193,17 +196,17 @@ export default function PropertyDetail() {
         <h2 className="font-display text-headline-md text-primary mb-12">Visual Journey</h2>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-2 md:gap-4 h-[614px] md:h-[819px]">
           <div className="md:col-span-2 h-full rounded-xl overflow-hidden relative group">
-            <div className="w-full h-full bg-surface-variant"></div>
+            <MediaImage src={unitGallery[0]} propertySlug={property.slug} alt={`${unit.title} gallery image`} />
           </div>
           <div className="hidden md:grid grid-rows-3 gap-4 h-full">
             <div className="rounded-xl overflow-hidden relative group h-full">
-              <div className="w-full h-full bg-surface-variant"></div>
+              <MediaImage src={unitGallery[1]} propertySlug={property.slug} index={1} alt={`${unit.title} gallery detail`} />
             </div>
             <div className="rounded-xl overflow-hidden relative group h-full">
-              <div className="w-full h-full bg-surface-variant"></div>
+              <MediaImage src={unitGallery[2]} propertySlug={property.slug} index={2} alt={`${unit.title} gallery detail`} />
             </div>
             <div className="rounded-xl overflow-hidden relative group h-full">
-              <div className="w-full h-full bg-surface-variant"></div>
+              <MediaImage src={unitGallery[3]} propertySlug={property.slug} index={3} alt={`${unit.title} gallery detail`} />
             </div>
           </div>
         </div>

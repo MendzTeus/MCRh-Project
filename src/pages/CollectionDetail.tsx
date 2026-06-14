@@ -1,8 +1,9 @@
 import { BedDouble, Bath, PersonStanding } from 'lucide-react';
 import { Link, useParams } from 'react-router-dom';
 import AvailabilityWidget from '../components/AvailabilityWidget';
-import { getExtractedAirbnbListing } from '../data/airbnbExtract';
+import MediaImage from '../components/MediaImage';
 import { getInventoryForProperty } from '../data/airbnbInventory';
+import { getListingMedia } from '../data/listingMedia';
 import { getPropertyBySlug } from '../data/properties';
 
 export default function CollectionDetail() {
@@ -14,14 +15,14 @@ export default function CollectionDetail() {
   const inventoryUnits = getInventoryForProperty(property.slug);
   const collectionUnits = inventoryUnits.length
     ? inventoryUnits.map((unit) => {
-        const extracted = getExtractedAirbnbListing(unit.unitSlug);
+        const media = getListingMedia(unit.unitSlug);
         return {
           slug: unit.unitSlug,
-          title: extracted?.airbnbName || unit.unitName,
+          title: media?.title || unit.unitName,
           label: unit.unitName,
-          specs: unit.suppliedSpecs || extracted?.specsFromAirbnb?.join(' / ') || 'Specs to confirm',
+          specs: unit.suppliedSpecs || 'Specs to confirm',
           path: `/properties/${property.slug}/${unit.unitSlug}`,
-          imageSrc: extracted?.primaryImage,
+          imageSrc: media?.primaryImage,
         };
       })
     : property.units.map((unit) => ({
@@ -40,7 +41,7 @@ export default function CollectionDetail() {
         className="w-full h-[80vh] min-h-[600px] relative flex flex-col justify-end pb-margin-desktop px-margin-mobile md:px-margin-desktop bg-surface-dim border-b border-outline-variant/30"
       >
         <div className="absolute inset-0 z-0">
-           <div className="w-full h-full bg-surface-variant"></div>
+           <MediaImage propertySlug={property.slug} alt={property.imageAlt} loading="eager" />
           <div className="absolute inset-0 bg-gradient-to-t from-primary-container/80 to-transparent"></div>
         </div>
         <div className="relative z-10 max-w-[1280px] mx-auto w-full">
@@ -87,11 +88,7 @@ export default function CollectionDetail() {
             const cardContent = (
               <>
               <div className="aspect-[16/9] overflow-hidden rounded mb-4 bg-surface-dim">
-                {apt.imageSrc ? (
-                  <img src={apt.imageSrc} alt={apt.title} className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105" loading="lazy" />
-                ) : (
-                  <div className="w-full h-full bg-surface-variant"></div>
-                )}
+                <MediaImage src={apt.imageSrc || undefined} propertySlug={property.slug} alt={apt.title} className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105" />
               </div>
               <div className="flex justify-between items-end">
                 <div>

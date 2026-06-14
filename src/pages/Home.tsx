@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Plus, Minus, SlidersHorizontal as Tune, Quote } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import MediaImage from '../components/MediaImage';
 import { locationAreas, manchesterMapEmbedUrl, mapLocations, type LocationArea } from '../data/locations';
 
 export default function Home() {
@@ -17,7 +18,7 @@ export default function Home() {
       {/* Hero Section */}
       <section className="relative h-[90vh] min-h-[600px] w-full overflow-hidden flex items-end">
         <div className="absolute inset-0 z-0 bg-surface-dim">
-           <div className="w-full h-full bg-surface-variant"></div>
+           <MediaImage propertySlug="chambers" alt="MCRh Manchester apartment interior" loading="eager" />
           <div className="absolute inset-0 bg-gradient-to-t from-primary/90 via-primary/40 to-primary/10"></div>
         </div>
         <div className="relative z-10 w-full px-margin-mobile md:px-margin-desktop pb-12 md:pb-24 max-w-[1280px] mx-auto flex flex-col md:flex-row justify-between items-end gap-8">
@@ -38,10 +39,10 @@ export default function Home() {
         <div className="grid grid-cols-1 md:grid-cols-12 gap-16 lg:gap-24 items-center">
           <div className="md:col-span-7 relative h-[500px] md:h-[700px]">
             <div className="absolute top-0 left-0 w-[85%] h-[85%] rounded-lg overflow-hidden shadow-sm bg-surface-dim">
-                <div className="w-full h-full bg-surface-variant"></div>
+                <MediaImage propertySlug="chambers" index={0} alt="Chambers Residence apartment" />
             </div>
             <div className="absolute bottom-0 right-0 w-[55%] h-[55%] rounded-lg overflow-hidden shadow-2xl z-10 bg-surface-dim border border-outline-variant/30">
-                <div className="w-full h-full bg-surface-variant"></div>
+                <MediaImage propertySlug="chambers" index={1} alt="Chambers Residence bedroom detail" />
             </div>
           </div>
           <div className="md:col-span-5">
@@ -73,10 +74,10 @@ export default function Home() {
           <div className="md:col-span-7 order-1 md:order-2">
             <div className="grid grid-cols-2 gap-4 h-[500px] md:h-[700px]">
               <div className="col-span-1 row-span-2 rounded-lg overflow-hidden bg-surface-dim">
-                <div className="w-full h-full bg-surface-variant"></div>
+                <MediaImage propertySlug="john-dalton-st" index={0} alt="John Dalton Street apartment" />
               </div>
               <div className="col-span-1 row-span-1 rounded-lg overflow-hidden bg-surface-dim">
-                <div className="w-full h-full bg-surface-variant"></div>
+                <MediaImage propertySlug="john-dalton-st" index={1} alt="John Dalton Street interior detail" />
               </div>
               <div className="col-span-1 row-span-1 rounded-lg overflow-hidden bg-surface-variant flex items-center justify-center p-8 border border-outline-variant/30">
                 <p className="font-display text-2xl text-center leading-snug">"A masterclass in urban sanctuary."</p>
@@ -91,10 +92,10 @@ export default function Home() {
         <div className="grid grid-cols-1 md:grid-cols-12 gap-16 lg:gap-24 items-center">
           <div className="md:col-span-7 relative h-[500px] md:h-[700px]">
             <div className="absolute top-0 left-0 w-[85%] h-[85%] rounded-lg overflow-hidden shadow-sm bg-surface-dim">
-              <div className="w-full h-full bg-surface-variant"></div>
+              <MediaImage propertySlug="wood-street" index={0} alt="Wood Street apartment" />
             </div>
             <div className="absolute bottom-0 right-0 w-[55%] h-[55%] rounded-lg overflow-hidden shadow-2xl z-10 bg-surface-dim border border-outline-variant/30">
-                <div className="w-full h-full bg-surface-variant"></div>
+                <MediaImage propertySlug="wood-street" index={1} alt="Wood Street apartment detail" />
             </div>
           </div>
           <div className="md:col-span-5">
@@ -126,10 +127,10 @@ export default function Home() {
           <div className="md:col-span-7 order-1 md:order-2">
             <div className="grid grid-cols-2 gap-4 h-[500px] md:h-[700px]">
               <div className="col-span-1 row-span-2 rounded-lg overflow-hidden bg-primary">
-                <div className="w-full h-full bg-surface-variant"></div>
+                <MediaImage propertySlug="ancoats" index={0} alt="Ancoats apartment" />
               </div>
               <div className="col-span-1 row-span-1 rounded-lg overflow-hidden bg-surface-dim">
-                <div className="w-full h-full bg-surface-variant"></div>
+                <MediaImage propertySlug="ancoats" index={1} alt="Ancoats interior detail" />
               </div>
               <div className="col-span-1 row-span-1 rounded-lg overflow-hidden bg-surface-container-lowest flex items-center justify-center p-8 border border-outline-variant/30">
                 <p className="font-display text-2xl md:text-3xl text-primary text-center leading-snug">"Industrial roots, contemporary luxury."</p>
@@ -144,10 +145,10 @@ export default function Home() {
         <div className="grid grid-cols-1 md:grid-cols-12 gap-16 lg:gap-24 items-center">
           <div className="md:col-span-7 relative h-[500px] md:h-[700px]">
             <div className="absolute top-0 left-0 w-[85%] h-[85%] rounded-lg overflow-hidden shadow-sm bg-surface-dim">
-              <div className="w-full h-full bg-surface-variant"></div>
+              <MediaImage propertySlug="old-trafford" index={0} alt="Old Trafford apartment" />
             </div>
             <div className="absolute bottom-0 right-0 w-[55%] h-[55%] rounded-lg overflow-hidden shadow-2xl z-10 bg-surface-dim border border-outline-variant/30">
-              <div className="w-full h-full bg-surface-variant"></div>
+              <MediaImage propertySlug="old-trafford" index={1} alt="Old Trafford apartment detail" />
             </div>
           </div>
           <div className="md:col-span-5">
@@ -179,10 +180,10 @@ export default function Home() {
           <div className="md:col-span-7 order-1 md:order-2">
             <div className="grid grid-cols-2 gap-4 h-[500px] md:h-[700px]">
               <div className="col-span-1 row-span-2 rounded-lg overflow-hidden bg-primary">
-                <div className="w-full h-full bg-surface-variant"></div>
+                <MediaImage propertySlug="the-collective" index={0} alt="Wood Street Collective room" />
               </div>
               <div className="col-span-1 row-span-1 rounded-lg overflow-hidden bg-surface-dim">
-                <div className="w-full h-full bg-surface-variant"></div>
+                <MediaImage propertySlug="the-collective" index={1} alt="Wood Street Collective interior detail" />
               </div>
               <div className="col-span-1 row-span-1 rounded-lg overflow-hidden bg-surface-container-lowest flex items-center justify-center p-8 border border-outline-variant/30">
                 <p className="font-display text-2xl md:text-3xl text-primary text-center leading-snug">"The sharpest design, immersive aesthetics."</p>
@@ -244,7 +245,7 @@ export default function Home() {
                     }`}
                   >
                     <div className="aspect-[4/3] bg-surface-dim relative">
-                       <div className="w-full h-full bg-surface-variant"></div>
+                       <MediaImage propertySlug={location.propertySlug} alt={`${location.name} apartment`} />
                     </div>
                     <div className="p-6">
                       <h3 className="font-display text-lg mb-1 text-primary">{location.name}</h3>

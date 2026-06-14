@@ -1,4 +1,5 @@
 import { Link } from 'react-router-dom';
+import MediaImage from '../components/MediaImage';
 
 export default function Properties() {
   return (
@@ -6,7 +7,7 @@ export default function Properties() {
       {/* Hero Section */}
       <section className="relative h-screen w-full overflow-hidden flex items-end">
         <div className="absolute inset-0 z-0 bg-surface-dim">
-           <div className="w-full h-full bg-surface-variant"></div>
+           <MediaImage propertySlug="chambers" alt="MCRh Manchester apartment interior" loading="eager" />
           <div className="absolute inset-0 bg-gradient-to-t from-primary/80 via-primary/30 to-transparent"></div>
         </div>
         <div className="relative z-10 w-full px-margin-mobile md:px-margin-desktop pb-margin-desktop md:pb-section-gap max-w-[1280px] mx-auto flex flex-col md:flex-row justify-between items-end">
@@ -27,10 +28,10 @@ export default function Properties() {
         <div className="grid grid-cols-1 md:grid-cols-12 gap-8 md:gap-16 items-center">
           <div className="md:col-span-7 relative h-[600px] md:h-[800px]">
             <div className="absolute top-0 left-0 w-[85%] h-[85%] rounded-lg overflow-hidden shadow-sm bg-surface-dim">
-              <div className="w-full h-full bg-surface-variant"></div>
+              <MediaImage propertySlug="chambers" index={0} alt="Chambers Residence apartment" />
             </div>
             <div className="absolute bottom-0 right-0 w-[55%] h-[55%] rounded-lg overflow-hidden shadow-2xl md:-mr-8 z-10 bg-surface-dim border border-outline-variant/30">
-              <div className="w-full h-full bg-surface-variant"></div>
+              <MediaImage propertySlug="chambers" index={1} alt="Chambers Residence bedroom detail" />
             </div>
           </div>
           <div className="md:col-span-5 md:pl-12 mt-12 md:mt-0">
@@ -62,10 +63,10 @@ export default function Properties() {
           <div className="md:col-span-7 order-1 md:order-2">
             <div className="grid grid-cols-2 gap-4 h-[600px] md:h-[700px]">
               <div className="col-span-1 row-span-2 rounded-lg overflow-hidden bg-surface-dim">
-                <div className="w-full h-full bg-surface-variant"></div>
+                <MediaImage propertySlug="john-dalton-st" index={0} alt="John Dalton Street apartment" />
               </div>
               <div className="col-span-1 row-span-1 rounded-lg overflow-hidden bg-surface-dim">
-                <div className="w-full h-full bg-surface-variant"></div>
+                <MediaImage propertySlug="john-dalton-st" index={1} alt="John Dalton Street interior detail" />
               </div>
               <div className="col-span-1 row-span-1 rounded-lg overflow-hidden bg-surface-variant flex items-center justify-center p-8 border border-outline-variant/30">
                 <p className="font-display text-2xl md:text-3xl text-primary text-center leading-snug">"A masterclass in urban sanctuary."</p>
@@ -80,10 +81,10 @@ export default function Properties() {
         <div className="grid grid-cols-1 md:grid-cols-12 gap-8 md:gap-16 items-center">
           <div className="md:col-span-7 relative h-[600px] md:h-[800px]">
             <div className="absolute top-0 left-0 w-[85%] h-[85%] rounded-lg overflow-hidden shadow-sm bg-surface-dim">
-              <div className="w-full h-full bg-surface-variant"></div>
+              <MediaImage propertySlug="wood-street" index={0} alt="Wood Street apartment" />
             </div>
             <div className="absolute bottom-0 right-0 w-[55%] h-[55%] rounded-lg overflow-hidden shadow-2xl z-10 bg-surface-dim border border-outline-variant/30">
-                <div className="w-full h-full bg-surface-variant"></div>
+                <MediaImage propertySlug="wood-street" index={1} alt="Wood Street apartment detail" />
             </div>
           </div>
           <div className="md:col-span-5 md:pl-12 mt-12 md:mt-0">
@@ -115,10 +116,10 @@ export default function Properties() {
           <div className="md:col-span-7 order-1 md:order-2">
             <div className="grid grid-cols-2 gap-4 h-[600px] md:h-[700px]">
               <div className="col-span-1 row-span-2 rounded-lg overflow-hidden bg-primary">
-                <div className="w-full h-full bg-surface-variant"></div>
+                <MediaImage propertySlug="ancoats" index={0} alt="Ancoats apartment" />
               </div>
               <div className="col-span-1 row-span-1 rounded-lg overflow-hidden bg-surface-dim">
-                <div className="w-full h-full bg-surface-variant"></div>
+                <MediaImage propertySlug="ancoats" index={1} alt="Ancoats interior detail" />
               </div>
               <div className="col-span-1 row-span-1 rounded-lg overflow-hidden bg-surface-container-lowest flex items-center justify-center p-8 border border-outline-variant/30">
                 <p className="font-display text-2xl md:text-3xl text-primary text-center leading-snug">"Industrial roots, contemporary luxury."</p>
@@ -133,10 +134,10 @@ export default function Properties() {
         <div className="grid grid-cols-1 md:grid-cols-12 gap-8 md:gap-16 items-center">
           <div className="md:col-span-7 relative h-[600px] md:h-[800px]">
             <div className="absolute top-0 left-0 w-[85%] h-[85%] rounded-lg overflow-hidden shadow-sm bg-surface-dim">
-              <div className="w-full h-full bg-surface-variant"></div>
+              <MediaImage propertySlug="old-trafford" index={0} alt="Old Trafford apartment" />
             </div>
             <div className="absolute bottom-0 right-0 w-[55%] h-[55%] rounded-lg overflow-hidden shadow-2xl md:-mr-8 z-10 bg-surface-dim border border-outline-variant/30">
-              <div className="w-full h-full bg-surface-variant"></div>
+              <MediaImage propertySlug="old-trafford" index={1} alt="Old Trafford apartment detail" />
             </div>
           </div>
           <div className="md:col-span-5 md:pl-12 mt-12 md:mt-0">
@@ -168,10 +169,10 @@ export default function Properties() {
           <div className="md:col-span-7 order-1 md:order-2">
             <div className="grid grid-cols-2 gap-4 h-[600px] md:h-[700px]">
               <div className="col-span-1 row-span-2 rounded-lg overflow-hidden bg-primary">
-                <div className="w-full h-full bg-surface-variant"></div>
+                <MediaImage propertySlug="the-collective" index={0} alt="Wood Street Collective room" />
               </div>
               <div className="col-span-1 row-span-1 rounded-lg overflow-hidden bg-surface-dim">
-                <div className="w-full h-full bg-surface-variant"></div>
+                <MediaImage propertySlug="the-collective" index={1} alt="Wood Street Collective interior detail" />
               </div>
               <div className="col-span-1 row-span-1 rounded-lg overflow-hidden bg-surface-container-lowest flex items-center justify-center p-8 border border-outline-variant/30">
                 <p className="font-display text-2xl md:text-3xl text-primary text-center leading-snug">"The sharpest design, immersive aesthetics."</p>
