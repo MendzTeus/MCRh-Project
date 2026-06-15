@@ -18,7 +18,7 @@ export default function About() {
         </h1>
       </section>
 
-      <section className="w-full relative h-[400px] md:h-[600px] overflow-hidden">
+      <section className="w-full relative h-[260px] sm:h-[380px] md:h-[600px] overflow-hidden">
         <MediaImage propertySlug="john-dalton-st" index={2} alt="MCRh curated apartment interior — John Dalton Street" className="h-full w-full object-cover" />
         <div className="absolute inset-0 bg-gradient-to-b from-transparent to-surface/30"></div>
       </section>

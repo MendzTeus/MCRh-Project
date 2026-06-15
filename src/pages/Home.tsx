@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useMemo } from 'react';
 import { Plus, Minus, SlidersHorizontal as Tune, Quote } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { Helmet } from 'react-helmet-async';
@@ -13,8 +13,9 @@ export default function Home() {
   const [selectedArea, setSelectedArea] = useState<LocationArea>('all');
   const [selectedLocationId, setSelectedLocationId] = useState(1);
   const [mapZoom, setMapZoom] = useState(1);
-  const visibleLocations = mapLocations.filter(
-    (location) => selectedArea === 'all' || location.areaId === selectedArea,
+  const visibleLocations = useMemo(
+    () => mapLocations.filter((location) => selectedArea === 'all' || location.areaId === selectedArea),
+    [selectedArea],
   );
 
   return (
@@ -51,7 +52,7 @@ export default function Home() {
       {/* Property Feature: Chambers Residence */}
       <section className="py-section-gap px-margin-mobile md:px-margin-desktop max-w-[1280px] mx-auto">
         <div className="grid grid-cols-1 md:grid-cols-12 gap-16 lg:gap-24 items-center">
-          <div className="md:col-span-7 relative h-[500px] md:h-[700px]">
+          <div className="md:col-span-7 relative h-[360px] sm:h-[500px] md:h-[700px]">
             <div className="absolute top-0 left-0 w-[85%] h-[85%] rounded-lg overflow-hidden shadow-sm bg-surface-dim">
                 <MediaImage propertySlug="chambers" index={0} alt="Chambers Residence apartment" />
             </div>
@@ -86,7 +87,7 @@ export default function Home() {
             </Link>
           </div>
           <div className="md:col-span-7 order-1 md:order-2">
-            <div className="grid grid-cols-2 gap-4 h-[500px] md:h-[700px]">
+            <div className="grid grid-cols-2 gap-4 h-[360px] sm:h-[500px] md:h-[700px]">
               <div className="col-span-1 row-span-2 rounded-lg overflow-hidden bg-surface-dim">
                 <MediaImage propertySlug="john-dalton-st" index={0} alt="John Dalton Street apartment" />
               </div>
@@ -104,7 +105,7 @@ export default function Home() {
       {/* Property Feature: Wood Street */}
       <section className="py-section-gap px-margin-mobile md:px-margin-desktop max-w-[1280px] mx-auto">
         <div className="grid grid-cols-1 md:grid-cols-12 gap-16 lg:gap-24 items-center">
-          <div className="md:col-span-7 relative h-[500px] md:h-[700px]">
+          <div className="md:col-span-7 relative h-[360px] sm:h-[500px] md:h-[700px]">
             <div className="absolute top-0 left-0 w-[85%] h-[85%] rounded-lg overflow-hidden shadow-sm bg-surface-dim">
               <MediaImage propertySlug="wood-street" index={0} alt="Wood Street apartment" />
             </div>
@@ -139,7 +140,7 @@ export default function Home() {
             </Link>
           </div>
           <div className="md:col-span-7 order-1 md:order-2">
-            <div className="grid grid-cols-2 gap-4 h-[500px] md:h-[700px]">
+            <div className="grid grid-cols-2 gap-4 h-[360px] sm:h-[500px] md:h-[700px]">
               <div className="col-span-1 row-span-2 rounded-lg overflow-hidden bg-primary">
                 <MediaImage propertySlug="ancoats" index={0} alt="Ancoats apartment" />
               </div>
@@ -157,7 +158,7 @@ export default function Home() {
       {/* Property Feature: Trafford */}
       <section className="py-section-gap px-margin-mobile md:px-margin-desktop max-w-[1280px] mx-auto">
         <div className="grid grid-cols-1 md:grid-cols-12 gap-16 lg:gap-24 items-center">
-          <div className="md:col-span-7 relative h-[500px] md:h-[700px]">
+          <div className="md:col-span-7 relative h-[360px] sm:h-[500px] md:h-[700px]">
             <div className="absolute top-0 left-0 w-[85%] h-[85%] rounded-lg overflow-hidden shadow-sm bg-surface-dim">
               <MediaImage propertySlug="old-trafford" index={0} alt="Old Trafford apartment" />
             </div>
@@ -192,7 +193,7 @@ export default function Home() {
             </Link>
           </div>
           <div className="md:col-span-7 order-1 md:order-2">
-            <div className="grid grid-cols-2 gap-4 h-[500px] md:h-[700px]">
+            <div className="grid grid-cols-2 gap-4 h-[360px] sm:h-[500px] md:h-[700px]">
               <div className="col-span-1 row-span-2 rounded-lg overflow-hidden bg-primary">
                 <MediaImage propertySlug="the-collective" index={0} alt="Wood Street Collective room" />
               </div>

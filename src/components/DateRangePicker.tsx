@@ -86,7 +86,7 @@ export default function DateRangePicker({ checkIn, checkOut, onChange, onDone, c
     return new Date(date.getFullYear(), date.getMonth(), date.getDate());
   }, []);
   const [visibleMonth, setVisibleMonth] = useState(startOfMonth(selectedStart || today));
-  const monthDays = getMonthDays(visibleMonth);
+  const monthDays = useMemo(() => getMonthDays(visibleMonth), [visibleMonth]);
 
   function selectDate(date: Date) {
     const value = toISODate(date);

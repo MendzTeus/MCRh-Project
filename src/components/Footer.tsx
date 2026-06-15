@@ -9,7 +9,7 @@ export default function Footer() {
             MCRh
           </div>
           <p className="text-on-surface-variant opacity-70">
-            © 2024 MCRh Luxury Lettings. All rights reserved.
+            © {new Date().getFullYear()} MCRh Luxury Lettings. All rights reserved.
           </p>
         </div>
         <div className="flex flex-wrap gap-x-8 gap-y-4">

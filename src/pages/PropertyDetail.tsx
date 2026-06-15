@@ -238,7 +238,7 @@ export default function PropertyDetail() {
       {/* Gallery Grid */}
       <section className="max-w-[1280px] mx-auto px-margin-mobile md:px-margin-desktop py-section-gap">
         <h2 className="font-display text-headline-md text-primary mb-12">Visual Journey</h2>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-2 md:gap-4 h-[614px] md:h-[819px]">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-2 md:gap-4 h-[340px] sm:h-[480px] md:h-[819px]">
           <div className="md:col-span-2 h-full rounded-xl overflow-hidden relative group">
             <MediaImage src={unitGallery[0]} propertySlug={property.slug} alt={`${unit.title} gallery image`} />
           </div>

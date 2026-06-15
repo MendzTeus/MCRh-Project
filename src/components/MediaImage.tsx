@@ -23,5 +23,5 @@ export default function MediaImage({
     return <div className="w-full h-full bg-surface-variant"></div>;
   }
 
-  return <img src={imageSrc} alt={alt} className={className} loading={loading} />;
+  return <img src={imageSrc} alt={alt} className={className} loading={loading} width="800" height="600" decoding="async" />;
 }
