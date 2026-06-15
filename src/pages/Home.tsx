@@ -1,11 +1,15 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { Plus, Minus, SlidersHorizontal as Tune, Quote } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { Helmet } from 'react-helmet-async';
 import MediaImage from '../components/MediaImage';
 import { locationAreas, manchesterMapEmbedUrl, mapLocations, type LocationArea } from '../data/locations';
+import { useClickOutside } from '../hooks/useClickOutside';
 
 export default function Home() {
   const [filtersOpen, setFiltersOpen] = useState(false);
+  const filterRef = useRef<HTMLDivElement>(null);
+  useClickOutside(filterRef, () => setFiltersOpen(false), filtersOpen);
   const [selectedArea, setSelectedArea] = useState<LocationArea>('all');
   const [selectedLocationId, setSelectedLocationId] = useState(1);
   const [mapZoom, setMapZoom] = useState(1);
@@ -15,6 +19,16 @@ export default function Home() {
 
   return (
     <div className="animate-in fade-in duration-500">
+      <Helmet>
+        <title>MCRh | Luxury Short-Let Apartments in Manchester</title>
+        <meta name="description" content="Premium short-term furnished apartments in Manchester — Chambers Residence, Ancoats, Wood Street, John Dalton Street and more. Book direct." />
+        <meta property="og:title" content="MCRh | Luxury Short-Let Apartments in Manchester" />
+        <meta property="og:description" content="Premium short-term furnished apartments in Manchester city centre. Experts in short-term lettings." />
+        <meta property="og:type" content="website" />
+        <meta property="og:image" content="/media/properties/chambers/01.jpeg" />
+        <meta name="twitter:card" content="summary_large_image" />
+      </Helmet>
+
       {/* Hero Section */}
       <section className="relative h-[90vh] min-h-[600px] w-full overflow-hidden flex items-end">
         <div className="absolute inset-0 z-0 bg-surface-dim">
@@ -199,7 +213,7 @@ export default function Home() {
           <div className="w-full lg:w-1/2 flex flex-col h-full">
             <div className="flex justify-between items-center mb-8">
               <h2 className="font-display text-headline-md text-primary">Discover Our Locations</h2>
-              <div className="flex items-center gap-4 relative">
+              <div className="flex items-center gap-4 relative" ref={filterRef}>
                 <button
                   type="button"
                   onClick={() => setFiltersOpen((open) => !open)}

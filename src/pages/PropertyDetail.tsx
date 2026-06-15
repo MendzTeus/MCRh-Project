@@ -1,11 +1,14 @@
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
-import { Star, ChevronDown, BedDouble, Wifi, ChefHat, Coffee, Snowflake, Bath, ArrowRight, ArrowLeft } from 'lucide-react';
+import { Helmet } from 'react-helmet-async';
+import { Star, ChevronDown, BedDouble, Wifi, ChefHat, Coffee, Snowflake, Bath, ArrowRight, ArrowLeft, X, ChevronLeft, ChevronRight } from 'lucide-react';
+import { getReviewsForProperty } from '../data/reviews';
 import DateRangePicker, { formatShortDate } from '../components/DateRangePicker';
 import MediaImage from '../components/MediaImage';
 import { getInventoryUnit } from '../data/airbnbInventory';
 import { getListingMedia, getUnitGallery } from '../data/listingMedia';
 import { getPropertyBySlug, getUnitBySlug, type PropertyUnit } from '../data/properties';
+import { useClickOutside } from '../hooks/useClickOutside';
 
 export default function PropertyDetail() {
   const { propertySlug, id } = useParams();
@@ -27,8 +30,28 @@ export default function PropertyDetail() {
   const unit = routedUnit || legacyUnit?.unit || inventoryBackedUnit || property?.units[0];
   const unitGallery = getUnitGallery(unit?.slug, property?.slug);
   const displayRating = listingMedia?.rating || '4.98';
+  const reviews = getReviewsForProperty(property?.slug || 'chambers');
+  const reviewsRef = useRef<HTMLDivElement>(null);
+  const guestsDropdownRef = useRef<HTMLDivElement>(null);
+  const [amenitiesOpen, setAmenitiesOpen] = useState(false);
+  const [galleryOpen, setGalleryOpen] = useState(false);
+  const [galleryIndex, setGalleryIndex] = useState(0);
   const [datesOpen, setDatesOpen] = useState(false);
+
+  useEffect(() => {
+    if (!galleryOpen && !amenitiesOpen) return;
+    function onKey(e: KeyboardEvent) {
+      if (e.key === 'Escape') { setGalleryOpen(false); setAmenitiesOpen(false); }
+      if (galleryOpen) {
+        if (e.key === 'ArrowRight') setGalleryIndex((i) => (i + 1) % unitGallery.length);
+        if (e.key === 'ArrowLeft') setGalleryIndex((i) => (i - 1 + unitGallery.length) % unitGallery.length);
+      }
+    }
+    document.addEventListener('keydown', onKey);
+    return () => document.removeEventListener('keydown', onKey);
+  }, [galleryOpen, amenitiesOpen, unitGallery.length]);
   const [guestsOpen, setGuestsOpen] = useState(false);
+  useClickOutside(guestsDropdownRef, () => setGuestsOpen(false), guestsOpen);
   const [checkIn, setCheckIn] = useState('');
   const [checkOut, setCheckOut] = useState('');
   const [guests, setGuests] = useState(2);
@@ -37,20 +60,28 @@ export default function PropertyDetail() {
 
   return (
     <div className="animate-in fade-in duration-500">
-      <section className="relative w-full h-[819px] md:h-[921px] flex items-end pb-section-gap">
+      <Helmet>
+        <title>{unit.title} — {property.name} | MCRh Manchester</title>
+        <meta name="description" content={`${unit.description} ${unit.specs}. Located in ${property.area}, Manchester.`} />
+        <meta property="og:title" content={`${unit.title} | MCRh Manchester`} />
+        <meta property="og:description" content={unit.description} />
+        {unitGallery[0] && <meta property="og:image" content={unitGallery[0]} />}
+      </Helmet>
+
+      <section className="relative w-full min-h-[600px] md:h-[921px] flex items-end pb-section-gap">
         <div className="absolute inset-0 z-0 bg-surface-dim">
           <MediaImage src={unitGallery[0]} propertySlug={property.slug} alt={unit.title} loading="eager" />
           <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent"></div>
         </div>
-        
-        <div className="relative z-10 w-full max-w-[1280px] mx-auto px-margin-mobile md:px-margin-desktop flex flex-col md:flex-row justify-between items-end gap-gutter">
+
+        <div className="relative z-10 w-full max-w-[1280px] mx-auto px-margin-mobile md:px-margin-desktop flex flex-col md:flex-row justify-between items-end gap-gutter pb-12 md:pb-0">
           <div className="text-white w-full md:w-2/3">
             <p className="font-body text-label-caps tracking-widest mb-4 opacity-80 uppercase">{unit.label}</p>
             <h1 className="font-display text-display-lg-mobile md:text-display-lg mb-6 leading-tight">{unit.title}</h1>
             <p className="font-body text-body-lg opacity-90 max-w-2xl">{unit.description}</p>
           </div>
-          
-          <div className="relative w-full md:w-1/3 bg-surface p-8 rounded-xl shadow-2xl translate-y-1/2 md:translate-y-1/4 backdrop-blur-md bg-opacity-95 border border-outline-variant/20">
+
+          <div className="relative w-full md:w-1/3 bg-surface p-8 rounded-xl shadow-2xl md:translate-y-1/4 backdrop-blur-md bg-opacity-95 border border-outline-variant/20">
             <div className="flex justify-end items-center mb-6 border-b border-outline-variant/30 pb-4">
               <div className="flex items-center gap-1 text-on-surface-variant">
                 <Star className="w-4 h-4 fill-current text-secondary" />
@@ -81,13 +112,14 @@ export default function PropertyDetail() {
                 <div className="font-body text-[10px] font-semibold text-on-surface-variant mb-1 uppercase">Check-out</div>
                 <div className="font-body text-body-md text-primary">{formatShortDate(checkOut)}</div>
               </button>
+              <div ref={guestsDropdownRef} className="col-span-2 relative">
               <button
                 type="button"
                 onClick={() => {
                   setGuestsOpen((open) => !open);
                   setDatesOpen(false);
                 }}
-                className="bg-surface p-3 col-span-2 cursor-pointer hover:bg-surface-container transition-colors flex justify-between items-center text-left"
+                className="bg-surface p-3 w-full cursor-pointer hover:bg-surface-container transition-colors flex justify-between items-center text-left"
               >
                 <div>
                   <div className="font-body text-[10px] font-semibold text-on-surface-variant mb-1 uppercase">Guests</div>
@@ -95,23 +127,8 @@ export default function PropertyDetail() {
                 </div>
                 <ChevronDown className="w-5 h-5 text-on-surface-variant" />
               </button>
-            </div>
-
-            {datesOpen && (
-              <DateRangePicker
-                checkIn={checkIn}
-                checkOut={checkOut}
-                onChange={({ checkIn: nextCheckIn, checkOut: nextCheckOut }) => {
-                  setCheckIn(nextCheckIn);
-                  setCheckOut(nextCheckOut);
-                }}
-                onDone={() => setDatesOpen(false)}
-                className="absolute bottom-full left-4 right-4 z-50 mb-4"
-              />
-            )}
-
             {guestsOpen && (
-              <div className="absolute left-8 right-8 top-[214px] z-50 rounded-xl border border-outline-variant/30 bg-surface p-5 shadow-2xl">
+              <div className="absolute left-0 right-0 top-full mt-2 z-50 rounded-xl border border-outline-variant/30 bg-surface p-5 shadow-2xl">
                 <div className="flex items-center justify-between">
                   <div>
                     <div className="font-body text-body-md font-semibold text-primary">Guests</div>
@@ -137,20 +154,44 @@ export default function PropertyDetail() {
                 </div>
               </div>
             )}
-            
+              </div>
+            </div>
+
+            {datesOpen && (
+              <DateRangePicker
+                checkIn={checkIn}
+                checkOut={checkOut}
+                onChange={({ checkIn: nextCheckIn, checkOut: nextCheckOut }) => {
+                  setCheckIn(nextCheckIn);
+                  setCheckOut(nextCheckOut);
+                }}
+                onDone={() => setDatesOpen(false)}
+                className="absolute bottom-full left-4 right-4 z-50 mb-4"
+              />
+            )}
+
             <button
               type="button"
               onClick={() => {
                 if (!checkIn || !checkOut) {
                   setDatesOpen(true);
                   setGuestsOpen(false);
+                  return;
+                }
+                const bookingUrl = inventoryUnit?.airbnbUrl || listingMedia?.finalUrl;
+                if (bookingUrl) {
+                  window.open(bookingUrl, '_blank', 'noopener,noreferrer');
+                } else {
+                  window.location.href = `/contact`;
                 }
               }}
               className="w-full py-4 bg-primary text-on-primary font-body text-label-caps tracking-widest hover:opacity-90 transition-opacity uppercase rounded"
             >
-              Reserve Now
+              {checkIn && checkOut ? 'Book on Airbnb' : 'Reserve Now'}
             </button>
-            <p className="text-center font-body text-sm text-on-surface-variant mt-4">You won't be charged yet</p>
+            <p className="text-center font-body text-sm text-on-surface-variant mt-4">
+              {checkIn && checkOut ? 'Opens Airbnb in a new tab' : "You won't be charged yet"}
+            </p>
           </div>
         </div>
       </section>
@@ -184,7 +225,10 @@ export default function PropertyDetail() {
               ))}
             </div>
             
-            <button className="mt-10 px-6 py-3 border border-outline-variant text-on-surface font-body text-label-caps tracking-widest hover:border-primary transition-colors duration-300 uppercase">
+            <button
+              onClick={() => setAmenitiesOpen(true)}
+              className="mt-10 px-6 py-3 border border-outline-variant text-on-surface font-body text-label-caps tracking-widest hover:border-primary transition-colors duration-300 uppercase"
+            >
               Show All Amenities
             </button>
           </div>
@@ -211,8 +255,11 @@ export default function PropertyDetail() {
           </div>
         </div>
         <div className="flex justify-end mt-6">
-          <button className="flex items-center gap-2 text-primary font-body text-label-caps tracking-widest hover:opacity-70 transition-opacity uppercase">
-            View Gallery <ArrowRight className="w-4 h-4" />
+          <button
+            onClick={() => { setGalleryIndex(0); setGalleryOpen(true); }}
+            className="flex items-center gap-2 text-primary font-body text-label-caps tracking-widest hover:opacity-70 transition-opacity uppercase"
+          >
+            View All Photos <ArrowRight className="w-4 h-4" />
           </button>
         </div>
       </section>
@@ -225,53 +272,48 @@ export default function PropertyDetail() {
               <h2 className="font-display text-headline-md text-primary mb-2">Guest Reflections</h2>
               <div className="flex items-center gap-2 text-on-surface-variant">
                 <Star className="w-4 h-4 fill-current text-secondary" />
-                <span className="font-body text-body-lg">4.98 • 124 reviews</span>
+                <span className="font-body text-body-lg">{displayRating} · Airbnb reviews</span>
               </div>
             </div>
             <div className="hidden md:flex gap-4">
-              <button className="w-12 h-12 rounded-full border border-outline-variant flex items-center justify-center hover:border-primary hover:bg-surface-container transition-all">
+              <button
+                aria-label="Previous review"
+                onClick={() => reviewsRef.current?.scrollBy({ left: -420, behavior: 'smooth' })}
+                className="w-12 h-12 rounded-full border border-outline-variant flex items-center justify-center hover:border-primary hover:bg-surface-container transition-all"
+              >
                 <ArrowLeft className="w-6 h-6 text-primary" />
               </button>
-              <button className="w-12 h-12 rounded-full border border-outline-variant flex items-center justify-center hover:border-primary hover:bg-surface-container transition-all">
+              <button
+                aria-label="Next review"
+                onClick={() => reviewsRef.current?.scrollBy({ left: 420, behavior: 'smooth' })}
+                className="w-12 h-12 rounded-full border border-outline-variant flex items-center justify-center hover:border-primary hover:bg-surface-container transition-all"
+              >
                 <ArrowRight className="w-6 h-6 text-primary" />
               </button>
             </div>
           </div>
-          
-          <div className="flex overflow-x-auto gap-gutter pb-8 snap-x snap-mandatory hide-scrollbar">
-            {[
-              {
-                name: "Eleanor R.",
-                date: "October 2023",
-                text: "An absolute sanctuary in the middle of the city. The attention to detail in the design is remarkable, and the quietness of the space is exactly what we needed.",
-                img: "https://lh3.googleusercontent.com/aida-public/AB6AXuA4bDrGxI5f-RRIx9UWtoX4F5q9R_gHCluoswVEgqHS49MGlAgzihW5WJoe53JyeUAgSwApBiIlo4ZInNq-n0ncE_xEKiDB8Iia36b-W_3OXEs4L9a3BJSP83MQgCzCODIoyqbkE_kBJLKbqK2UmY8qGsA8-puYIjcUYIdEJpbzY4dd3O-aG1YAF9zqJoB7NQ4SOOkfYzYIc3H_3-YlPFQA-4tbiwDf5bq8VbC_VP7ARxngbV8FTh5fPKo0GD7jXsmUS_Pp9Lsp1mWb"
-              },
-              {
-                name: "James T.",
-                date: "September 2023",
-                text: "Impeccable style and comfort. The location is perfect for exploring, yet retreating to this apartment felt like entering a private, luxury hotel.",
-                img: "https://lh3.googleusercontent.com/aida-public/AB6AXuCBxq-w_tIL4dLo4nVLVwlD0zsDBlkzaTHnONMMs-WvKRsh2XVw2ZWkyOtBKELXkzXuG1Y2ck9xJ4Vjx2khaI0csXbb237X89wHbzEw-bMf4TfrYhk6CPv3RR0-gueHcG1IjIYJveT_dWbrg1D1DpGfgUcJC4CQMHuEGcwOEf5EbUGWb7qsnFbvmHTOhMRgaUTvgRoIkaI6_R83bLu2T_IlJ9ylufVIRS9GRCHV8Z2ahPO5WEJGWvEuW_V65Bpf-Yu-7lj9Ch7wuqFI"
-              },
-              {
-                name: "Sophia M.",
-                date: "August 2023",
-                text: "Every element of Chambers 01 speaks of quality. From the linens to the lighting, it was a flawless stay. Highly recommended for design lovers.",
-                img: "https://lh3.googleusercontent.com/aida-public/AB6AXuByC1kjB0y4mdVhqrkp4s0eQeE4LgA_aeEGm30bKW_xKhigDWhomo2XjGIR_-Ou_bYCF5lIMRLf8QOUVLqF6Redd5kPoe3EuJnxFAZn5Wz54Rq6ph_Ci805798SyFws43Q1a0Lki8P3cKt_9tghrV4-abx-lsq1KuqQITcattZGD1t_seVeQCFfggA0FZLcf07NVFCmetcCUOvF5iqyCe_XyxjyHyNAHXwpdozcUZUOnUpMB69P_Vv-4GIxEq7N13HhiyojrJnT57zD"
-              }
-            ].map((review, i) => (
-              <div key={i} className="min-w-[300px] md:min-w-[400px] bg-surface p-8 rounded-xl border border-outline-variant/20 snap-start">
-                <div className="flex items-center gap-4 mb-6">
-                  <div className="w-12 h-12 rounded-full bg-surface-variant overflow-hidden">
-                    <div className="w-full h-full bg-surface-variant"></div>
+
+          <div ref={reviewsRef} className="flex overflow-x-auto gap-8 pb-8 snap-x snap-mandatory" style={{ scrollbarWidth: 'none' }}>
+            {reviews.map((review, i) => {
+              const initials = review.name.split(' ').map((n) => n[0]).join('').slice(0, 2);
+              return (
+                <div key={i} className="min-w-[300px] md:min-w-[400px] bg-surface p-8 rounded-xl border border-outline-variant/20 snap-start shrink-0">
+                  <div className="flex items-center gap-4 mb-6">
+                    <div className="w-12 h-12 rounded-full bg-primary-container flex items-center justify-center shrink-0">
+                      <span className="font-body text-label-caps text-on-primary-container font-semibold">{initials}</span>
+                    </div>
+                    <div>
+                      <h4 className="font-body text-body-md font-semibold text-primary">{review.name}</h4>
+                      <p className="font-body text-sm text-on-surface-variant">{review.date}</p>
+                    </div>
                   </div>
-                  <div>
-                    <h4 className="font-body text-body-lg font-semibold text-primary">{review.name}</h4>
-                    <p className="font-body text-sm text-on-surface-variant">{review.date}</p>
-                  </div>
+                  <p className="font-display text-xl text-on-surface italic opacity-90 leading-relaxed">"{review.text}"</p>
+                  {review.property && (
+                    <p className="font-body text-label-caps text-on-surface-variant/60 tracking-widest uppercase mt-4">{review.property}</p>
+                  )}
                 </div>
-                <p className="font-display text-quote text-on-surface italic opacity-90">"{review.text}"</p>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </div>
       </section>
@@ -291,20 +333,87 @@ export default function PropertyDetail() {
           </div>
         </div>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mt-12">
-          <div>
-            <h4 className="font-display text-headline-sm text-primary mb-2">{property.area}</h4>
-            <p className="font-body text-body-md text-on-surface-variant">5 minute walk</p>
-          </div>
-          <div>
-            <h4 className="font-display text-headline-sm text-primary mb-2">Spinningfields</h4>
-            <p className="font-body text-body-md text-on-surface-variant">8 minute walk</p>
-          </div>
-          <div>
-            <h4 className="font-display text-headline-sm text-primary mb-2">Victoria Station</h4>
-            <p className="font-body text-body-md text-on-surface-variant">12 minute walk</p>
-          </div>
+          {property.distances.slice(0, 3).map((item, i) => (
+            <div key={i}>
+              <h4 className="font-display text-headline-sm text-primary mb-2">{item.location}</h4>
+              <p className="font-body text-body-md text-on-surface-variant">{item.time}</p>
+            </div>
+          ))}
         </div>
       </section>
+
+      {/* Amenities Modal */}
+      {amenitiesOpen && (
+        <div
+          className="fixed inset-0 z-50 bg-primary/60 flex items-end md:items-center justify-center p-0 md:p-8"
+          onClick={() => setAmenitiesOpen(false)}
+          role="dialog"
+          aria-modal="true"
+          aria-label="All amenities"
+        >
+          <div
+            className="bg-surface w-full md:max-w-2xl max-h-[85vh] rounded-t-2xl md:rounded-2xl overflow-y-auto p-8 md:p-12"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex justify-between items-center mb-8">
+              <h3 className="font-display text-headline-sm text-primary">What this place offers</h3>
+              <button onClick={() => setAmenitiesOpen(false)} aria-label="Close amenities" className="text-on-surface-variant hover:text-primary transition-colors">
+                <X className="w-6 h-6" />
+              </button>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-y-6 gap-x-8">
+              {[
+                { icon: BedDouble, label: `${property.bedrooms} Bedroom${property.bedrooms === 1 ? '' : 's'}` },
+                { icon: Bath, label: `${property.bathrooms} Bathroom${property.bathrooms === 1 ? '' : 's'}` },
+                ...property.amenities.map((a) => ({ icon: Snowflake, label: a })),
+              ].map((item, i) => (
+                <div key={i} className="flex items-center gap-4 border-b border-outline-variant/20 pb-4">
+                  <item.icon className="w-6 h-6 text-on-surface-variant shrink-0" strokeWidth={1.5} />
+                  <span className="font-body text-body-md text-on-surface">{item.label}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Gallery Lightbox */}
+      {galleryOpen && unitGallery.length > 0 && (
+        <div
+          className="fixed inset-0 z-50 bg-black/95 flex items-center justify-center"
+          role="dialog"
+          aria-modal="true"
+          aria-label="Photo gallery"
+        >
+          <button onClick={() => setGalleryOpen(false)} aria-label="Close gallery" className="absolute top-4 right-4 text-white/70 hover:text-white transition-colors z-10">
+            <X className="w-8 h-8" />
+          </button>
+          <button
+            onClick={() => setGalleryIndex((i) => (i - 1 + unitGallery.length) % unitGallery.length)}
+            aria-label="Previous photo"
+            className="absolute left-4 top-1/2 -translate-y-1/2 text-white/70 hover:text-white transition-colors z-10 bg-black/30 rounded-full p-2"
+          >
+            <ChevronLeft className="w-8 h-8" />
+          </button>
+          <div className="w-full h-full flex items-center justify-center px-16 py-12">
+            <img
+              src={unitGallery[galleryIndex]}
+              alt={`${unit.title} — photo ${galleryIndex + 1} of ${unitGallery.length}`}
+              className="max-w-full max-h-full object-contain"
+            />
+          </div>
+          <button
+            onClick={() => setGalleryIndex((i) => (i + 1) % unitGallery.length)}
+            aria-label="Next photo"
+            className="absolute right-4 top-1/2 -translate-y-1/2 text-white/70 hover:text-white transition-colors z-10 bg-black/30 rounded-full p-2"
+          >
+            <ChevronRight className="w-8 h-8" />
+          </button>
+          <div className="absolute bottom-4 left-1/2 -translate-x-1/2 font-body text-label-caps text-white/60 tracking-widest">
+            {galleryIndex + 1} / {unitGallery.length}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

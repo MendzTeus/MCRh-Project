@@ -1,8 +1,16 @@
 import { Quote } from 'lucide-react';
+import { Helmet } from 'react-helmet-async';
+import MediaImage from '../components/MediaImage';
 
 export default function About() {
   return (
     <div className="animate-in fade-in duration-500">
+      <Helmet>
+        <title>About | MCRh Manchester Short-Let Apartments</title>
+        <meta name="description" content="MCRh was founded to bridge the gap between boutique hotels and short-term rentals. We manage a curated portfolio of design-led properties in Manchester." />
+        <meta property="og:title" content="About MCRh | Manchester Luxury Lettings" />
+      </Helmet>
+
       <section className="max-w-[1280px] mx-auto px-margin-mobile md:px-margin-desktop pt-24 md:pt-32 pb-16">
         <span className="font-body text-label-caps text-secondary block mb-6 tracking-widest uppercase">Our Story</span>
         <h1 className="font-display text-display-lg-mobile md:text-display-lg text-primary max-w-4xl leading-tight">
@@ -10,8 +18,9 @@ export default function About() {
         </h1>
       </section>
 
-      <section className="w-full relative h-[400px] md:h-[600px]">
-        <div className="w-full h-full bg-surface-variant"></div>
+      <section className="w-full relative h-[400px] md:h-[600px] overflow-hidden">
+        <MediaImage propertySlug="john-dalton-st" index={2} alt="MCRh curated apartment interior — John Dalton Street" className="h-full w-full object-cover" />
+        <div className="absolute inset-0 bg-gradient-to-b from-transparent to-surface/30"></div>
       </section>
 
       <section className="max-w-[1280px] mx-auto px-margin-mobile md:px-margin-desktop py-section-gap grid grid-cols-1 md:grid-cols-12 gap-gutter">

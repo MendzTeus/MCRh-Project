@@ -1,11 +1,21 @@
 import { ArrowRight, SlidersHorizontal, Check, ShieldCheck } from 'lucide-react';
+import { Link } from 'react-router-dom';
+import { Helmet } from 'react-helmet-async';
+import MediaImage from '../components/MediaImage';
 
 export default function DesignServices() {
   return (
     <div className="animate-in fade-in duration-500">
+      <Helmet>
+        <title>Design Services | MCRh Interior Architecture Manchester</title>
+        <meta name="description" content="MCRh Studio — interior architecture and design for short-term rental properties in Manchester. Turnkey furnishing, spatial planning and material selection." />
+        <meta property="og:title" content="MCRh Design Studio | Interior Architecture Manchester" />
+      </Helmet>
+
       <section className="relative w-full h-[60vh] min-h-[500px] flex items-center justify-center bg-surface-container-low overflow-hidden">
         <div className="absolute inset-0 z-0">
-          <div className="w-full h-full bg-surface-variant"></div>
+          <MediaImage propertySlug="chambers" index={3} alt="MCRh interior design — Chambers Residence" className="h-full w-full object-cover" />
+          <div className="absolute inset-0 bg-surface-container-low/80"></div>
         </div>
         <div className="relative z-10 text-center max-w-3xl px-6">
           <span className="font-body text-label-caps text-secondary block mb-6 tracking-widest uppercase">MCRh Studio</span>
@@ -36,7 +46,7 @@ export default function DesignServices() {
           </div>
           <div className="relative">
             <div className="aspect-[4/5] bg-surface-dim rounded-xl overflow-hidden relative z-10">
-              <div className="w-full h-full bg-surface-variant"></div>
+              <MediaImage propertySlug="ancoats" index={1} alt="MCRh interior design approach — Ancoats apartment" className="h-full w-full object-cover" />
             </div>
             <div className="absolute -bottom-8 -left-8 w-48 h-48 bg-secondary-container rounded-full mix-blend-multiply opacity-50 blur-2xl z-0"></div>
           </div>
@@ -72,9 +82,9 @@ export default function DesignServices() {
             <div>
               <h2 className="font-display text-headline-md text-white mb-6">Ready to transform your property?</h2>
               <p className="font-body text-body-lg mb-8 max-w-md text-white/80">Book a consultation to discuss how our design studio can elevate your asset's nightly rate and occupancy.</p>
-              <button className="bg-white text-primary px-8 py-4 font-body text-label-caps tracking-widest uppercase hover:bg-surface-dim transition-colors">
+              <Link to="/contact?inquiry=design" className="inline-block bg-white text-primary px-8 py-4 font-body text-label-caps tracking-widest uppercase hover:bg-surface-dim transition-colors">
                 Enquire Now
-              </button>
+              </Link>
             </div>
           </div>
         </div>

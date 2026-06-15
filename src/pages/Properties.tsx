@@ -1,9 +1,18 @@
 import { Link } from 'react-router-dom';
+import { Helmet } from 'react-helmet-async';
 import MediaImage from '../components/MediaImage';
 
 export default function Properties() {
   return (
     <div className="animate-in fade-in duration-500">
+      <Helmet>
+        <title>Properties | MCRh Manchester Short-Let Apartments</title>
+        <meta name="description" content="Browse MCRh's curated portfolio of short-let apartments in Manchester — Chambers, John Dalton Street, Wood Street, Ancoats, Old Trafford and The Collective." />
+        <meta property="og:title" content="Properties | MCRh Manchester" />
+        <meta property="og:description" content="Curated short-let apartments in Manchester's prime locations." />
+        <meta property="og:type" content="website" />
+      </Helmet>
+
       {/* Hero Section */}
       <section className="relative h-screen w-full overflow-hidden flex items-end">
         <div className="absolute inset-0 z-0 bg-surface-dim">

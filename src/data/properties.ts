@@ -7,6 +7,11 @@ export type PropertyUnit = {
   description: string;
 };
 
+export type NearbyPlace = {
+  location: string;
+  time: string;
+};
+
 export type Property = {
   slug: string;
   name: string;
@@ -25,6 +30,8 @@ export type Property = {
   amenities: string[];
   units: PropertyUnit[];
   displayOrder: number;
+  distances: NearbyPlace[];
+  neighborhoodTitle: string;
 };
 
 const mediaPaths = {
@@ -93,6 +100,13 @@ export const properties: Property[] = [
       "Towels and bed linen",
       "Dishwasher",
       "Washing machine",
+    ],
+    neighborhoodTitle: 'Chapel Walks, City Centre',
+    distances: [
+      { location: 'Deansgate Station', time: '4 min walk' },
+      { location: 'Exchange Square', time: '6 min walk' },
+      { location: 'Manchester Piccadilly', time: '18 min walk' },
+      { location: 'Manchester Airport', time: '25 min by tram' },
     ],
     units: [
       {
@@ -177,6 +191,13 @@ export const properties: Property[] = [
       "Dishwasher",
       "Washing machine",
     ],
+    neighborhoodTitle: 'Deansgate & Spinningfields',
+    distances: [
+      { location: 'Deansgate Station', time: '3 min walk' },
+      { location: 'Spinningfields', time: '5 min walk' },
+      { location: 'Manchester Arndale', time: '10 min walk' },
+      { location: 'Manchester Piccadilly', time: '20 min walk' },
+    ],
     units: [
       {
         slug: "john-dalton-st-loft",
@@ -230,6 +251,13 @@ export const properties: Property[] = [
       "Towels and bed linen",
       "Dishwasher",
     ],
+    neighborhoodTitle: 'Wood Street, City Centre',
+    distances: [
+      { location: 'Deansgate Station', time: '5 min walk' },
+      { location: 'St Peter\'s Square', time: '7 min walk' },
+      { location: 'Northern Quarter', time: '12 min walk' },
+      { location: 'Manchester Piccadilly', time: '16 min walk' },
+    ],
     units: [
       {
         slug: "wood-street-apt-01",
@@ -266,6 +294,13 @@ export const properties: Property[] = [
       "Indoor coworking",
       "Outdoor coworking",
       "City views",
+    ],
+    neighborhoodTitle: 'Wood Street & Northern Quarter',
+    distances: [
+      { location: 'Deansgate Station', time: '5 min walk' },
+      { location: 'Manchester Arndale', time: '10 min walk' },
+      { location: 'Northern Quarter', time: '10 min walk' },
+      { location: 'Manchester Piccadilly', time: '15 min walk' },
     ],
     units: [
       {
@@ -311,6 +346,13 @@ export const properties: Property[] = [
       "Private parking options",
       "Fully equipped kitchen",
       "Smart TV",
+    ],
+    neighborhoodTitle: 'Ancoats & New Islington',
+    distances: [
+      { location: 'Co-op Live', time: '10 min walk' },
+      { location: 'Northern Quarter', time: '12 min walk' },
+      { location: 'Manchester Piccadilly', time: '15 min walk' },
+      { location: 'Etihad Stadium', time: '15 min walk' },
     ],
     units: [
       {
@@ -364,6 +406,13 @@ export const properties: Property[] = [
       "Fully equipped kitchen",
       "Flat-screen TV",
       "Dishwasher",
+    ],
+    neighborhoodTitle: 'Old Trafford, Trafford',
+    distances: [
+      { location: 'Old Trafford Stadium', time: '10 min walk' },
+      { location: 'Old Trafford Tram Stop', time: '8 min walk' },
+      { location: 'Manchester City Centre', time: '20 min by tram' },
+      { location: 'Manchester Airport', time: '30 min by tram' },
     ],
     units: [
       {

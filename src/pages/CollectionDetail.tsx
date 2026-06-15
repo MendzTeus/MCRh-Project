@@ -1,5 +1,6 @@
 import { BedDouble, Bath, PersonStanding } from 'lucide-react';
 import { Link, useParams } from 'react-router-dom';
+import { Helmet } from 'react-helmet-async';
 import AvailabilityWidget from '../components/AvailabilityWidget';
 import MediaImage from '../components/MediaImage';
 import { getInventoryForProperty } from '../data/airbnbInventory';
@@ -36,8 +37,16 @@ export default function CollectionDetail() {
 
   return (
     <div className="animate-in fade-in duration-500">
+      <Helmet>
+        <title>{property.name} | MCRh Manchester</title>
+        <meta name="description" content={`${property.headline} ${property.description}`} />
+        <meta property="og:title" content={`${property.name} | MCRh Manchester`} />
+        <meta property="og:description" content={property.headline} />
+        {property.imageSrc && <meta property="og:image" content={property.imageSrc} />}
+      </Helmet>
+
       {/* Hero Section */}
-      <section 
+      <section
         className="w-full h-[80vh] min-h-[600px] relative flex flex-col justify-end pb-margin-desktop px-margin-mobile md:px-margin-desktop bg-surface-dim border-b border-outline-variant/30"
       >
         <div className="absolute inset-0 z-0">
@@ -123,18 +132,13 @@ export default function CollectionDetail() {
           </div>
           <div className="md:col-span-5">
             <span className="font-body text-label-caps text-secondary mb-2 block tracking-widest uppercase">The Neighborhood</span>
-            <h2 className="font-display text-headline-md md:text-display-lg text-primary mb-8">Prime Manchester</h2>
-            
+            <h2 className="font-display text-headline-md md:text-display-lg text-primary mb-8">{property.neighborhoodTitle}</h2>
+
             <div className="space-y-6">
-              {[
-                { location: 'City Centre', time: '5 min walk' },
-                { location: 'Deansgate Station', time: '8 min walk' },
-                { location: 'Etihad Stadium', time: '12 min drive' },
-                { location: 'Manchester Piccadilly', time: '15 min walk' },
-              ].map((item, i) => (
+              {property.distances.map((item, i) => (
                 <div key={i} className="flex justify-between items-end border-b border-outline-variant/30 pb-2">
                   <span className="font-body text-body-lg text-primary">{item.location}</span>
-                  <span className="font-body text-[10px] text-on-surface-variant uppercase tracking-widest">{item.time}</span>
+                  <span className="font-body text-label-caps text-on-surface-variant uppercase tracking-widest">{item.time}</span>
                 </div>
               ))}
             </div>

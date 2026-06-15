@@ -1,6 +1,7 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { Calendar, ChevronDown } from 'lucide-react';
 import DateRangePicker, { formatDateRangeLabel } from './DateRangePicker';
+import { useClickOutside } from '../hooks/useClickOutside';
 
 type AvailabilityWidgetProps = {
   propertyName: string;
@@ -10,23 +11,23 @@ type AvailabilityWidgetProps = {
 export default function AvailabilityWidget({ propertyName, maxGuests = 8 }: AvailabilityWidgetProps) {
   const [datesOpen, setDatesOpen] = useState(false);
   const [guestsOpen, setGuestsOpen] = useState(false);
+  const datesRef = useRef<HTMLDivElement>(null);
+  const guestsRef = useRef<HTMLDivElement>(null);
+  useClickOutside(datesRef, () => setDatesOpen(false), datesOpen);
+  useClickOutside(guestsRef, () => setGuestsOpen(false), guestsOpen);
   const [checkIn, setCheckIn] = useState('');
   const [checkOut, setCheckOut] = useState('');
   const [guests, setGuests] = useState(2);
-  const [status, setStatus] = useState('Available');
-
   const dateLabel = formatDateRangeLabel(checkIn, checkOut);
+  const datesSelected = Boolean(checkIn && checkOut);
 
-  function checkAvailability() {
+  function handleCheckAvailability() {
     if (!checkIn || !checkOut) {
       setDatesOpen(true);
-      setStatus('Select dates');
       return;
     }
-
     setDatesOpen(false);
     setGuestsOpen(false);
-    setStatus('Available');
   }
 
   return (
@@ -38,7 +39,7 @@ export default function AvailabilityWidget({ propertyName, maxGuests = 8 }: Avai
             {propertyName}
           </div>
         </div>
-        <div className="flex-1 w-full relative">
+        <div className="flex-1 w-full relative" ref={datesRef}>
           <label className="font-body text-[10px] mb-1 block uppercase tracking-widest text-on-surface">Dates</label>
           <button
             type="button"
@@ -64,7 +65,7 @@ export default function AvailabilityWidget({ propertyName, maxGuests = 8 }: Avai
             />
           )}
         </div>
-        <div className="flex-1 w-full relative">
+        <div className="flex-1 w-full relative" ref={guestsRef}>
           <label className="font-body text-[10px] mb-1 block uppercase tracking-widest text-on-surface">Guests</label>
           <button
             type="button"
@@ -105,15 +106,16 @@ export default function AvailabilityWidget({ propertyName, maxGuests = 8 }: Avai
         <div className="flex flex-col items-center md:items-end gap-2 w-full md:w-auto">
           <button
             type="button"
-            onClick={checkAvailability}
+            onClick={handleCheckAvailability}
             className="bg-primary-container text-[#C8A45C] border border-[#C8A45C] px-8 py-3 font-body text-label-caps tracking-widest uppercase hover:bg-primary transition-all w-full md:w-auto rounded"
           >
-            Check availability
+            {datesSelected ? 'Enquire Now' : 'Check Dates'}
           </button>
-          <div className="flex items-center gap-2">
-            <span className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse"></span>
-            <span className="font-body text-[10px] text-primary tracking-widest uppercase">{status}</span>
-          </div>
+          {datesSelected && (
+            <span className="font-body text-label-caps text-on-surface-variant tracking-widest uppercase">
+              Contact us to confirm
+            </span>
+          )}
         </div>
       </div>
     </div>

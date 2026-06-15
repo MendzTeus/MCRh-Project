@@ -1,11 +1,20 @@
-import { Key, User, ArrowRight, ShieldCheck, Check } from 'lucide-react';
+import { Key, User, ArrowRight, ShieldCheck, Check, Crosshair } from 'lucide-react';
+import { Helmet } from 'react-helmet-async';
+import MediaImage from '../components/MediaImage';
 
 export default function ManagementServices() {
   return (
     <div className="animate-in fade-in duration-500">
+      <Helmet>
+        <title>Management Services | MCRh Property Management Manchester</title>
+        <meta name="description" content="Full-cycle short-term rental management in Manchester. Guest screening, 24/7 concierge, dynamic pricing, housekeeping and transparent reporting for property owners." />
+        <meta property="og:title" content="MCRh Property Management | Manchester Short-Let Experts" />
+      </Helmet>
+
       <section className="relative w-full h-[60vh] min-h-[500px] flex items-center justify-center bg-surface border-b border-outline-variant/30">
         <div className="absolute inset-0 z-0">
-          <div className="w-full h-full bg-surface-variant"></div>
+          <MediaImage propertySlug="chambers" index={4} alt="MCRh managed property — Chambers Residence Manchester" className="h-full w-full object-cover" />
+          <div className="absolute inset-0 bg-surface/70"></div>
         </div>
         <div className="relative z-10 text-center max-w-3xl px-6">
           <span className="font-body text-label-caps text-secondary block mb-6 tracking-widest uppercase">Complete Operations</span>
@@ -87,29 +96,5 @@ export default function ManagementServices() {
         </div>
       </section>
     </div>
-  );
-}
-
-// Inline Crosshair icon definition since we didn't import it at the top
-function Crosshair(props: any) {
-  return (
-    <svg
-      {...props}
-      xmlns="http://www.w3.org/2000/svg"
-      width="24"
-      height="24"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    >
-      <circle cx="12" cy="12" r="10" />
-      <line x1="22" y1="12" x2="18" y2="12" />
-      <line x1="6" y1="12" x2="2" y2="12" />
-      <line x1="12" y1="6" x2="12" y2="2" />
-      <line x1="12" y1="22" x2="12" y2="18" />
-    </svg>
   );
 }

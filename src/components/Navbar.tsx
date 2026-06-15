@@ -1,42 +1,83 @@
+import { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Menu } from 'lucide-react';
+import { Menu, X } from 'lucide-react';
+
+const navLinks = [
+  { to: '/properties', label: 'Properties' },
+  { to: '/design-services', label: 'Design Services' },
+  { to: '/management-services', label: 'Management Services' },
+  { to: '/about', label: 'About' },
+  { to: '/contact', label: 'Contact' },
+];
 
 export default function Navbar() {
   const location = useLocation();
-  const isDarkBg = location.pathname.includes('/contact') || location.pathname.includes('/about');
-  
+  const [menuOpen, setMenuOpen] = useState(false);
+
+  function closeMenu() {
+    setMenuOpen(false);
+  }
+
   return (
     <header className="fixed top-0 w-full z-50 bg-surface/80 backdrop-blur-xl border-b border-outline-variant/30 transition-all duration-300">
       <div className="flex justify-between items-center h-20 px-4 md:px-16 max-w-[1280px] mx-auto">
-        <Link to="/" className="font-display font-display-lg text-headline-sm tracking-tighter text-primary">
+        <Link to="/" onClick={closeMenu} className="font-display font-display-lg text-headline-sm tracking-tighter text-primary">
           MCRh
         </Link>
         <nav className="hidden md:flex items-center space-x-8">
-          <Link to="/properties" className={`text-label-caps ${location.pathname === '/properties' ? 'text-primary border-b border-primary pb-1' : 'text-on-surface-variant hover:text-primary'} transition-all`}>
-            Properties
-          </Link>
-          <Link to="/design-services" className={`text-label-caps ${location.pathname === '/design-services' ? 'text-primary border-b border-primary pb-1' : 'text-on-surface-variant hover:text-primary'} transition-all`}>
-            Design Services
-          </Link>
-          <Link to="/management-services" className={`text-label-caps ${location.pathname === '/management-services' ? 'text-primary border-b border-primary pb-1' : 'text-on-surface-variant hover:text-primary'} transition-all`}>
-            Management Services
-          </Link>
-          <Link to="/about" className={`text-label-caps ${location.pathname === '/about' ? 'text-primary border-b border-primary pb-1' : 'text-on-surface-variant hover:text-primary'} transition-all`}>
-            About
-          </Link>
-          <Link to="/contact" className={`text-label-caps ${location.pathname === '/contact' ? 'text-primary border-b border-primary pb-1' : 'text-on-surface-variant hover:text-primary'} transition-all`}>
-            Contact
-          </Link>
+          {navLinks.map(({ to, label }) => (
+            <Link
+              key={to}
+              to={to}
+              aria-current={location.pathname === to ? 'page' : undefined}
+              className={`text-label-caps ${location.pathname === to ? 'text-primary border-b border-primary pb-1' : 'text-on-surface-variant hover:text-primary'} transition-all`}
+            >
+              {label}
+            </Link>
+          ))}
         </nav>
         <div className="flex items-center gap-6">
           <Link to="/properties" className="hidden md:block px-6 py-3 border border-primary text-primary font-display text-label-caps tracking-widest hover:bg-primary/5 transition-colors uppercase">
             Book Now
           </Link>
-          <button className="md:hidden text-primary">
-            <Menu className="w-6 h-6" />
+          <button
+            className="md:hidden text-primary"
+            aria-label={menuOpen ? 'Close menu' : 'Open menu'}
+            aria-expanded={menuOpen}
+            aria-controls="mobile-nav"
+            onClick={() => setMenuOpen((o) => !o)}
+          >
+            {menuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
           </button>
         </div>
       </div>
+
+      {/* Mobile menu */}
+      {menuOpen && (
+        <nav
+          id="mobile-nav"
+          className="md:hidden bg-surface border-t border-outline-variant/30 px-6 py-8 flex flex-col gap-6"
+        >
+          {navLinks.map(({ to, label }) => (
+            <Link
+              key={to}
+              to={to}
+              onClick={closeMenu}
+              aria-current={location.pathname === to ? 'page' : undefined}
+              className={`text-label-caps ${location.pathname === to ? 'text-primary' : 'text-on-surface-variant'} transition-all`}
+            >
+              {label}
+            </Link>
+          ))}
+          <Link
+            to="/properties"
+            onClick={closeMenu}
+            className="border border-primary text-primary px-6 py-3 text-label-caps tracking-widest uppercase text-center hover:bg-primary/5 transition-colors mt-2"
+          >
+            Book Now
+          </Link>
+        </nav>
+      )}
     </header>
   );
 }
