@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom';
 import { Helmet } from 'react-helmet-async';
 import MediaImage from '../components/MediaImage';
+import PropertyFeatureSection from '../components/PropertyFeatureSection';
 
 export default function Properties() {
   return (
@@ -32,164 +33,72 @@ export default function Properties() {
         </div>
       </section>
 
-      {/* Property Feature: Chambers Residence */}
-      <section id="chambers" className="py-section-gap px-margin-mobile md:px-margin-desktop max-w-[1280px] mx-auto">
-        <div className="grid grid-cols-1 md:grid-cols-12 gap-8 md:gap-16 items-center">
-          <div className="md:col-span-7 relative h-[600px] md:h-[800px]">
-            <div className="absolute top-0 left-0 w-[85%] h-[85%] rounded-lg overflow-hidden shadow-sm bg-surface-dim">
-              <MediaImage propertySlug="chambers" index={0} alt="Chambers Residence apartment" />
-            </div>
-            <div className="absolute bottom-0 right-0 w-[55%] h-[55%] rounded-lg overflow-hidden shadow-2xl md:-mr-8 z-10 bg-surface-dim border border-outline-variant/30">
-              <MediaImage propertySlug="chambers" index={1} alt="Chambers Residence bedroom detail" />
-            </div>
-          </div>
-          <div className="md:col-span-5 md:pl-12 mt-12 md:mt-0">
-            <span className="inline-block font-body text-label-caps text-secondary mb-4 tracking-widest uppercase">FEATURED PROPERTY</span>
-            <h2 className="font-display text-headline-md text-primary mb-6">Chambers Residence</h2>
-            <p className="font-body text-body-md text-on-surface-variant mb-8 opacity-80 leading-relaxed">
-              Experience the perfect blend of Manchester's rich industrial heritage and contemporary luxury. Located in the heart of the city, Chambers Residence offers a serene escape with bespoke furnishings, towering ceilings, and an atmosphere of curated calm.
-            </p>
-            <Link to="/collection/chambers" className="inline-flex items-center justify-center border border-primary text-primary px-8 py-4 font-body text-label-caps hover:bg-surface-variant transition-colors duration-300 uppercase tracking-widest">
-              BOOK NOW
-            </Link>
-          </div>
-        </div>
-      </section>
+      <PropertyFeatureSection
+        propertySlug="chambers"
+        eyebrow="Featured Property"
+        name="Chambers Residence"
+        description="Experience the perfect blend of Manchester's rich industrial heritage and contemporary luxury. Located in the heart of the city, Chambers Residence offers a serene escape with bespoke furnishings, towering ceilings, and an atmosphere of curated calm."
+        collectionSlug="chambers"
+        cta="Book Now"
+        imageLayout="stack"
+        sectionId="chambers"
+      />
 
-      {/* Property Feature: John Dalton Street */}
-      <section className="py-section-gap px-margin-mobile md:px-margin-desktop bg-surface-container-low border-y border-outline-variant/30">
-        <div className="max-w-[1280px] mx-auto grid grid-cols-1 md:grid-cols-12 gap-8 md:gap-16 items-center">
-          <div className="md:col-span-5 md:pr-12 order-2 md:order-1 mt-12 md:mt-0">
-            <span className="inline-block font-body text-label-caps text-secondary mb-4 tracking-widest uppercase">HERITAGE COLLECTION</span>
-            <h2 className="font-display text-headline-md text-primary mb-6">John Dalton Street</h2>
-            <p className="font-body text-body-md text-on-surface-variant mb-8 opacity-80 leading-relaxed">
-              Set within a meticulously restored historic building, this residence celebrates architectural grandeur while providing uncompromising modern comfort. Expansive arched windows frame city views, while tactile brickwork and rich textiles create a deeply comforting environment.
-            </p>
-            <Link to="/collection/john-dalton-st" className="inline-flex items-center justify-center border border-primary text-primary px-8 py-4 font-body text-label-caps hover:bg-surface-variant transition-colors duration-300 uppercase tracking-widest">
-              EXPLORE DETAILS
-            </Link>
-          </div>
-          <div className="md:col-span-7 order-1 md:order-2">
-            <div className="grid grid-cols-2 gap-4 h-[600px] md:h-[700px]">
-              <div className="col-span-1 row-span-2 rounded-lg overflow-hidden bg-surface-dim">
-                <MediaImage propertySlug="john-dalton-st" index={0} alt="John Dalton Street apartment" />
-              </div>
-              <div className="col-span-1 row-span-1 rounded-lg overflow-hidden bg-surface-dim">
-                <MediaImage propertySlug="john-dalton-st" index={1} alt="John Dalton Street interior detail" />
-              </div>
-              <div className="col-span-1 row-span-1 rounded-lg overflow-hidden bg-surface-variant flex items-center justify-center p-8 border border-outline-variant/30">
-                <p className="font-display text-2xl md:text-3xl text-primary text-center leading-snug">"A masterclass in urban sanctuary."</p>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
+      <PropertyFeatureSection
+        propertySlug="john-dalton-st"
+        eyebrow="Heritage Collection"
+        name="John Dalton Street"
+        description="Set within a meticulously restored historic building, this residence celebrates architectural grandeur while providing uncompromising modern comfort. Expansive arched windows frame city views, while tactile brickwork and rich textiles create a deeply comforting environment."
+        collectionSlug="john-dalton-st"
+        cta="Explore Details"
+        quote="A masterclass in urban sanctuary."
+        imageLayout="grid"
+        tinted
+      />
 
-      {/* Property Feature: Wood Street */}
-      <section className="py-section-gap px-margin-mobile md:px-margin-desktop max-w-[1280px] mx-auto">
-        <div className="grid grid-cols-1 md:grid-cols-12 gap-8 md:gap-16 items-center">
-          <div className="md:col-span-7 relative h-[600px] md:h-[800px]">
-            <div className="absolute top-0 left-0 w-[85%] h-[85%] rounded-lg overflow-hidden shadow-sm bg-surface-dim">
-              <MediaImage propertySlug="wood-street" index={0} alt="Wood Street apartment" />
-            </div>
-            <div className="absolute bottom-0 right-0 w-[55%] h-[55%] rounded-lg overflow-hidden shadow-2xl z-10 bg-surface-dim border border-outline-variant/30">
-                <MediaImage propertySlug="wood-street" index={1} alt="Wood Street apartment detail" />
-            </div>
-          </div>
-          <div className="md:col-span-5 md:pl-12 mt-12 md:mt-0">
-            <span className="inline-block font-body text-label-caps text-secondary mb-4 tracking-widest uppercase">WOOD STREET COLLECTION</span>
-            <h2 className="font-display text-headline-md text-primary mb-6">Wood Street</h2>
-            <p className="font-body text-body-md text-on-surface-variant mb-8 opacity-80 leading-relaxed">
-              Situated in a vibrant, historic quarter, Wood Street properties offer an unmatched blend of privacy and proximity to Manchester's cultural landmarks. Featuring tailored interiors, warm wood tones, and expansive natural light.
-            </p>
-            <Link to="/collection/wood-street" className="inline-flex items-center justify-center border border-primary text-primary px-8 py-4 font-body text-label-caps hover:bg-surface-variant transition-colors duration-300 uppercase tracking-widest">
-              VIEW DETAILS
-            </Link>
-          </div>
-        </div>
-      </section>
+      <PropertyFeatureSection
+        propertySlug="wood-street"
+        eyebrow="Wood Street Collection"
+        name="Wood Street"
+        description="Situated in a vibrant, historic quarter, Wood Street properties offer an unmatched blend of privacy and proximity to Manchester's cultural landmarks. Featuring tailored interiors, warm wood tones, and expansive natural light."
+        collectionSlug="wood-street"
+        cta="View Details"
+        imageLayout="stack"
+      />
 
-      {/* Property Feature: Ancoats */}
-      <section className="py-section-gap px-margin-mobile md:px-margin-desktop bg-surface-container-low border-y border-outline-variant/30">
-        <div className="max-w-[1280px] mx-auto grid grid-cols-1 md:grid-cols-12 gap-8 md:gap-16 items-center">
-          <div className="md:col-span-5 md:pr-12 order-2 md:order-1 mt-12 md:mt-0">
-            <span className="inline-block font-body text-label-caps text-secondary mb-4 tracking-widest uppercase">ANCOATS DISTRICT</span>
-            <h2 className="font-display text-headline-md text-primary mb-6">Ancoats</h2>
-            <p className="font-body text-body-md text-on-surface-variant mb-8 opacity-80 leading-relaxed">
-              Embrace the spirit of innovation in Ancoats. These residences lean into their industrial roots with polished concrete, exposed beams, and contemporary art, creating a dynamic yet refined living space for the modern traveler.
-            </p>
-            <Link to="/collection/ancoats" className="inline-flex items-center justify-center border border-primary text-primary px-8 py-4 font-body text-label-caps hover:bg-surface-variant transition-colors duration-300 uppercase tracking-widest">
-              EXPLORE DETAILS
-            </Link>
-          </div>
-          <div className="md:col-span-7 order-1 md:order-2">
-            <div className="grid grid-cols-2 gap-4 h-[600px] md:h-[700px]">
-              <div className="col-span-1 row-span-2 rounded-lg overflow-hidden bg-primary">
-                <MediaImage propertySlug="ancoats" index={0} alt="Ancoats apartment" />
-              </div>
-              <div className="col-span-1 row-span-1 rounded-lg overflow-hidden bg-surface-dim">
-                <MediaImage propertySlug="ancoats" index={1} alt="Ancoats interior detail" />
-              </div>
-              <div className="col-span-1 row-span-1 rounded-lg overflow-hidden bg-surface-container-lowest flex items-center justify-center p-8 border border-outline-variant/30">
-                <p className="font-display text-2xl md:text-3xl text-primary text-center leading-snug">"Industrial roots, contemporary luxury."</p>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
+      <PropertyFeatureSection
+        propertySlug="ancoats"
+        eyebrow="Ancoats District"
+        name="Ancoats"
+        description="Embrace the spirit of innovation in Ancoats. These residences lean into their industrial roots with polished concrete, exposed beams, and contemporary art, creating a dynamic yet refined living space for the modern traveler."
+        collectionSlug="ancoats"
+        cta="Explore Details"
+        quote="Industrial roots, contemporary luxury."
+        imageLayout="grid"
+        tinted
+      />
 
-      {/* Property Feature: Trafford */}
-      <section className="py-section-gap px-margin-mobile md:px-margin-desktop max-w-[1280px] mx-auto">
-        <div className="grid grid-cols-1 md:grid-cols-12 gap-8 md:gap-16 items-center">
-          <div className="md:col-span-7 relative h-[600px] md:h-[800px]">
-            <div className="absolute top-0 left-0 w-[85%] h-[85%] rounded-lg overflow-hidden shadow-sm bg-surface-dim">
-              <MediaImage propertySlug="old-trafford" index={0} alt="Old Trafford apartment" />
-            </div>
-            <div className="absolute bottom-0 right-0 w-[55%] h-[55%] rounded-lg overflow-hidden shadow-2xl md:-mr-8 z-10 bg-surface-dim border border-outline-variant/30">
-              <MediaImage propertySlug="old-trafford" index={1} alt="Old Trafford apartment detail" />
-            </div>
-          </div>
-          <div className="md:col-span-5 md:pl-12 mt-12 md:mt-0">
-            <span className="inline-block font-body text-label-caps text-secondary mb-4 tracking-widest uppercase">TRAFFORD EXCLUSIVES</span>
-            <h2 className="font-display text-headline-md text-primary mb-6">Trafford</h2>
-            <p className="font-body text-body-md text-on-surface-variant mb-8 opacity-80 leading-relaxed">
-              A collection of spacious, tranquil retreats on the outskirts of the city bustle. Trafford properties are defined by their generous proportions, lush surroundings, and uncompromising commitment to elegant comfort.
-            </p>
-            <Link to="/collection/old-trafford" className="inline-flex items-center justify-center border border-primary text-primary px-8 py-4 font-body text-label-caps hover:bg-surface-variant transition-colors duration-300 uppercase tracking-widest">
-              VIEW DETAILS
-            </Link>
-          </div>
-        </div>
-      </section>
+      <PropertyFeatureSection
+        propertySlug="old-trafford"
+        eyebrow="Trafford Exclusives"
+        name="Trafford"
+        description="A collection of spacious, tranquil retreats on the outskirts of the city bustle. Trafford properties are defined by their generous proportions, lush surroundings, and uncompromising commitment to elegant comfort."
+        collectionSlug="old-trafford"
+        cta="View Details"
+        imageLayout="stack"
+      />
 
-      {/* Property Feature: The Collective */}
-      <section className="py-section-gap px-margin-mobile md:px-margin-desktop bg-surface-container-low border-y border-outline-variant/30">
-        <div className="max-w-[1280px] mx-auto grid grid-cols-1 md:grid-cols-12 gap-8 md:gap-16 items-center">
-          <div className="md:col-span-5 md:pr-12 order-2 md:order-1 mt-12 md:mt-0">
-            <span className="inline-block font-body text-label-caps text-secondary mb-4 tracking-widest uppercase">CURATED EXPERIENCES</span>
-            <h2 className="font-display text-headline-md text-primary mb-6">The Collective</h2>
-            <p className="font-body text-body-md text-on-surface-variant mb-8 opacity-80 leading-relaxed">
-              An exclusive assortment of highly stylized and uniquely positioned properties. The Collective brings together the sharpest design, immersive aesthetics, and premier locations for the ultimate city escape.
-            </p>
-            <Link to="/collection/the-collective" className="inline-flex items-center justify-center border border-primary text-primary px-8 py-4 font-body text-label-caps hover:bg-surface-variant transition-colors duration-300 uppercase tracking-widest">
-              EXPLORE DETAILS
-            </Link>
-          </div>
-          <div className="md:col-span-7 order-1 md:order-2">
-            <div className="grid grid-cols-2 gap-4 h-[600px] md:h-[700px]">
-              <div className="col-span-1 row-span-2 rounded-lg overflow-hidden bg-primary">
-                <MediaImage propertySlug="the-collective" index={0} alt="Wood Street Collective room" />
-              </div>
-              <div className="col-span-1 row-span-1 rounded-lg overflow-hidden bg-surface-dim">
-                <MediaImage propertySlug="the-collective" index={1} alt="Wood Street Collective interior detail" />
-              </div>
-              <div className="col-span-1 row-span-1 rounded-lg overflow-hidden bg-surface-container-lowest flex items-center justify-center p-8 border border-outline-variant/30">
-                <p className="font-display text-2xl md:text-3xl text-primary text-center leading-snug">"The sharpest design, immersive aesthetics."</p>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
+      <PropertyFeatureSection
+        propertySlug="the-collective"
+        eyebrow="Curated Experiences"
+        name="The Collective"
+        description="An exclusive assortment of highly stylized and uniquely positioned properties. The Collective brings together the sharpest design, immersive aesthetics, and premier locations for the ultimate city escape."
+        collectionSlug="the-collective"
+        cta="Explore Details"
+        quote="The sharpest design, immersive aesthetics."
+        imageLayout="grid"
+        tinted
+      />
     </div>
   );
 }
