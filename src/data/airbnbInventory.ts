@@ -20,7 +20,7 @@ export const airbnbInventory: AirbnbInventoryUnit[] = [
   { propertySlug: 'chambers-9', propertyName: '9 Chapel Walks', unitSlug: 'chambers-9-2', unitName: 'Apartment 9.2', suppliedSpecs: '3BED 2BATH', postcode: 'M2 1HN', airbnbUrl: 'https://www.airbnb.co.uk/h/chambers-9-2' },
   { propertySlug: 'chambers-9', propertyName: '9 Chapel Walks', unitSlug: 'chambers-9-7', unitName: 'Apartment 9.7', suppliedSpecs: '2BED 1BATH', postcode: 'M2 1HN', airbnbUrl: 'https://airbnb.co.uk/h/chambers-9-7' },
   { propertySlug: 'chambers-9', propertyName: '9 Chapel Walks', unitSlug: 'chambers-9-8', unitName: 'Apartment 9.8', suppliedSpecs: '2BED 1BATH', postcode: 'M2 1HN', airbnbUrl: 'https://airbnb.co.uk/h/chambers-9-8' },
-  { propertySlug: 'chambers-9', propertyName: '9 Chapel Walks', unitSlug: 'chambers-9-9', unitName: 'Apartment 9.9', suppliedSpecs: '2BED 2BATH', postcode: 'M2 1HN' },
+  { propertySlug: 'chambers-9', propertyName: '9 Chapel Walks', unitSlug: 'chambers-9-9', unitName: 'Apartment 9.9', suppliedSpecs: '2BED 2BATH', postcode: 'M2 1HN', airbnbUrl: 'https://www.airbnb.co.uk/h/chambers-9-9' },
   { propertySlug: 'chambers-9', propertyName: '9 Chapel Walks', unitSlug: 'chambers-7-9', unitName: 'Apartments 7 & 9', suppliedSpecs: '4BED 3BATH', postcode: 'M2 1HN', airbnbUrl: 'https://airbnb.com/h/chambers-7-9' },
   { propertySlug: 'chambers-9', propertyName: '9 Chapel Walks', unitSlug: 'chambers-9-1-9-2', unitName: 'Apartment 9.1 & 9.2', suppliedSpecs: '5BED 4BATH', postcode: 'M2 1HN' },
 

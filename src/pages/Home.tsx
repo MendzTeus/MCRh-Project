@@ -252,7 +252,7 @@ export default function Home() {
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                 {visibleLocations.map((location) => (
                   <Link
-                    to={`/collection/${location.propertySlug}`}
+                    to={`/collection/${location.collectionSlug}`}
                     key={location.id}
                     onClick={() => setSelectedLocationId(location.id)}
                     className={`bg-surface-container-lowest rounded-xl overflow-hidden shadow-sm border group cursor-pointer hover:border-primary transition-all duration-300 text-left ${

@@ -1,9 +1,10 @@
-export type LocationArea = 'all' | 'city-centre' | 'deansgate' | 'ancoats' | 'old-trafford';
+export type LocationArea = 'all' | 'city-centre' | 'deansgate' | 'ancoats' | 'northern-quarter' | 'old-trafford';
 
 export type MapLocation = {
   id: number;
   name: string;
   propertySlug: string;
+  collectionSlug: string;
   area: string;
   areaId: Exclude<LocationArea, 'all'>;
   postcode: string;
@@ -14,10 +15,10 @@ export type MapLocation = {
 type DraftMapLocation = Omit<MapLocation, 'position'>;
 
 const manchesterMapBounds = {
-  north: 53.493,
+  north: 53.495,
   south: 53.456,
-  west: -2.3,
-  east: -2.215,
+  west: -2.305,
+  east: -2.200,
 };
 
 function toMapPosition({ lat, lng }: MapLocation['coordinates']) {
@@ -37,16 +38,19 @@ export const locationAreas: { id: LocationArea; label: string }[] = [
   { id: 'all', label: 'All' },
   { id: 'city-centre', label: 'City Centre' },
   { id: 'deansgate', label: 'Deansgate' },
+  { id: 'northern-quarter', label: 'Northern Quarter' },
   { id: 'ancoats', label: 'Ancoats' },
   { id: 'old-trafford', label: 'Old Trafford' },
 ];
 
 const draftMapLocations: DraftMapLocation[] = [
+  // --- City Centre / Deansgate ---
   {
     id: 1,
-    name: 'Chambers Residence',
+    name: 'Chapel Walks',
     propertySlug: 'chambers',
-    area: 'Central Manchester',
+    collectionSlug: 'chambers',
+    area: 'City Centre',
     areaId: 'city-centre',
     postcode: 'M2 1HN',
     coordinates: { lat: 53.4813, lng: -2.2424 },
@@ -55,46 +59,127 @@ const draftMapLocations: DraftMapLocation[] = [
     id: 2,
     name: 'John Dalton Street',
     propertySlug: 'john-dalton-st',
+    collectionSlug: 'john-dalton-st',
     area: 'Deansgate',
     areaId: 'deansgate',
-    postcode: 'M2 6DS',
+    postcode: 'M2 6LE',
     coordinates: { lat: 53.4801, lng: -2.2478 },
   },
   {
     id: 3,
     name: 'Wood Street',
     propertySlug: 'wood-street',
-    area: 'Central Manchester',
+    collectionSlug: 'wood-street',
+    area: 'City Centre',
     areaId: 'city-centre',
     postcode: 'M3 3EF',
     coordinates: { lat: 53.4792, lng: -2.2527 },
   },
   {
     id: 4,
-    name: 'Ancoats',
-    propertySlug: 'ancoats',
-    area: 'Ancoats',
-    areaId: 'ancoats',
-    postcode: 'M4 6DU',
-    coordinates: { lat: 53.4849, lng: -2.2269 },
+    name: 'Wood Street Collective',
+    propertySlug: 'the-collective',
+    collectionSlug: 'the-collective',
+    area: 'City Centre',
+    areaId: 'city-centre',
+    postcode: 'M3 3EF',
+    coordinates: { lat: 53.4795, lng: -2.2520 },
   },
+
+  // --- Northern Quarter ---
   {
     id: 5,
-    name: 'Old Trafford',
-    propertySlug: 'old-trafford',
-    area: 'Old Trafford',
-    areaId: 'old-trafford',
-    postcode: 'M16 0RA',
-    coordinates: { lat: 53.4631, lng: -2.2913 },
+    name: 'Newton Street',
+    propertySlug: 'ancoats',
+    collectionSlug: 'ancoats',
+    area: 'Northern Quarter',
+    areaId: 'northern-quarter',
+    postcode: 'M1 1AE',
+    coordinates: { lat: 53.4838, lng: -2.2352 },
   },
   {
     id: 6,
-    name: 'The Collective',
-    propertySlug: 'the-collective',
-    area: 'Central Manchester',
-    areaId: 'city-centre',
-    postcode: 'M1 3LA',
-    coordinates: { lat: 53.477, lng: -2.237 },
+    name: 'Crusader',
+    propertySlug: 'ancoats',
+    collectionSlug: 'ancoats',
+    area: 'Northern Quarter',
+    areaId: 'northern-quarter',
+    postcode: 'M1 2WQ',
+    coordinates: { lat: 53.4815, lng: -2.2330 },
+  },
+
+  // --- Ancoats & East ---
+  {
+    id: 7,
+    name: 'Loom Street',
+    propertySlug: 'ancoats',
+    collectionSlug: 'ancoats',
+    area: 'Ancoats',
+    areaId: 'ancoats',
+    postcode: 'M4 6AN',
+    coordinates: { lat: 53.4843, lng: -2.2215 },
+  },
+  {
+    id: 8,
+    name: 'Lockgate Mews',
+    propertySlug: 'ancoats',
+    collectionSlug: 'ancoats',
+    area: 'Ancoats',
+    areaId: 'ancoats',
+    postcode: 'M4 6GE',
+    coordinates: { lat: 53.4866, lng: -2.2188 },
+  },
+  {
+    id: 9,
+    name: "Seza's",
+    propertySlug: 'ancoats',
+    collectionSlug: 'ancoats',
+    area: 'Ancoats',
+    areaId: 'ancoats',
+    postcode: 'M4 5BR',
+    coordinates: { lat: 53.4855, lng: -2.2245 },
+  },
+  {
+    id: 10,
+    name: 'MM2',
+    propertySlug: 'ancoats',
+    collectionSlug: 'ancoats',
+    area: 'Ancoats',
+    areaId: 'ancoats',
+    postcode: 'M4 5BS',
+    coordinates: { lat: 53.4852, lng: -2.2240 },
+  },
+  {
+    id: 11,
+    name: 'PopWorks',
+    propertySlug: 'ancoats',
+    collectionSlug: 'ancoats',
+    area: 'Ancoats',
+    areaId: 'ancoats',
+    postcode: 'M4 6BQ',
+    coordinates: { lat: 53.4860, lng: -2.2210 },
+  },
+  {
+    id: 12,
+    name: 'Spinning Mills',
+    propertySlug: 'ancoats',
+    collectionSlug: 'ancoats',
+    area: 'Ancoats',
+    areaId: 'ancoats',
+    postcode: 'M40 7LY',
+    coordinates: { lat: 53.4905, lng: -2.2080 },
+  },
+
+  // --- Old Trafford ---
+  {
+    id: 13,
+    name: 'Insignia',
+    propertySlug: 'old-trafford',
+    collectionSlug: 'old-trafford',
+    area: 'Old Trafford',
+    areaId: 'old-trafford',
+    postcode: 'M16 0PG',
+    coordinates: { lat: 53.4631, lng: -2.2913 },
   },
 ];
 
