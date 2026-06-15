@@ -41,6 +41,46 @@
     <priority>0.8</priority>
   </url>
   <url>
+    <loc>https://www.airbnbflow.com/collection/loom-street</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://www.airbnbflow.com/collection/newton-street</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://www.airbnbflow.com/collection/lockgate-mews</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://www.airbnbflow.com/collection/sezas</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://www.airbnbflow.com/collection/crusader</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://www.airbnbflow.com/collection/mm2</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://www.airbnbflow.com/collection/spinning-mills</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://www.airbnbflow.com/collection/popworks</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
     <loc>https://www.airbnbflow.com/design-services</loc>
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
