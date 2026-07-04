@@ -26,7 +26,13 @@ router.get('/units', async (_req, res) => {
     const primary = photos.find((p) => p.isPrimary) || photos[0];
     return { ...u, primaryImage: primary?.url || null, photos };
   });
-  res.json({ units: result, count: result.length });
+
+  // Explicit list of hidden slugs so the site knows exactly what to remove
+  // (never inferred from absence — keeps the public site safe if the DB lags).
+  const { data: hidden } = await supabase.from('Unit').select('unitSlug').eq('visible', false);
+  const hiddenSlugs = (hidden || []).map((h) => h.unitSlug);
+
+  res.json({ units: result, hiddenSlugs, count: result.length });
 });
 
 module.exports = router;
