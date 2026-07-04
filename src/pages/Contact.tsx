@@ -1,5 +1,6 @@
 import { useState, type FormEvent } from 'react';
 import { MapPin, ArrowRight, CheckCircle, AlertCircle } from 'lucide-react';
+import { useSiteContent, text } from '../hooks/useSiteContent';
 
 type FormStatus = 'idle' | 'sending' | 'sent' | 'error';
 
@@ -8,6 +9,10 @@ const inputClass = 'w-full bg-transparent border-b border-outline-variant/50 py-
 
 export default function Contact() {
   const [status, setStatus] = useState<FormStatus>('idle');
+  const site = useSiteContent();
+  const email = text(site.content, 'contact.email', 'contact@mcrh.co.uk');
+  const phone = text(site.content, 'contact.phone', '');
+  const address = text(site.content, 'contact.address', 'Chambers Building\nDeansgate\nManchester, M3 3EW\nUnited Kingdom');
 
   async function handleSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -37,26 +42,28 @@ export default function Contact() {
         <div className="text-inverse-on-surface">
           <h1 className="font-display text-display-lg-mobile md:text-display-lg mb-8 text-white">Begin the conversation.</h1>
           <p className="font-body text-body-lg text-white/70 mb-16 max-w-md">
-            Whether you are looking to book an extended stay or discuss the management of your property, our team is at your disposal.
+            {text(site.content, 'contact.intro', 'Whether you are looking to book an extended stay or discuss the management of your property, our team is at your disposal.')}
           </p>
 
           <div className="space-y-12">
             <div>
               <span className="font-body text-label-caps text-white/50 mb-2 block">General Inquiries</span>
-              <a href="mailto:contact@mcrh.co.uk" className="font-body text-2xl hover:text-secondary-container transition-colors text-white">
-                contact@mcrh.co.uk
+              <a href={`mailto:${email}`} className="font-body text-2xl hover:text-secondary-container transition-colors text-white">
+                {email}
               </a>
+              {phone && (
+                <a href={`tel:${phone.replace(/\s+/g, '')}`} className="font-body text-lg hover:text-secondary-container transition-colors text-white/80 block mt-3">
+                  {phone}
+                </a>
+              )}
             </div>
 
             <div className="pt-8 border-t border-white/10">
               <span className="font-body text-label-caps text-white/50 mb-4 block">The Studio</span>
               <div className="flex items-start gap-3">
                 <MapPin className="w-5 h-5 text-white/50 mt-1 shrink-0" />
-                <address className="font-body not-italic text-white/80 leading-relaxed">
-                  Chambers Building<br />
-                  Deansgate<br />
-                  Manchester, M3 3EW<br />
-                  United Kingdom
+                <address className="font-body not-italic text-white/80 leading-relaxed whitespace-pre-line">
+                  {address}
                 </address>
               </div>
             </div>

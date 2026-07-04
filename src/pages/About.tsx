@@ -1,8 +1,10 @@
 import { Quote } from 'lucide-react';
 import { Helmet } from 'react-helmet-async';
 import MediaImage from '../components/MediaImage';
+import { useSiteContent, text } from '../hooks/useSiteContent';
 
 export default function About() {
+  const site = useSiteContent();
   return (
     <div className="animate-in fade-in duration-500">
       <Helmet>
@@ -12,14 +14,16 @@ export default function About() {
       </Helmet>
 
       <section className="max-w-[1280px] mx-auto px-margin-mobile md:px-margin-desktop pt-24 md:pt-32 pb-16">
-        <span className="font-body text-label-caps text-secondary block mb-6 tracking-widest uppercase">Our Story</span>
+        <span className="font-body text-label-caps text-secondary block mb-6 tracking-widest uppercase">{text(site.content, 'about.hero.eyebrow', 'Our Story')}</span>
         <h1 className="font-display text-display-lg-mobile md:text-display-lg text-primary max-w-4xl leading-tight">
-          Redefining urban hospitality through design and discretion.
+          {text(site.content, 'about.hero.title', 'Redefining urban hospitality through design and discretion.')}
         </h1>
       </section>
 
       <section className="w-full relative h-[260px] sm:h-[380px] md:h-[600px] overflow-hidden">
-        <MediaImage propertySlug="john-dalton-st" index={2} alt="MCRh curated apartment interior — John Dalton Street" className="h-full w-full object-cover" />
+        {site.images['about.hero']
+          ? <img src={site.images['about.hero'].url} alt={site.images['about.hero'].alt || 'MCRh curated apartment interior'} className="h-full w-full object-cover" />
+          : <MediaImage propertySlug="john-dalton-st" index={2} alt="MCRh curated apartment interior — John Dalton Street" className="h-full w-full object-cover" />}
         <div className="absolute inset-0 bg-gradient-to-b from-transparent to-surface/30"></div>
       </section>
 

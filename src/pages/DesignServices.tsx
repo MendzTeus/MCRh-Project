@@ -2,8 +2,10 @@ import { ArrowRight, SlidersHorizontal, Check, ShieldCheck } from 'lucide-react'
 import { Link } from 'react-router-dom';
 import { Helmet } from 'react-helmet-async';
 import MediaImage from '../components/MediaImage';
+import { useSiteContent, text } from '../hooks/useSiteContent';
 
 export default function DesignServices() {
+  const site = useSiteContent();
   return (
     <div className="animate-in fade-in duration-500">
       <Helmet>
@@ -14,14 +16,16 @@ export default function DesignServices() {
 
       <section className="relative w-full h-[60vh] min-h-[500px] flex items-center justify-center bg-surface-container-low overflow-hidden">
         <div className="absolute inset-0 z-0">
-          <MediaImage propertySlug="chambers" index={3} alt="MCRh interior design — Chambers Residence" className="h-full w-full object-cover" />
+          {site.images['design.hero']
+            ? <img src={site.images['design.hero'].url} alt={site.images['design.hero'].alt || 'MCRh interior design'} className="h-full w-full object-cover" />
+            : <MediaImage propertySlug="chambers" index={3} alt="MCRh interior design — Chambers Residence" className="h-full w-full object-cover" />}
           <div className="absolute inset-0 bg-surface-container-low/80"></div>
         </div>
         <div className="relative z-10 text-center max-w-3xl px-6">
-          <span className="font-body text-label-caps text-secondary block mb-6 tracking-widest uppercase">MCRh Studio</span>
-          <h1 className="font-display text-display-lg-mobile md:text-display-lg text-primary mb-6">Interior Architecture & Design</h1>
+          <span className="font-body text-label-caps text-secondary block mb-6 tracking-widest uppercase">{text(site.content, 'design.hero.eyebrow', 'MCRh Studio')}</span>
+          <h1 className="font-display text-display-lg-mobile md:text-display-lg text-primary mb-6">{text(site.content, 'design.hero.title', 'Interior Architecture & Design')}</h1>
           <p className="font-body text-body-lg text-on-surface-variant max-w-2xl mx-auto">
-            Crafting spaces that elevate the short-term rental experience. We design for longevity, functional elegance, and unforgettable guest impressions.
+            {text(site.content, 'design.hero.paragraph', 'Crafting spaces that elevate the short-term rental experience. We design for longevity, functional elegance, and unforgettable guest impressions.')}
           </p>
         </div>
       </section>
@@ -46,7 +50,9 @@ export default function DesignServices() {
           </div>
           <div className="relative">
             <div className="aspect-[4/5] bg-surface-dim rounded-xl overflow-hidden relative z-10">
-              <MediaImage propertySlug="ancoats" index={1} alt="MCRh interior design approach — Ancoats apartment" className="h-full w-full object-cover" />
+              {site.images['design.approach']
+                ? <img src={site.images['design.approach'].url} alt={site.images['design.approach'].alt || 'MCRh interior design approach'} className="h-full w-full object-cover" />
+                : <MediaImage propertySlug="ancoats" index={1} alt="MCRh interior design approach — Ancoats apartment" className="h-full w-full object-cover" />}
             </div>
             <div className="absolute -bottom-8 -left-8 w-48 h-48 bg-secondary-container rounded-full mix-blend-multiply opacity-50 blur-2xl z-0"></div>
           </div>

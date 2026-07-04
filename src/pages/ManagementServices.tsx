@@ -1,8 +1,10 @@
 import { Key, User, ArrowRight, ShieldCheck, Check, Crosshair } from 'lucide-react';
 import { Helmet } from 'react-helmet-async';
 import MediaImage from '../components/MediaImage';
+import { useSiteContent, text } from '../hooks/useSiteContent';
 
 export default function ManagementServices() {
+  const site = useSiteContent();
   return (
     <div className="animate-in fade-in duration-500">
       <Helmet>
@@ -13,14 +15,16 @@ export default function ManagementServices() {
 
       <section className="relative w-full h-[60vh] min-h-[500px] flex items-center justify-center bg-surface border-b border-outline-variant/30">
         <div className="absolute inset-0 z-0">
-          <MediaImage propertySlug="chambers" index={4} alt="MCRh managed property — Chambers Residence Manchester" className="h-full w-full object-cover" />
+          {site.images['management.hero']
+            ? <img src={site.images['management.hero'].url} alt={site.images['management.hero'].alt || 'MCRh managed property'} className="h-full w-full object-cover" />
+            : <MediaImage propertySlug="chambers" index={4} alt="MCRh managed property — Chambers Residence Manchester" className="h-full w-full object-cover" />}
           <div className="absolute inset-0 bg-surface/70"></div>
         </div>
         <div className="relative z-10 text-center max-w-3xl px-6">
-          <span className="font-body text-label-caps text-secondary block mb-6 tracking-widest uppercase">Complete Operations</span>
-          <h1 className="font-display text-display-lg-mobile md:text-display-lg text-primary mb-6">Effortless Yield Management</h1>
+          <span className="font-body text-label-caps text-secondary block mb-6 tracking-widest uppercase">{text(site.content, 'management.hero.eyebrow', 'Complete Operations')}</span>
+          <h1 className="font-display text-display-lg-mobile md:text-display-lg text-primary mb-6">{text(site.content, 'management.hero.title', 'Effortless Yield Management')}</h1>
           <p className="font-body text-body-lg text-on-surface-variant max-w-2xl mx-auto">
-            We handle every operational detail, from dynamic pricing algorithms to white-glove guest service, maximizing your return while liberating your time.
+            {text(site.content, 'management.hero.paragraph', 'We handle every operational detail, from dynamic pricing algorithms to white-glove guest service, maximizing your return while liberating your time.')}
           </p>
         </div>
       </section>
