@@ -1,6 +1,7 @@
-import { Routes, Route } from 'react-router-dom';
+import { Routes, Route, useLocation } from 'react-router-dom';
 import Navbar from './components/Navbar';
 import Footer from './components/Footer';
+import Admin from './pages/Admin';
 import Home from './pages/Home';
 import Properties from './pages/Properties';
 import PropertyDetail from './pages/PropertyDetail';
@@ -12,6 +13,17 @@ import Contact from './pages/Contact';
 import NotFound from './pages/NotFound';
 
 export default function App() {
+  const location = useLocation();
+
+  // The admin panel is a standalone app — no public navbar/footer.
+  if (location.pathname.startsWith('/admin')) {
+    return (
+      <Routes>
+        <Route path="/admin" element={<Admin />} />
+      </Routes>
+    );
+  }
+
   return (
     <div className="min-h-screen flex flex-col bg-surface text-on-surface">
       <Navbar />
