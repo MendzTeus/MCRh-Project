@@ -35,4 +35,17 @@ router.get('/units', async (_req, res) => {
   res.json({ units: result, hiddenSlugs, count: result.length });
 });
 
+// Public site content: text/numbers/links + image-slot overrides.
+router.get('/site', async (_req, res) => {
+  const [{ data: content }, { data: images }] = await Promise.all([
+    supabase.from('SiteContent').select('key, value'),
+    supabase.from('SiteImage').select('slot, url, alt'),
+  ]);
+  const contentMap = {};
+  (content || []).forEach((c) => { contentMap[c.key] = c.value; });
+  const imageMap = {};
+  (images || []).forEach((i) => { imageMap[i.slot] = { url: i.url, alt: i.alt }; });
+  res.json({ content: contentMap, images: imageMap });
+});
+
 module.exports = router;

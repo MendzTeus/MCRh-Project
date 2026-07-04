@@ -129,4 +129,58 @@ router.delete('/photos/:id', async (req, res) => {
   res.json({ ok: true });
 });
 
+// ── Site content (text/numbers/links) + image slots ─────────────────
+
+// All content + images in one call for the admin UI.
+router.get('/site', async (_req, res) => {
+  const [{ data: content }, { data: images }] = await Promise.all([
+    supabase.from('SiteContent').select('key, value'),
+    supabase.from('SiteImage').select('slot, url, alt'),
+  ]);
+  const contentMap = {};
+  (content || []).forEach((c) => { contentMap[c.key] = c.value; });
+  const imageMap = {};
+  (images || []).forEach((i) => { imageMap[i.slot] = { url: i.url, alt: i.alt }; });
+  res.json({ content: contentMap, images: imageMap });
+});
+
+// Edit one content key (text, number, or structured JSON).
+router.put('/content/:key', async (req, res) => {
+  if (!('value' in (req.body || {}))) return res.status(400).json({ error: 'value required' });
+  const { error } = await supabase.from('SiteContent')
+    .upsert({ key: req.params.key, value: req.body.value, updatedAt: new Date().toISOString() }, { onConflict: 'key' });
+  if (error) return res.status(500).json({ error: error.message });
+  res.json({ ok: true });
+});
+
+// Upload/replace the image for a named slot (base64 JSON body).
+router.post('/images/:slot', async (req, res) => {
+  const { slot } = req.params;
+  const { dataBase64, contentType, alt } = req.body || {};
+  if (!dataBase64 || !contentType) return res.status(400).json({ error: 'dataBase64 and contentType required' });
+
+  const ext = (contentType.split('/')[1] || 'jpg').replace('jpeg', 'jpg');
+  const path = `site/${slot}/${Date.now()}-${crypto.randomBytes(4).toString('hex')}.${ext}`;
+  const { error: upErr } = await supabase.storage.from(BUCKET).upload(path, Buffer.from(dataBase64, 'base64'), { contentType, upsert: false });
+  if (upErr) return res.status(500).json({ error: upErr.message });
+  const { data: pub } = supabase.storage.from(BUCKET).getPublicUrl(path);
+
+  // Remove the previous file for this slot so the bucket doesn't accumulate orphans.
+  const { data: prev } = await supabase.from('SiteImage').select('storagePath').eq('slot', slot).single();
+  if (prev?.storagePath) await supabase.storage.from(BUCKET).remove([prev.storagePath]);
+
+  const { error } = await supabase.from('SiteImage')
+    .upsert({ slot, url: pub.publicUrl, storagePath: path, alt: alt || null, updatedAt: new Date().toISOString() }, { onConflict: 'slot' });
+  if (error) return res.status(500).json({ error: error.message });
+  res.json({ slot, url: pub.publicUrl });
+});
+
+// Revert a slot to the site's built-in default (removes the override).
+router.delete('/images/:slot', async (req, res) => {
+  const { data: prev } = await supabase.from('SiteImage').select('storagePath').eq('slot', req.params.slot).single();
+  if (prev?.storagePath) await supabase.storage.from(BUCKET).remove([prev.storagePath]);
+  await supabase.from('SiteImage').delete().eq('slot', req.params.slot);
+  res.json({ ok: true });
+});
+
 module.exports = router;
