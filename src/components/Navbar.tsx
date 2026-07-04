@@ -19,7 +19,7 @@ export default function Navbar() {
   }
 
   return (
-    <header className="fixed top-0 w-full z-50 bg-surface/80 backdrop-blur-xl border-b border-outline-variant/30 transition-all duration-300">
+    <header className="fixed top-0 w-full z-50 bg-surface border-b border-outline-variant/30 transition-all duration-300">
       <div className="flex justify-between items-center h-20 px-4 md:px-16 max-w-[1280px] mx-auto">
         <Link to="/" onClick={closeMenu} className="font-display font-display-lg text-headline-sm tracking-tighter text-primary">
           MCRh

@@ -3,6 +3,7 @@ import { useParams } from 'react-router-dom';
 import { Helmet } from 'react-helmet-async';
 import { Star, ChevronDown, BedDouble, Wifi, ChefHat, Coffee, Snowflake, Bath, ArrowRight, ArrowLeft, X, ChevronLeft, ChevronRight } from 'lucide-react';
 import { getReviewsForProperty } from '../data/reviews';
+import { getPropertyMapEmbedUrl } from '../data/locations';
 import DateRangePicker, { formatShortDate } from '../components/DateRangePicker';
 import MediaImage from '../components/MediaImage';
 import { getInventoryUnit } from '../data/airbnbInventory';
@@ -236,33 +237,33 @@ export default function PropertyDetail() {
       </section>
 
       {/* Gallery Grid */}
-      <section className="max-w-[1280px] mx-auto px-margin-mobile md:px-margin-desktop py-section-gap">
-        <h2 className="font-display text-headline-md text-primary mb-12">Visual Journey</h2>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-2 md:gap-4 h-[340px] sm:h-[480px] md:h-[819px]">
-          <div className="md:col-span-2 h-full rounded-xl overflow-hidden relative group">
-            <MediaImage src={unitGallery[0]} propertySlug={property.slug} alt={`${unit.title} gallery image`} />
+      {unitGallery.length > 0 && (
+        <section className="max-w-[1280px] mx-auto px-margin-mobile md:px-margin-desktop py-section-gap">
+          <div className="grid grid-cols-2 md:grid-cols-4 grid-rows-2 gap-2 md:gap-3" style={{ height: 480 }}>
+            {/* Main large image — spans 2 cols + 2 rows */}
+            <div className="col-span-2 row-span-2 rounded-xl overflow-hidden cursor-pointer" onClick={() => { setGalleryIndex(0); setGalleryOpen(true); }}>
+              <img src={unitGallery[0]} alt={`${unit.title} main`} className="w-full h-full object-cover hover:scale-[1.02] transition-transform duration-500" />
+            </div>
+            {/* 4 thumbnails — right side, each 1 col × 1 row */}
+            {[1, 2, 3, 4].map((i) => (
+              unitGallery[i] ? (
+                <div key={i} className={`overflow-hidden cursor-pointer ${i === 2 ? 'rounded-tr-xl' : ''} ${i === 4 ? 'rounded-br-xl' : ''}`}
+                  onClick={() => { setGalleryIndex(i); setGalleryOpen(true); }}>
+                  <img src={unitGallery[i]} alt={`${unit.title} photo ${i + 1}`} className="w-full h-full object-cover hover:scale-[1.04] transition-transform duration-500" />
+                </div>
+              ) : <div key={i} className="bg-surface-dim rounded" />
+            ))}
           </div>
-          <div className="hidden md:grid grid-rows-3 gap-4 h-full">
-            <div className="rounded-xl overflow-hidden relative group h-full">
-              <MediaImage src={unitGallery[1]} propertySlug={property.slug} index={1} alt={`${unit.title} gallery detail`} />
-            </div>
-            <div className="rounded-xl overflow-hidden relative group h-full">
-              <MediaImage src={unitGallery[2]} propertySlug={property.slug} index={2} alt={`${unit.title} gallery detail`} />
-            </div>
-            <div className="rounded-xl overflow-hidden relative group h-full">
-              <MediaImage src={unitGallery[3]} propertySlug={property.slug} index={3} alt={`${unit.title} gallery detail`} />
-            </div>
+          <div className="flex justify-end mt-4">
+            <button
+              onClick={() => { setGalleryIndex(0); setGalleryOpen(true); }}
+              className="flex items-center gap-2 text-primary font-body text-label-caps tracking-widest hover:opacity-70 transition-opacity uppercase border border-outline-variant/50 px-4 py-2 rounded-lg text-xs"
+            >
+              View All {unitGallery.length} Photos <ArrowRight className="w-3 h-3" />
+            </button>
           </div>
-        </div>
-        <div className="flex justify-end mt-6">
-          <button
-            onClick={() => { setGalleryIndex(0); setGalleryOpen(true); }}
-            className="flex items-center gap-2 text-primary font-body text-label-caps tracking-widest hover:opacity-70 transition-opacity uppercase"
-          >
-            View All Photos <ArrowRight className="w-4 h-4" />
-          </button>
-        </div>
-      </section>
+        </section>
+      )}
       
       {/* Reviews Slider */}
       <section className="bg-surface-container-low py-section-gap">
@@ -321,16 +322,26 @@ export default function PropertyDetail() {
       <section className="max-w-[1280px] mx-auto px-margin-mobile md:px-margin-desktop py-section-gap">
         <h2 className="font-display text-headline-md text-primary mb-12">The Neighborhood</h2>
         <div className="rounded-xl overflow-hidden h-[500px] relative border border-outline-variant/20">
-          <div className="w-full h-full bg-surface-variant"></div>
-          {/* Stylized Map Markers */}
-          <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 flex flex-col items-center">
-            <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center animate-pulse">
-              <div className="w-4 h-4 bg-primary rounded-full"></div>
+          {getPropertyMapEmbedUrl(property.slug) ? (
+            <iframe
+              title={`Map of ${property.name}`}
+              src={getPropertyMapEmbedUrl(property.slug)!}
+              className="w-full h-full border-0"
+              loading="lazy"
+              referrerPolicy="no-referrer"
+            />
+          ) : (
+            <div className="w-full h-full bg-surface-variant flex items-center justify-center">
+              <div className="flex flex-col items-center">
+                <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center animate-pulse">
+                  <div className="w-4 h-4 bg-primary rounded-full"></div>
+                </div>
+                <div className="mt-2 bg-surface px-4 py-2 rounded-lg shadow-lg border border-outline-variant/20">
+                  <span className="font-body text-label-caps text-primary tracking-widest uppercase font-semibold">{unit.title}</span>
+                </div>
+              </div>
             </div>
-            <div className="mt-2 bg-surface px-4 py-2 rounded-lg shadow-lg border border-outline-variant/20">
-              <span className="font-body text-label-caps text-primary tracking-widest uppercase font-semibold">{unit.title}</span>
-            </div>
-          </div>
+          )}
         </div>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mt-12">
           {property.distances.slice(0, 3).map((item, i) => (

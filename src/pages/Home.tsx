@@ -1,10 +1,11 @@
-import { useState, useRef, useMemo } from 'react';
-import { Plus, Minus, SlidersHorizontal as Tune, Quote } from 'lucide-react';
+import { useState, useRef, useMemo, lazy, Suspense } from 'react';
+import { SlidersHorizontal as Tune, Quote } from 'lucide-react';
+const PropertyMap = lazy(() => import('../components/PropertyMap'));
 import { Link } from 'react-router-dom';
 import { Helmet } from 'react-helmet-async';
 import MediaImage from '../components/MediaImage';
 import PropertyFeatureSection from '../components/PropertyFeatureSection';
-import { locationAreas, manchesterMapEmbedUrl, mapLocations, type LocationArea } from '../data/locations';
+import { locationAreas, mapLocations, type LocationArea } from '../data/locations';
 import { useClickOutside } from '../hooks/useClickOutside';
 
 export default function Home() {
@@ -13,7 +14,6 @@ export default function Home() {
   useClickOutside(filterRef, () => setFiltersOpen(false), filtersOpen);
   const [selectedArea, setSelectedArea] = useState<LocationArea>('all');
   const [selectedLocationId, setSelectedLocationId] = useState(1);
-  const [mapZoom, setMapZoom] = useState(1);
   const visibleLocations = useMemo(
     () => mapLocations.filter((location) => selectedArea === 'all' || location.areaId === selectedArea),
     [selectedArea],
@@ -186,56 +186,28 @@ export default function Home() {
             </div>
           </div>
           
-          <div className="w-full lg:w-1/2 h-[500px] lg:h-full rounded-2xl overflow-hidden relative border border-outline-variant/30 bg-surface-variant grayscale opacity-80">
-            {/* Map placeholder visually */}
-            <iframe
-              title="Manchester locations map"
-              src={manchesterMapEmbedUrl}
-              className="absolute inset-0 h-full w-full border-0 pointer-events-none"
-              loading="lazy"
-            />
-            <div className="absolute inset-0 bg-primary/5 mix-blend-multiply pointer-events-none"></div>
-            
-            <div className="absolute top-6 left-6 z-20 flex flex-col gap-2">
-              <button
-                type="button"
-                onClick={() => setMapZoom((zoom) => Math.min(3, zoom + 0.25))}
-                className="w-10 h-10 bg-white rounded-lg shadow-sm flex items-center justify-center hover:bg-surface-dim transition-colors border border-outline-variant/30 text-primary"
-              >
-                <Plus className="w-5 h-5" />
-              </button>
-              <button
-                type="button"
-                onClick={() => setMapZoom((zoom) => Math.max(0.75, zoom - 0.25))}
-                className="w-10 h-10 bg-white rounded-lg shadow-sm flex items-center justify-center hover:bg-surface-dim transition-colors border border-outline-variant/30 text-primary"
-              >
-                <Minus className="w-5 h-5" />
-              </button>
-            </div>
-            
-            <div
-              className="absolute inset-0 z-10 transition-transform duration-300 pointer-events-none"
-              style={{ transform: `scale(${mapZoom})` }}
-            >
-              {visibleLocations.map((location) => (
-                <button
-                  type="button"
-                  key={location.id}
-                  onClick={() => setSelectedLocationId(location.id)}
-                  className="absolute cursor-pointer pointer-events-auto"
-                  style={{ top: location.position.top, left: location.position.left }}
-                  aria-label={`${location.name} ${location.postcode}`}
-                  title={`${location.name} - ${location.postcode}`}
-                >
-                  <span
-                    className={`block rounded-full shadow-md border transition-transform ${
-                      selectedLocationId === location.id ? 'h-5 w-5 bg-primary scale-125' : 'h-4 w-4 bg-primary hover:scale-110'
-                    }`}
-                  ></span>
-                </button>
-              ))}
-            </div>
+          <div className="w-full lg:w-1/2 h-[500px] lg:h-full rounded-2xl overflow-hidden relative border border-outline-variant/30">
+            <Suspense fallback={<div className="w-full h-full bg-surface-dim flex items-center justify-center"><span className="font-body text-label-caps text-on-surface-variant/50 tracking-widest uppercase">Loading map…</span></div>}>
+              <PropertyMap locations={visibleLocations} height="100%" />
+            </Suspense>
           </div>
+        </div>
+      </section>
+
+      {/* Stats / Numbers Section */}
+      <section className="py-section-gap bg-primary border-t border-white/10">
+        <div className="max-w-[1280px] mx-auto px-margin-mobile md:px-margin-desktop grid grid-cols-2 md:grid-cols-4 gap-12 md:gap-0 divide-y-2 md:divide-y-0 md:divide-x divide-white/10">
+          {[
+            { value: '30+', label: 'Properties' },
+            { value: '500+', label: 'Guest Reviews' },
+            { value: '100%', label: '5-Star Stays' },
+            { value: '7', label: 'Neighbourhoods' },
+          ].map(({ value, label }) => (
+            <div key={label} className="flex flex-col items-center text-center py-6 md:py-0 px-4">
+              <span className="font-display text-5xl md:text-6xl text-white mb-3 leading-none">{value}</span>
+              <span className="font-body text-label-caps text-white/50 tracking-widest uppercase text-xs">{label}</span>
+            </div>
+          ))}
         </div>
       </section>
 

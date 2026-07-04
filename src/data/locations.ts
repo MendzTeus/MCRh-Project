@@ -48,65 +48,75 @@ const draftMapLocations: DraftMapLocation[] = [
   // --- City Centre / Deansgate ---
   {
     id: 1,
-    name: 'Chapel Walks',
-    propertySlug: 'chambers',
-    collectionSlug: 'chambers',
+    name: '9 Chapel Walks',
+    propertySlug: 'chambers-9',
+    collectionSlug: 'chambers-9',
     area: 'City Centre',
     areaId: 'city-centre',
     postcode: 'M2 1HN',
-    coordinates: { lat: 53.4813, lng: -2.2424 },
+    coordinates: { lat: 53.4818, lng: -2.2440 },
+  },
+  {
+    id: 14,
+    name: '11 Chapel Walks',
+    propertySlug: 'chambers-11',
+    collectionSlug: 'chambers-11',
+    area: 'City Centre',
+    areaId: 'city-centre',
+    postcode: 'M2 1HN',
+    coordinates: { lat: 53.4817, lng: -2.2443 },
   },
   {
     id: 2,
-    name: 'John Dalton Street',
+    name: '42 John Dalton St.',
     propertySlug: 'john-dalton-st',
     collectionSlug: 'john-dalton-st',
     area: 'Deansgate',
     areaId: 'deansgate',
     postcode: 'M2 6LE',
-    coordinates: { lat: 53.4801, lng: -2.2478 },
+    coordinates: { lat: 53.4802, lng: -2.2458 },
   },
   {
     id: 3,
-    name: 'Wood Street',
+    name: '18 Wood Street',
     propertySlug: 'wood-street',
     collectionSlug: 'wood-street',
     area: 'City Centre',
     areaId: 'city-centre',
     postcode: 'M3 3EF',
-    coordinates: { lat: 53.4792, lng: -2.2527 },
+    coordinates: { lat: 53.4807, lng: -2.2496 },
   },
   {
     id: 4,
-    name: 'Wood Street Collective',
+    name: '20-22 Wood Street',
     propertySlug: 'the-collective',
     collectionSlug: 'the-collective',
     area: 'City Centre',
     areaId: 'city-centre',
     postcode: 'M3 3EF',
-    coordinates: { lat: 53.4795, lng: -2.2520 },
+    coordinates: { lat: 53.4805, lng: -2.2493 },
   },
 
   // --- Northern Quarter ---
   {
     id: 5,
-    name: 'Newton Street',
+    name: '113 Newton Street',
     propertySlug: 'ancoats',
     collectionSlug: 'newton-street',
     area: 'Northern Quarter',
     areaId: 'northern-quarter',
     postcode: 'M1 1AE',
-    coordinates: { lat: 53.4838, lng: -2.2352 },
+    coordinates: { lat: 53.4835, lng: -2.2312 },
   },
   {
     id: 6,
-    name: 'Crusader',
+    name: 'Crusader / Neptune Mill',
     propertySlug: 'ancoats',
     collectionSlug: 'crusader',
     area: 'Northern Quarter',
     areaId: 'northern-quarter',
     postcode: 'M1 2WQ',
-    coordinates: { lat: 53.4815, lng: -2.2330 },
+    coordinates: { lat: 53.4784, lng: -2.2262 },
   },
 
   // --- Ancoats & East ---
@@ -118,17 +128,17 @@ const draftMapLocations: DraftMapLocation[] = [
     area: 'Ancoats',
     areaId: 'ancoats',
     postcode: 'M4 6AN',
-    coordinates: { lat: 53.4843, lng: -2.2215 },
+    coordinates: { lat: 53.4854, lng: -2.2272 },
   },
   {
     id: 8,
     name: 'Lockgate Mews',
     propertySlug: 'ancoats',
     collectionSlug: 'lockgate-mews',
-    area: 'Ancoats',
-    areaId: 'ancoats',
-    postcode: 'M4 6GE',
-    coordinates: { lat: 53.4866, lng: -2.2188 },
+    area: 'Northern Quarter',
+    areaId: 'northern-quarter',
+    postcode: 'M1 2WA',
+    coordinates: { lat: 53.4793, lng: -2.2284 },
   },
   {
     id: 9,
@@ -148,7 +158,7 @@ const draftMapLocations: DraftMapLocation[] = [
     area: 'Ancoats',
     areaId: 'ancoats',
     postcode: 'M4 5BS',
-    coordinates: { lat: 53.4852, lng: -2.2240 },
+    coordinates: { lat: 53.4833, lng: -2.2285 },
   },
   {
     id: 11,
@@ -158,17 +168,17 @@ const draftMapLocations: DraftMapLocation[] = [
     area: 'Ancoats',
     areaId: 'ancoats',
     postcode: 'M4 6BQ',
-    coordinates: { lat: 53.4860, lng: -2.2210 },
+    coordinates: { lat: 53.4872, lng: -2.2260 },
   },
   {
     id: 12,
     name: 'Spinning Mills',
     propertySlug: 'ancoats',
     collectionSlug: 'spinning-mills',
-    area: 'East Manchester',
+    area: 'Miles Platting',
     areaId: 'east-manchester',
-    postcode: 'M40 7LY',
-    coordinates: { lat: 53.4905, lng: -2.2080 },
+    postcode: 'M40 7LJ',
+    coordinates: { lat: 53.4897, lng: -2.2143 },
   },
 
   // --- Old Trafford ---
@@ -179,8 +189,8 @@ const draftMapLocations: DraftMapLocation[] = [
     collectionSlug: 'old-trafford',
     area: 'Old Trafford',
     areaId: 'old-trafford',
-    postcode: 'M16 0PG',
-    coordinates: { lat: 53.4631, lng: -2.2913 },
+    postcode: 'M16 0UF',
+    coordinates: { lat: 53.4600, lng: -2.2849 },
   },
 ];
 
@@ -188,3 +198,12 @@ export const mapLocations: MapLocation[] = draftMapLocations.map((location) => (
   ...location,
   position: toMapPosition(location.coordinates),
 }));
+
+export function getPropertyMapEmbedUrl(collectionSlug: string): string | null {
+  const loc = draftMapLocations.find((l) => l.collectionSlug === collectionSlug);
+  if (!loc) return null;
+  const { lat, lng } = loc.coordinates;
+  const delta = 0.007;
+  const bbox = `${lng - delta},${lat - delta},${lng + delta},${lat + delta}`;
+  return `https://www.openstreetmap.org/export/embed.html?bbox=${bbox}&layer=mapnik&marker=${lat},${lng}`;
+}
