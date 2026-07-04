@@ -1,4 +1,9 @@
-import { useState, useEffect, useCallback, useRef, type FormEvent, type CSSProperties } from 'react';
+import { useState, useEffect, useCallback, useRef, type FormEvent, type ReactNode } from 'react';
+
+// Quiet Luxury signature accent
+const GOLD = '#C5A059';
+const NAVY = '#101c2d';
+const TOKEN_KEY = 'mcrh_admin_token';
 
 // ── Types ───────────────────────────────────────────────────────────
 type Photo = { id: string; url: string; alt: string | null; isPrimary: boolean; displayOrder: number };
@@ -7,8 +12,16 @@ type Unit = {
   suppliedSpecs: string | null; postcode: string | null; airbnbUrl: string | null;
   description: string | null; visible: boolean; displayOrder: number; photos: Photo[];
 };
+type SiteData = { content: Record<string, unknown>; images: Record<string, { url: string; alt: string | null }> };
 
-const TOKEN_KEY = 'mcrh_admin_token';
+// Image slots the admin can override (friendly labels for the UI).
+const IMAGE_SLOTS: { slot: string; label: string; page: string }[] = [
+  { slot: 'home.hero', label: 'Foto de capa (hero)', page: 'Home' },
+  { slot: 'design.hero', label: 'Hero', page: 'Design Services' },
+  { slot: 'design.approach', label: 'Seção "Our Approach"', page: 'Design Services' },
+  { slot: 'management.hero', label: 'Hero', page: 'Management Services' },
+  { slot: 'about.hero', label: 'Hero', page: 'About' },
+];
 
 // ── API helper ──────────────────────────────────────────────────────
 function useApi(token: string | null, onUnauthorized: () => void) {
@@ -23,7 +36,40 @@ function useApi(token: string | null, onUnauthorized: () => void) {
   }, [token, onUnauthorized]);
 }
 
-// ── Login screen ────────────────────────────────────────────────────
+function fileToBase64(file: File): Promise<{ base64: string; type: string }> {
+  return new Promise((resolve) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve({ base64: (reader.result as string).split(',')[1], type: file.type });
+    reader.readAsDataURL(file);
+  });
+}
+
+// ── Shared primitives (Quiet Luxury) ────────────────────────────────
+const label = 'font-body text-[10px] uppercase tracking-[0.15em] text-on-surface-variant block mb-1.5';
+const field = 'w-full bg-transparent border-b border-outline-variant/50 py-1.5 font-body text-sm text-on-surface focus:outline-none focus:border-[#C5A059] transition-colors';
+
+function Btn({ children, onClick, gold, disabled, type }: { children: ReactNode; onClick?: () => void; gold?: boolean; disabled?: boolean; type?: 'button' | 'submit' }) {
+  const c = gold ? GOLD : '#101c2d';
+  return (
+    <button type={type || 'button'} onClick={onClick} disabled={disabled}
+      className="px-6 py-2.5 font-body text-[11px] uppercase tracking-[0.15em] transition-colors disabled:opacity-40"
+      style={{ border: `1px solid ${c}`, color: c, background: 'transparent' }}
+      onMouseEnter={(e) => { if (!disabled) { e.currentTarget.style.background = c; e.currentTarget.style.color = '#fff'; } }}
+      onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = c; }}>
+      {children}
+    </button>
+  );
+}
+
+function Status({ s }: { s: 'idle' | 'saving' | 'saved' | 'error' }) {
+  return (
+    <span className="font-body text-[10px] uppercase tracking-[0.15em]" style={{ color: s === 'error' ? '#ba1a1a' : GOLD }}>
+      {s === 'saving' && 'Salvando…'}{s === 'saved' && '✓ Salvo'}{s === 'error' && 'Erro'}
+    </span>
+  );
+}
+
+// ── Login ───────────────────────────────────────────────────────────
 function Login({ onLogin }: { onLogin: (token: string) => void }) {
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
@@ -41,17 +87,14 @@ function Login({ onLogin }: { onLogin: (token: string) => void }) {
   }
 
   return (
-    <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#1c1c18', fontFamily: 'sans-serif' }}>
-      <form onSubmit={submit} style={{ background: '#fdf9f3', padding: 40, borderRadius: 16, width: 360, boxShadow: '0 20px 60px rgba(0,0,0,0.4)' }}>
-        <div style={{ fontSize: 28, fontWeight: 700, color: '#1c1c18', marginBottom: 4 }}>MCRh</div>
-        <div style={{ fontSize: 13, color: '#44474c', marginBottom: 28, letterSpacing: '0.08em', textTransform: 'uppercase' }}>Painel de Administração</div>
-        <label style={{ fontSize: 12, color: '#44474c', display: 'block', marginBottom: 6 }}>Senha</label>
-        <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} autoFocus
-          style={{ width: '100%', padding: '10px 12px', border: '1px solid rgba(197,198,205,0.6)', borderRadius: 8, fontSize: 15, marginBottom: 16, boxSizing: 'border-box' }} />
-        {error && <div style={{ color: '#c0392b', fontSize: 13, marginBottom: 16 }}>{error}</div>}
-        <button type="submit" disabled={busy} style={{ width: '100%', padding: '11px 0', background: '#1c1c18', color: '#fff', border: 'none', borderRadius: 8, fontSize: 14, fontWeight: 600, cursor: 'pointer', opacity: busy ? 0.6 : 1 }}>
-          {busy ? 'Entrando…' : 'Entrar'}
-        </button>
+    <div className="min-h-screen flex items-center justify-center px-6" style={{ background: NAVY }}>
+      <form onSubmit={submit} className="w-full max-w-sm bg-surface p-12" style={{ borderTop: `2px solid ${GOLD}` }}>
+        <div className="font-display text-4xl text-primary mb-1 tracking-tight">MCRh</div>
+        <div className="font-body text-[11px] uppercase tracking-[0.2em] text-on-surface-variant mb-10">Painel de Administração</div>
+        <label className={label}>Senha</label>
+        <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} autoFocus className={`${field} mb-8`} />
+        {error && <div className="font-body text-sm mb-6" style={{ color: '#ba1a1a' }}>{error}</div>}
+        <Btn type="submit" gold disabled={busy}>{busy ? 'Entrando…' : 'Entrar'}</Btn>
       </form>
     </div>
   );
@@ -60,12 +103,12 @@ function Login({ onLogin }: { onLogin: (token: string) => void }) {
 // ── Photo tile ──────────────────────────────────────────────────────
 function PhotoTile({ photo, onSetCover, onDelete }: { photo: Photo; onSetCover: () => void; onDelete: () => void }) {
   return (
-    <div style={{ position: 'relative', width: 88, height: 88, borderRadius: 8, overflow: 'hidden', border: photo.isPrimary ? '2px solid #C8A45C' : '1px solid rgba(197,198,205,0.5)', flexShrink: 0 }}>
-      <img src={photo.url} alt={photo.alt || ''} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-      {photo.isPrimary && <div style={{ position: 'absolute', top: 0, left: 0, background: '#C8A45C', color: '#fff', fontSize: 9, padding: '1px 5px', borderBottomRightRadius: 6, fontWeight: 600 }}>CAPA</div>}
-      <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, display: 'flex', background: 'rgba(0,0,0,0.55)' }}>
-        {!photo.isPrimary && <button title="Definir como capa" onClick={onSetCover} style={{ flex: 1, background: 'none', border: 'none', color: '#fff', cursor: 'pointer', fontSize: 11, padding: '3px 0' }}>★</button>}
-        <button title="Excluir" onClick={onDelete} style={{ flex: 1, background: 'none', border: 'none', color: '#ff8a80', cursor: 'pointer', fontSize: 11, padding: '3px 0' }}>✕</button>
+    <div className="relative w-24 h-24 overflow-hidden shrink-0" style={{ border: photo.isPrimary ? `2px solid ${GOLD}` : '1px solid rgba(197,198,205,0.5)' }}>
+      <img src={photo.url} alt={photo.alt || ''} className="w-full h-full object-cover" />
+      {photo.isPrimary && <div className="absolute top-0 left-0 font-body text-[8px] uppercase tracking-widest text-white px-1.5 py-0.5" style={{ background: GOLD }}>Capa</div>}
+      <div className="absolute bottom-0 left-0 right-0 flex" style={{ background: 'rgba(16,28,45,0.75)' }}>
+        {!photo.isPrimary && <button title="Definir como capa" onClick={onSetCover} className="flex-1 text-white text-xs py-1 hover:text-[#C5A059] transition-colors">★</button>}
+        <button title="Excluir" onClick={onDelete} className="flex-1 text-white/80 text-xs py-1 hover:text-red-300 transition-colors">✕</button>
       </div>
     </div>
   );
@@ -88,39 +131,36 @@ function UnitCard({ unit, api, onChanged }: { unit: Unit; api: ReturnType<typeof
   }, [api, unit.unitSlug, onChanged]);
 
   async function uploadPhoto(file: File) {
-    const reader = new FileReader();
-    reader.onload = async () => {
-      const dataUrl = reader.result as string;
-      const base64 = dataUrl.split(',')[1];
-      setStatus('saving');
-      try { await api(`/admin/units/${unit.unitSlug}/photos`, { method: 'POST', body: JSON.stringify({ dataBase64: base64, contentType: file.type, alt: unit.unitName }) }); setStatus('saved'); onChanged(); }
-      catch { setStatus('error'); }
-    };
-    reader.readAsDataURL(file);
+    setStatus('saving');
+    const { base64, type } = await fileToBase64(file);
+    try { await api(`/admin/units/${unit.unitSlug}/photos`, { method: 'POST', body: JSON.stringify({ dataBase64: base64, contentType: type, alt: unit.unitName }) }); setStatus('saved'); onChanged(); }
+    catch { setStatus('error'); }
   }
 
-  const inputStyle: CSSProperties = { padding: '7px 10px', border: '1px solid rgba(197,198,205,0.6)', borderRadius: 6, fontSize: 13, width: '100%', boxSizing: 'border-box' };
-
   return (
-    <div style={{ background: '#fff', border: '1px solid rgba(197,198,205,0.4)', borderRadius: 12, padding: 16, opacity: unit.visible ? 1 : 0.6 }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
-        <span style={{ fontSize: 11, color: '#8a8d93', letterSpacing: '0.06em' }}>{unit.unitSlug}</span>
+    <div className="bg-surface-container-lowest border border-outline-variant/40 p-5" style={{ opacity: unit.visible ? 1 : 0.55 }}>
+      <div className="flex justify-between items-center mb-4">
+        <span className="font-body text-[10px] uppercase tracking-[0.12em] text-on-surface-variant/70">{unit.unitSlug}</span>
         <button type="button" onClick={() => save({ visible: !unit.visible })} aria-pressed={unit.visible}
-          style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', fontSize: 12, color: '#1c1c18', background: 'none', border: 'none', padding: 0 }}>
+          className="flex items-center gap-2 font-body text-[10px] uppercase tracking-[0.15em] text-on-surface-variant">
           <span>{unit.visible ? 'Visível' : 'Oculto'}</span>
-          <span style={{ width: 40, height: 22, borderRadius: 11, background: unit.visible ? '#2e7d32' : '#c5c6cd', position: 'relative', transition: 'background 0.2s', display: 'inline-block' }}>
-            <span style={{ position: 'absolute', top: 2, left: unit.visible ? 20 : 2, width: 18, height: 18, borderRadius: '50%', background: '#fff', transition: 'left 0.2s' }} />
+          <span className="relative inline-block w-9 h-5 transition-colors" style={{ background: unit.visible ? GOLD : '#c5c6cd' }}>
+            <span className="absolute top-0.5 w-4 h-4 bg-white transition-all" style={{ left: unit.visible ? 18 : 2 }} />
           </span>
         </button>
       </div>
 
-      <div style={{ display: 'grid', gap: 8, marginBottom: 12 }}>
-        <input value={name} onChange={(e) => setName(e.target.value)} onBlur={() => name !== unit.unitName && save({ unitName: name })} placeholder="Nome do apartamento" style={{ ...inputStyle, fontWeight: 600 }} />
-        <input value={specs} onChange={(e) => setSpecs(e.target.value)} onBlur={() => specs !== (unit.suppliedSpecs || '') && save({ suppliedSpecs: specs })} placeholder="Ex.: 2BED 2BATH" style={inputStyle} />
-        <input value={airbnb} onChange={(e) => setAirbnb(e.target.value)} onBlur={() => airbnb !== (unit.airbnbUrl || '') && save({ airbnbUrl: airbnb })} placeholder="Link do Airbnb" style={inputStyle} />
+      <div className="grid gap-4 mb-5">
+        <div><label className={label}>Nome</label>
+          <input value={name} onChange={(e) => setName(e.target.value)} onBlur={() => name !== unit.unitName && save({ unitName: name })} className={`${field} font-display text-base`} /></div>
+        <div><label className={label}>Specs</label>
+          <input value={specs} onChange={(e) => setSpecs(e.target.value)} onBlur={() => specs !== (unit.suppliedSpecs || '') && save({ suppliedSpecs: specs })} placeholder="2BED 2BATH" className={field} /></div>
+        <div><label className={label}>Link do Airbnb</label>
+          <input value={airbnb} onChange={(e) => setAirbnb(e.target.value)} onBlur={() => airbnb !== (unit.airbnbUrl || '') && save({ airbnbUrl: airbnb })} className={field} /></div>
       </div>
 
-      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, alignItems: 'center' }}>
+      <label className={label}>Fotos</label>
+      <div className="flex flex-wrap gap-2 items-center">
         {unit.photos.map((p) => (
           <div key={p.id} style={{ display: 'contents' }}>
             <PhotoTile photo={p}
@@ -129,21 +169,152 @@ function UnitCard({ unit, api, onChanged }: { unit: Unit; api: ReturnType<typeof
             />
           </div>
         ))}
-        <button onClick={() => fileRef.current?.click()} style={{ width: 88, height: 88, borderRadius: 8, border: '1px dashed rgba(197,198,205,0.8)', background: '#faf7f2', cursor: 'pointer', color: '#8a8d93', fontSize: 12, flexShrink: 0 }}>+ Foto</button>
-        <input ref={fileRef} type="file" accept="image/*" style={{ display: 'none' }} onChange={(e) => { const f = e.target.files?.[0]; if (f) uploadPhoto(f); e.target.value = ''; }} />
+        <button onClick={() => fileRef.current?.click()} className="w-24 h-24 border border-dashed border-outline-variant/70 text-on-surface-variant/60 font-body text-[10px] uppercase tracking-widest hover:border-[#C5A059] hover:text-[#C5A059] transition-colors shrink-0">+ Foto</button>
+        <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={(e) => { const f = e.target.files?.[0]; if (f) uploadPhoto(f); e.target.value = ''; }} />
       </div>
+      <div className="mt-3 h-4"><Status s={status} /></div>
+    </div>
+  );
+}
 
-      <div style={{ marginTop: 8, height: 16, fontSize: 11, color: status === 'error' ? '#c0392b' : '#2e7d32' }}>
-        {status === 'saving' && '⟳ Salvando…'}{status === 'saved' && '✓ Salvo'}{status === 'error' && '⚠ Erro ao salvar'}
+// ── Images tab ──────────────────────────────────────────────────────
+function ImagesTab({ site, api, onChanged }: { site: SiteData; api: ReturnType<typeof useApi>; onChanged: () => void }) {
+  const [busy, setBusy] = useState<string | null>(null);
+  const refs = useRef<Record<string, HTMLInputElement | null>>({});
+
+  async function upload(slot: string, file: File) {
+    setBusy(slot);
+    const { base64, type } = await fileToBase64(file);
+    try { await api(`/admin/images/${slot}`, { method: 'POST', body: JSON.stringify({ dataBase64: base64, contentType: type }) }); onChanged(); }
+    finally { setBusy(null); }
+  }
+
+  return (
+    <div className="max-w-3xl">
+      <p className="font-body text-body-md text-on-surface-variant mb-8">Troque as imagens de capa das páginas. Sem uma imagem definida aqui, o site usa a imagem padrão.</p>
+      <div className="divide-y divide-outline-variant/30 border-y border-outline-variant/30">
+        {IMAGE_SLOTS.map((s) => {
+          const current = site.images[s.slot];
+          return (
+            <div key={s.slot} className="flex items-center gap-6 py-6">
+              <div className="w-40 h-24 bg-surface-container shrink-0 overflow-hidden border border-outline-variant/30 flex items-center justify-center">
+                {current ? <img src={current.url} alt="" className="w-full h-full object-cover" /> : <span className="font-body text-[10px] uppercase tracking-widest text-on-surface-variant/50">Padrão do site</span>}
+              </div>
+              <div className="flex-1">
+                <div className="font-body text-[10px] uppercase tracking-[0.15em] text-on-surface-variant/70">{s.page}</div>
+                <div className="font-display text-lg text-primary">{s.label}</div>
+              </div>
+              <div className="flex items-center gap-3">
+                <Btn gold onClick={() => refs.current[s.slot]?.click()} disabled={busy === s.slot}>{busy === s.slot ? 'Enviando…' : current ? 'Trocar' : 'Enviar'}</Btn>
+                {current && <Btn onClick={async () => { await api(`/admin/images/${s.slot}`, { method: 'DELETE' }); onChanged(); }}>Reverter</Btn>}
+                <input ref={(el) => { refs.current[s.slot] = el; }} type="file" accept="image/*" className="hidden" onChange={(e) => { const f = e.target.files?.[0]; if (f) upload(s.slot, f); e.target.value = ''; }} />
+              </div>
+            </div>
+          );
+        })}
       </div>
     </div>
   );
 }
 
-// ── Main admin page ─────────────────────────────────────────────────
+// ── Content tab ─────────────────────────────────────────────────────
+function ContentTab({ site, api, onChanged }: { site: SiteData; api: ReturnType<typeof useApi>; onChanged: () => void }) {
+  const save = useCallback((key: string, value: unknown) => api(`/admin/content/${key}`, { method: 'PUT', body: JSON.stringify({ value }) }).then(onChanged), [api, onChanged]);
+
+  function StringField({ k, title, textarea }: { k: string; title: string; textarea?: boolean }) {
+    const [v, setV] = useState(String(site.content[k] ?? ''));
+    const [s, setS] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
+    const commit = () => { if (v !== String(site.content[k] ?? '')) { setS('saving'); save(k, v).then(() => { setS('saved'); setTimeout(() => setS('idle'), 1500); }).catch(() => setS('error')); } };
+    return (
+      <div>
+        <div className="flex items-center justify-between"><label className={label}>{title}</label><Status s={s} /></div>
+        {textarea
+          ? <textarea value={v} onChange={(e) => setV(e.target.value)} onBlur={commit} rows={3} className={`${field} resize-none`} />
+          : <input value={v} onChange={(e) => setV(e.target.value)} onBlur={commit} className={field} />}
+      </div>
+    );
+  }
+
+  function ListEditor<T extends Record<string, string>>({ k, title, cols, blank }: { k: string; title: string; cols: { key: keyof T; label: string; wide?: boolean }[]; blank: T }) {
+    const [rows, setRows] = useState<T[]>(Array.isArray(site.content[k]) ? (site.content[k] as T[]) : []);
+    const [s, setS] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
+    const commit = (next: T[]) => { setRows(next); setS('saving'); save(k, next).then(() => { setS('saved'); setTimeout(() => setS('idle'), 1500); }).catch(() => setS('error')); };
+    return (
+      <div>
+        <div className="flex items-center justify-between mb-2"><label className={label}>{title}</label><Status s={s} /></div>
+        <div className="space-y-3">
+          {rows.map((row, i) => (
+            <div key={i} className="flex gap-3 items-end">
+              {cols.map((c) => (
+                <div key={String(c.key)} style={{ flex: c.wide ? 3 : 1 }}>
+                  <input value={row[c.key]} placeholder={c.label}
+                    onChange={(e) => setRows(rows.map((r, j) => j === i ? { ...r, [c.key]: e.target.value } : r))}
+                    onBlur={() => commit(rows)} className={field} />
+                </div>
+              ))}
+              <button onClick={() => commit(rows.filter((_, j) => j !== i))} className="text-on-surface-variant/50 hover:text-red-500 pb-1.5 text-sm">✕</button>
+            </div>
+          ))}
+          <button onClick={() => setRows([...rows, { ...blank }])} className="font-body text-[10px] uppercase tracking-[0.15em] text-[#C5A059] mt-1">+ Adicionar</button>
+        </div>
+      </div>
+    );
+  }
+
+  const Section = ({ title, children }: { title: string; children: ReactNode }) => (
+    <section className="mb-14">
+      <div className="flex items-center gap-4 mb-6">
+        <h2 className="font-display text-headline-md text-primary whitespace-nowrap">{title}</h2>
+        <div className="flex-1 h-px" style={{ background: `${GOLD}55` }} />
+      </div>
+      <div className="grid gap-6 max-w-2xl">{children}</div>
+    </section>
+  );
+
+  return (
+    <div className="max-w-3xl">
+      <Section title="Home">
+        <StringField k="home.hero.title" title="Título do hero" />
+        <StringField k="home.hero.subtitle" title="Subtítulo do hero" textarea />
+        <div className="grid grid-cols-2 gap-6">
+          <StringField k="home.hero.ctaLabel" title="Texto do botão" />
+          <StringField k="home.hero.ctaHref" title="Link do botão" />
+        </div>
+        <StringField k="home.map.title" title="Título da seção do mapa" />
+        <ListEditor k="home.stats" title="Números / estatísticas" blank={{ value: '', label: '' }} cols={[{ key: 'value', label: 'Ex.: 30+' }, { key: 'label', label: 'Rótulo', wide: true }]} />
+        <ListEditor k="home.testimonials" title="Depoimentos" blank={{ text: '', name: '', property: '' }} cols={[{ key: 'text', label: 'Depoimento', wide: true }, { key: 'name', label: 'Nome' }, { key: 'property', label: 'Propriedade' }]} />
+      </Section>
+
+      <Section title="Contato">
+        <StringField k="contact.email" title="E-mail" />
+        <StringField k="contact.phone" title="Telefone / WhatsApp" />
+        <StringField k="contact.address" title="Endereço" textarea />
+        <StringField k="contact.intro" title="Texto de introdução" textarea />
+      </Section>
+
+      <Section title="Rodapé">
+        <ListEditor k="footer.links" title="Links do rodapé" blank={{ label: '', href: '' }} cols={[{ key: 'label', label: 'Texto' }, { key: 'href', label: 'Link (URL)', wide: true }]} />
+      </Section>
+
+      <Section title="Páginas de Serviço & Sobre">
+        <StringField k="design.hero.title" title="Design — título" />
+        <StringField k="design.hero.paragraph" title="Design — parágrafo" textarea />
+        <StringField k="management.hero.title" title="Management — título" />
+        <StringField k="management.hero.paragraph" title="Management — parágrafo" textarea />
+        <StringField k="about.hero.title" title="About — título" />
+      </Section>
+    </div>
+  );
+}
+
+// ── Main ────────────────────────────────────────────────────────────
+type Tab = 'apartments' | 'images' | 'content';
+
 export default function Admin() {
   const [token, setToken] = useState<string | null>(() => localStorage.getItem(TOKEN_KEY));
+  const [tab, setTab] = useState<Tab>('apartments');
   const [units, setUnits] = useState<Unit[]>([]);
+  const [site, setSite] = useState<SiteData>({ content: {}, images: {} });
   const [loading, setLoading] = useState(false);
   const [query, setQuery] = useState('');
 
@@ -152,14 +323,15 @@ export default function Admin() {
 
   const load = useCallback(async () => {
     setLoading(true);
-    try { const data = await api('/admin/units'); setUnits(data.units); } catch { /* handled */ } finally { setLoading(false); }
+    try {
+      const [u, s] = await Promise.all([api('/admin/units'), api('/admin/site')]);
+      setUnits(u.units); setSite(s);
+    } catch { /* handled */ } finally { setLoading(false); }
   }, [api]);
 
   useEffect(() => { if (token) load(); }, [token, load]);
 
-  function handleLogin(t: string) { localStorage.setItem(TOKEN_KEY, t); setToken(t); }
-
-  if (!token) return <Login onLogin={handleLogin} />;
+  if (!token) return <Login onLogin={(t) => { localStorage.setItem(TOKEN_KEY, t); setToken(t); }} />;
 
   const filtered = units.filter((u) => {
     const q = query.toLowerCase();
@@ -169,40 +341,67 @@ export default function Admin() {
   filtered.forEach((u) => { (groups[u.propertyName] ||= []).push(u); });
   const visibleCount = units.filter((u) => u.visible).length;
 
+  const tabs: { id: Tab; label: string }[] = [
+    { id: 'apartments', label: 'Apartamentos' },
+    { id: 'images', label: 'Imagens' },
+    { id: 'content', label: 'Conteúdo' },
+  ];
+
   return (
-    <div style={{ minHeight: '100vh', background: '#f4f0ea', fontFamily: 'sans-serif' }}>
-      <header style={{ position: 'sticky', top: 0, zIndex: 10, background: '#1c1c18', color: '#fff', padding: '14px 24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-        <div style={{ display: 'flex', alignItems: 'baseline', gap: 12 }}>
-          <span style={{ fontSize: 20, fontWeight: 700 }}>MCRh</span>
-          <span style={{ fontSize: 12, color: '#c5c6cd', letterSpacing: '0.08em', textTransform: 'uppercase' }}>Apartamentos</span>
+    <div className="min-h-screen bg-surface">
+      {/* Header */}
+      <header className="sticky top-0 z-20 text-white" style={{ background: NAVY, borderBottom: `1px solid ${GOLD}66` }}>
+        <div className="max-w-[1280px] mx-auto px-6 md:px-10 flex items-center justify-between h-16">
+          <div className="flex items-center gap-8">
+            <span className="font-display text-2xl tracking-tight">MCRh</span>
+            <nav className="hidden md:flex gap-6">
+              {tabs.map((t) => (
+                <button key={t.id} onClick={() => setTab(t.id)}
+                  className="font-body text-[11px] uppercase tracking-[0.15em] py-1 transition-colors"
+                  style={{ color: tab === t.id ? GOLD : 'rgba(255,255,255,0.6)', borderBottom: tab === t.id ? `1px solid ${GOLD}` : '1px solid transparent' }}>
+                  {t.label}
+                </button>
+              ))}
+            </nav>
+          </div>
+          <div className="flex items-center gap-5">
+            <span className="font-body text-[10px] uppercase tracking-[0.12em] text-white/40">{visibleCount}/{units.length} visíveis</span>
+            <button onClick={logout} className="font-body text-[10px] uppercase tracking-[0.15em] text-white/70 border border-white/25 px-4 py-1.5 hover:bg-white/10 transition-colors">Sair</button>
+          </div>
         </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
-          <span style={{ fontSize: 12, color: '#c5c6cd' }}>{visibleCount}/{units.length} visíveis</span>
-          <button onClick={logout} style={{ background: 'none', border: '1px solid rgba(255,255,255,0.3)', color: '#fff', padding: '6px 14px', borderRadius: 6, cursor: 'pointer', fontSize: 12 }}>Sair</button>
-        </div>
+        {/* Mobile tabs */}
+        <nav className="md:hidden flex gap-5 px-6 pb-3">
+          {tabs.map((t) => (
+            <button key={t.id} onClick={() => setTab(t.id)} className="font-body text-[11px] uppercase tracking-[0.12em]" style={{ color: tab === t.id ? GOLD : 'rgba(255,255,255,0.6)' }}>{t.label}</button>
+          ))}
+        </nav>
       </header>
 
-      <div style={{ maxWidth: 1100, margin: '0 auto', padding: '24px 20px 80px' }}>
-        <input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Buscar apartamento ou prédio…"
-          style={{ width: '100%', maxWidth: 360, padding: '10px 14px', border: '1px solid rgba(197,198,205,0.6)', borderRadius: 8, fontSize: 14, marginBottom: 24, boxSizing: 'border-box' }} />
+      <main className="max-w-[1280px] mx-auto px-6 md:px-10 py-10">
+        {loading && <p className="font-body text-on-surface-variant">Carregando…</p>}
 
-        {loading && <p style={{ color: '#44474c' }}>Carregando…</p>}
+        {tab === 'apartments' && !loading && (
+          <>
+            <input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Buscar apartamento ou prédio…" className={`${field} max-w-sm mb-10`} />
+            {Object.entries(groups).map(([propertyName, groupUnits]) => (
+              <div key={propertyName} className="mb-12">
+                <div className="flex items-center gap-4 mb-5">
+                  <h2 className="font-display text-headline-md text-primary whitespace-nowrap">{propertyName}</h2>
+                  <div className="flex-1 h-px" style={{ background: `${GOLD}55` }} />
+                  <span className="font-body text-[10px] uppercase tracking-widest text-on-surface-variant/60">{groupUnits.length} apê(s)</span>
+                </div>
+                <div className="grid gap-5" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))' }}>
+                  {groupUnits.map((u) => <div key={u.unitSlug} style={{ display: 'contents' }}><UnitCard unit={u} api={api} onChanged={load} /></div>)}
+                </div>
+              </div>
+            ))}
+            {filtered.length === 0 && <p className="font-body text-on-surface-variant/60">Nenhum apartamento encontrado.</p>}
+          </>
+        )}
 
-        {Object.entries(groups).map(([propertyName, groupUnits]) => (
-          <div key={propertyName} style={{ marginBottom: 36 }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 14, marginBottom: 14 }}>
-              <h2 style={{ fontSize: 13, fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', color: '#1c1c18', margin: 0, whiteSpace: 'nowrap' }}>{propertyName}</h2>
-              <div style={{ flex: 1, height: 1, background: 'rgba(197,198,205,0.6)' }} />
-              <span style={{ fontSize: 11, color: '#8a8d93' }}>{groupUnits.length} apê(s)</span>
-            </div>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: 16 }}>
-              {groupUnits.map((u) => <div key={u.unitSlug} style={{ display: 'contents' }}><UnitCard unit={u} api={api} onChanged={load} /></div>)}
-            </div>
-          </div>
-        ))}
-
-        {!loading && filtered.length === 0 && <p style={{ color: '#8a8d93' }}>Nenhum apartamento encontrado.</p>}
-      </div>
+        {tab === 'images' && !loading && <ImagesTab site={site} api={api} onChanged={load} />}
+        {tab === 'content' && !loading && <ContentTab site={site} api={api} onChanged={load} />}
+      </main>
     </div>
   );
 }

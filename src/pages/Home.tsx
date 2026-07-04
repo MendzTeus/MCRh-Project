@@ -7,8 +7,10 @@ import MediaImage from '../components/MediaImage';
 import PropertyFeatureSection from '../components/PropertyFeatureSection';
 import { locationAreas, mapLocations, type LocationArea } from '../data/locations';
 import { useClickOutside } from '../hooks/useClickOutside';
+import { useSiteContent, text, list } from '../hooks/useSiteContent';
 
 export default function Home() {
+  const site = useSiteContent();
   const [filtersOpen, setFiltersOpen] = useState(false);
   const filterRef = useRef<HTMLDivElement>(null);
   useClickOutside(filterRef, () => setFiltersOpen(false), filtersOpen);
@@ -34,17 +36,19 @@ export default function Home() {
       {/* Hero Section */}
       <section className="relative h-[90vh] min-h-[600px] w-full overflow-hidden flex items-end">
         <div className="absolute inset-0 z-0 bg-surface-dim">
-           <MediaImage propertySlug="chambers" alt="MCRh Manchester apartment interior" loading="eager" />
+           {site.images['home.hero']
+             ? <img src={site.images['home.hero'].url} alt={site.images['home.hero'].alt || 'MCRh Manchester apartment interior'} className="w-full h-full object-cover" />
+             : <MediaImage propertySlug="chambers" alt="MCRh Manchester apartment interior" loading="eager" />}
           <div className="absolute inset-0 bg-gradient-to-t from-primary/90 via-primary/40 to-primary/10"></div>
         </div>
         <div className="relative z-10 w-full px-margin-mobile md:px-margin-desktop pb-12 md:pb-24 max-w-[1280px] mx-auto flex flex-col md:flex-row justify-between items-end gap-8">
           <div className="max-w-3xl text-white">
-            <h1 className="font-display text-display-lg-mobile md:text-display-lg text-white mb-6 leading-[1.1]">Experts In Short-Term Lettings</h1>
-            <p className="font-body text-body-lg text-white/90 max-w-lg text-lg">The first choice for property rentals & hosting in Manchester.</p>
+            <h1 className="font-display text-display-lg-mobile md:text-display-lg text-white mb-6 leading-[1.1]">{text(site.content, 'home.hero.title', 'Experts In Short-Term Lettings')}</h1>
+            <p className="font-body text-body-lg text-white/90 max-w-lg text-lg">{text(site.content, 'home.hero.subtitle', 'The first choice for property rentals & hosting in Manchester.')}</p>
           </div>
           <div className="pb-2 w-full md:w-auto">
-            <Link to="/properties" className="w-full md:w-auto inline-flex items-center justify-center border border-white text-white px-8 py-4 font-body text-label-caps tracking-widest uppercase hover:bg-white hover:text-primary transition-colors duration-300">
-              EXPLORE PROPERTIES
+            <Link to={text(site.content, 'home.hero.ctaHref', '/properties')} className="w-full md:w-auto inline-flex items-center justify-center border border-white text-white px-8 py-4 font-body text-label-caps tracking-widest uppercase hover:bg-white hover:text-primary transition-colors duration-300">
+              {text(site.content, 'home.hero.ctaLabel', 'Explore Properties')}
             </Link>
           </div>
         </div>
@@ -197,12 +201,12 @@ export default function Home() {
       {/* Stats / Numbers Section */}
       <section className="py-section-gap bg-primary border-t border-white/10">
         <div className="max-w-[1280px] mx-auto px-margin-mobile md:px-margin-desktop grid grid-cols-2 md:grid-cols-4 gap-12 md:gap-0 divide-y-2 md:divide-y-0 md:divide-x divide-white/10">
-          {[
+          {list<{ value: string; label: string }>(site.content, 'home.stats', [
             { value: '30+', label: 'Properties' },
             { value: '500+', label: 'Guest Reviews' },
             { value: '100%', label: '5-Star Stays' },
             { value: '7', label: 'Neighbourhoods' },
-          ].map(({ value, label }) => (
+          ]).map(({ value, label }) => (
             <div key={label} className="flex flex-col items-center text-center py-6 md:py-0 px-4">
               <span className="font-display text-5xl md:text-6xl text-white mb-3 leading-none">{value}</span>
               <span className="font-body text-label-caps text-white/50 tracking-widest uppercase text-xs">{label}</span>
@@ -219,38 +223,20 @@ export default function Home() {
             <h2 className="font-display text-headline-md text-primary">Guest Experiences</h2>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-16 md:gap-12 lg:gap-24">
-            <div className="flex flex-col items-center text-center">
-              <Quote className="w-10 h-10 text-outline-variant mb-8 opacity-40 shrink-0" />
-              <p className="font-display text-xl md:text-2xl leading-relaxed text-primary mb-12 grow">
-                "An absolute masterclass in luxury hosting. Every detail of the apartment was thoughtfully curated, from the linens to the local guide provided."
-              </p>
-              <div className="flex flex-col items-center border-t border-outline-variant/30 pt-8 mt-auto w-24">
-                <p className="font-body text-label-caps tracking-widest text-primary uppercase mb-2 whitespace-nowrap">Emma T.</p>
-                <p className="font-body text-sm text-on-surface-variant whitespace-nowrap">Chambers Residence</p>
+            {list<{ text: string; name: string; property: string }>(site.content, 'home.testimonials', [
+              { text: 'An absolute masterclass in luxury hosting. Every detail of the apartment was thoughtfully curated, from the linens to the local guide provided.', name: 'Emma T.', property: 'Chambers Residence' },
+              { text: 'The perfect urban sanctuary. I travel often for work and this felt more like a boutique hotel than a rental. Exceptionally clean and beautifully designed.', name: 'James H.', property: 'John Dalton Street' },
+              { text: 'We loved our stay in Ancoats. The team at MCRh made checking in seamless, and the property exceeded all expectations. Highly recommended.', name: 'Sarah M.', property: 'Ancoats Retreat' },
+            ]).map((t, i) => (
+              <div key={i} className="flex flex-col items-center text-center">
+                <Quote className="w-10 h-10 text-outline-variant mb-8 opacity-40 shrink-0" />
+                <p className="font-display text-xl md:text-2xl leading-relaxed text-primary mb-12 grow">"{t.text}"</p>
+                <div className="flex flex-col items-center border-t border-outline-variant/30 pt-8 mt-auto w-24">
+                  <p className="font-body text-label-caps tracking-widest text-primary uppercase mb-2 whitespace-nowrap">{t.name}</p>
+                  <p className="font-body text-sm text-on-surface-variant whitespace-nowrap">{t.property}</p>
+                </div>
               </div>
-            </div>
-
-            <div className="flex flex-col items-center text-center">
-              <Quote className="w-10 h-10 text-outline-variant mb-8 opacity-40 shrink-0" />
-              <p className="font-display text-xl md:text-2xl leading-relaxed text-primary mb-12 grow">
-                "The perfect urban sanctuary. I travel often for work and this felt more like a boutique hotel than a rental. Exceptionally clean and beautifully designed."
-              </p>
-              <div className="flex flex-col items-center border-t border-outline-variant/30 pt-8 mt-auto w-24">
-                <p className="font-body text-label-caps tracking-widest text-primary uppercase mb-2 whitespace-nowrap">James H.</p>
-                <p className="font-body text-sm text-on-surface-variant whitespace-nowrap">John Dalton Street</p>
-              </div>
-            </div>
-
-            <div className="flex flex-col items-center text-center">
-              <Quote className="w-10 h-10 text-outline-variant mb-8 opacity-40 shrink-0" />
-              <p className="font-display text-xl md:text-2xl leading-relaxed text-primary mb-12 grow">
-                "We loved our stay in Ancoats. The team at MCRh made checking in seamless, and the property exceeded all expectations. Highly recommended."
-              </p>
-              <div className="flex flex-col items-center border-t border-outline-variant/30 pt-8 mt-auto w-24">
-                <p className="font-body text-label-caps tracking-widest text-primary uppercase mb-2 whitespace-nowrap">Sarah M.</p>
-                <p className="font-body text-sm text-on-surface-variant whitespace-nowrap">Ancoats Retreat</p>
-              </div>
-            </div>
+            ))}
           </div>
         </div>
       </section>
