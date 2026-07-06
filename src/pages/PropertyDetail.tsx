@@ -14,6 +14,20 @@ import { useClickOutside } from '../hooks/useClickOutside';
 import { useUnitBlockedDates } from '../hooks/useUnitBlockedDates';
 import { useSiteContent, text } from '../hooks/useSiteContent';
 
+// Append/update query params on a saved listing URL, preserving any existing ones
+// (e.g. ?source=…). Returns the base untouched if it isn't a valid absolute URL.
+function withBookingParams(base: string, params: Record<string, string | number>): string {
+  try {
+    const url = new URL(base);
+    for (const [key, value] of Object.entries(params)) {
+      if (value !== '' && value != null) url.searchParams.set(key, String(value));
+    }
+    return url.toString();
+  } catch {
+    return base;
+  }
+}
+
 export default function PropertyDetail() {
   const { propertySlug, id } = useParams();
   const routedProperty = getPropertyBySlug(propertySlug);
@@ -82,6 +96,17 @@ export default function PropertyDetail() {
     : `Olá! Gostaria de saber mais sobre o apartamento ${unit.title}.`;
   const whatsappHref = `https://wa.me/${whatsappNumber}?text=${encodeURIComponent(enquiryText)}`;
   const emailHref = `mailto:${contactEmail}?subject=${encodeURIComponent(`Reserva - ${unit.title}`)}&body=${encodeURIComponent(enquiryText)}`;
+
+  // Booking deep-links carrying the selected dates + guests. Airbnb prefers the
+  // resolved rooms/<id> URL (query params survive there; /h/ short links can drop
+  // them on redirect). When no dates are selected yet, the links stay pure.
+  const airbnbBase = listingMedia?.finalUrl || airbnbUrl;
+  const airbnbHref = airbnbBase
+    ? withBookingParams(airbnbBase, hasDates ? { check_in: checkIn, check_out: checkOut, adults: guests } : {})
+    : undefined;
+  const vrboHref = vrboUrl
+    ? withBookingParams(vrboUrl, hasDates ? { startDate: checkIn, endDate: checkOut, adults: guests } : {})
+    : undefined;
 
   // Per-unit specs from the Airbnb scrape, falling back to the property's own
   // figures when a listing didn't scrape (e.g. Crusader's intermittently blocked page).
@@ -220,7 +245,7 @@ export default function PropertyDetail() {
               <div>
                 <button
                   type="button"
-                  onClick={() => { if (airbnbUrl) window.open(airbnbUrl, '_blank', 'noopener,noreferrer'); }}
+                  onClick={() => { if (airbnbHref) window.open(airbnbHref, '_blank', 'noopener,noreferrer'); }}
                   className="w-full py-4 bg-primary text-on-primary font-body text-label-caps tracking-widest hover:opacity-90 transition-opacity uppercase rounded"
                 >
                   Book on Airbnb
@@ -232,7 +257,7 @@ export default function PropertyDetail() {
                 <div>
                   <button
                     type="button"
-                    onClick={() => window.open(vrboUrl, '_blank', 'noopener,noreferrer')}
+                    onClick={() => { if (vrboHref) window.open(vrboHref, '_blank', 'noopener,noreferrer'); }}
                     className="w-full py-4 border border-primary bg-surface text-primary font-body text-label-caps tracking-widest hover:bg-surface-dim transition-colors uppercase rounded"
                   >
                     Book on VRBO
