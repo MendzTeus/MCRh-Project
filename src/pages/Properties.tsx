@@ -4,7 +4,7 @@ import { Helmet } from 'react-helmet-async';
 import { useState, useRef, useEffect, useMemo } from 'react';
 import { Calendar, User, SlidersHorizontal, ArrowUpDown, Heart, Bed, Bath, Plus, Minus, X } from 'lucide-react';
 import { mapLocations } from '../data/locations';
-import { airbnbInventory, type AirbnbInventoryUnit } from '../data/airbnbInventory';
+import { airbnbInventory, inventoryRegions, getRegionForProperty, type AirbnbInventoryUnit } from '../data/airbnbInventory';
 import { getListingMedia, getPropertyMedia } from '../data/listingMedia';
 import { usePublicUnits } from '../hooks/usePublicUnits';
 import DateRangePicker from '../components/DateRangePicker';
@@ -105,7 +105,7 @@ function PropertiesMap({
   }, [focusedPropertySlug]);
 
   return (
-    <div style={{ position: 'relative', width: '100%', height: '100%' }}>
+    <div style={{ position: 'relative', width: '100%', height: '100%', isolation: 'isolate' }}>
       <div style={{ position: 'absolute', top: 16, right: 16, zIndex: 500, display: 'flex', flexDirection: 'column', gap: 6 }}>
         <button onClick={() => mapRef.current?.zoomIn()} style={{ width: 36, height: 36, background: 'rgba(255,255,255,0.9)', border: '1px solid rgba(197,198,205,0.3)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}><Plus style={{ width: 16, height: 16 }} /></button>
         <button onClick={() => mapRef.current?.zoomOut()} style={{ width: 36, height: 36, background: 'rgba(255,255,255,0.9)', border: '1px solid rgba(197,198,205,0.3)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}><Minus style={{ width: 16, height: 16 }} /></button>
@@ -151,6 +151,7 @@ export default function Properties() {
   const [sortOpen, setSortOpen] = useState(false);
   const [filterOpen, setFilterOpen] = useState(false);
   const [filterMinBeds, setFilterMinBeds] = useState(0);
+  const [filterRegion, setFilterRegion] = useState<string | null>(null);
   const [filterAvailOnly, setFilterAvailOnly] = useState(false);
 
   // Refs for scrolling to groups from map click
@@ -205,7 +206,9 @@ export default function Properties() {
 
   // Apply filter then sort
   const displayedGroups = useMemo(() => {
-    let groups = overlaidGroups.map((g) => ({
+    let groups = overlaidGroups
+      .filter((g) => !filterRegion || getRegionForProperty(g.propertySlug) === filterRegion)
+      .map((g) => ({
       ...g,
       units: g.units.filter((unit) => {
         const { beds } = specsToNumbers(unit.suppliedSpecs);
@@ -231,10 +234,10 @@ export default function Properties() {
       });
     }
     return groups;
-  }, [overlaidGroups, sortBy, filterMinBeds, filterAvailOnly, availability]);
+  }, [overlaidGroups, sortBy, filterMinBeds, filterRegion, filterAvailOnly, availability]);
 
   const totalDisplayed = displayedGroups.reduce((sum, g) => sum + g.units.length, 0);
-  const hasActiveFilters = filterMinBeds > 0 || filterAvailOnly;
+  const hasActiveFilters = filterMinBeds > 0 || filterRegion !== null || filterAvailOnly;
   const sortLabel = SORT_OPTIONS.find((o) => o.value === sortBy)?.label ?? 'Sort';
 
   return (
@@ -326,7 +329,7 @@ export default function Properties() {
                     <SlidersHorizontal style={{ width: 14, height: 14 }} />
                     Filters
                     {hasActiveFilters && (
-                      <span onClick={(e) => { e.stopPropagation(); setFilterMinBeds(0); setFilterAvailOnly(false); }} style={{ marginLeft: 4, opacity: 0.7 }}>×</span>
+                      <span onClick={(e) => { e.stopPropagation(); setFilterMinBeds(0); setFilterRegion(null); setFilterAvailOnly(false); }} style={{ marginLeft: 4, opacity: 0.7 }}>×</span>
                     )}
                   </button>
                   {filterOpen && (
@@ -346,6 +349,25 @@ export default function Properties() {
                           ))}
                         </div>
                       </div>
+                      <div style={{ marginBottom: 16 }}>
+                        <p className="font-body text-xs text-on-surface-variant" style={{ marginBottom: 8, letterSpacing: '0.1em', textTransform: 'uppercase', fontWeight: 600 }}>Location</p>
+                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+                          {[null, ...inventoryRegions].map((region) => {
+                            const active = filterRegion === region;
+                            const label = region ?? 'Any';
+                            return (
+                              <button
+                                key={label}
+                                onClick={() => setFilterRegion(region)}
+                                className="font-body text-sm"
+                                style={{ padding: '6px 12px', borderRadius: 999, border: `1px solid ${active ? '#1c1c18' : 'rgba(197,198,205,0.5)'}`, background: active ? '#1c1c18' : 'transparent', color: active ? '#fff' : '#1c1c18', cursor: 'pointer', fontWeight: 500 }}
+                              >
+                                {label}
+                              </button>
+                            );
+                          })}
+                        </div>
+                      </div>
                       {availability && (
                         <div>
                           <button
@@ -361,7 +383,7 @@ export default function Properties() {
                         </div>
                       )}
                       <button
-                        onClick={() => { setFilterMinBeds(0); setFilterAvailOnly(false); setFilterOpen(false); }}
+                        onClick={() => { setFilterMinBeds(0); setFilterRegion(null); setFilterAvailOnly(false); setFilterOpen(false); }}
                         className="font-body text-xs"
                         style={{ marginTop: 16, width: '100%', padding: '8px 0', border: '1px solid rgba(197,198,205,0.4)', borderRadius: 6, background: 'transparent', cursor: 'pointer', color: '#44474c' }}
                       >
@@ -396,7 +418,7 @@ export default function Properties() {
             {displayedGroups.length === 0 && (
               <div style={{ padding: '48px 0', textAlign: 'center', color: '#44474c' }}>
                 <p className="font-body text-sm">No apartments match your filters.</p>
-                <button onClick={() => { setFilterMinBeds(0); setFilterAvailOnly(false); }} className="font-body text-sm" style={{ marginTop: 12, textDecoration: 'underline', background: 'none', border: 'none', cursor: 'pointer', color: '#1c1c18' }}>Clear filters</button>
+                <button onClick={() => { setFilterMinBeds(0); setFilterRegion(null); setFilterAvailOnly(false); }} className="font-body text-sm" style={{ marginTop: 12, textDecoration: 'underline', background: 'none', border: 'none', cursor: 'pointer', color: '#1c1c18' }}>Clear filters</button>
               </div>
             )}
             {displayedGroups.map((group) => (

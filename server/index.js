@@ -1,4 +1,8 @@
+require('dotenv').config({ path: require('path').join(__dirname, '..', '.env') });
+
 const express = require('express');
+const path = require('path');
+const fs = require('fs');
 const { supabase } = require('./db');
 const { syncAll, syncUnit, loadPropertyIds } = require('./sync');
 const adminRouter = require('./admin');
@@ -139,8 +143,60 @@ app.get('/api/availability/units', async (req, res) => {
   res.json({ units, configured: true });
 });
 
+// iCal all-day dates are stored as instants (e.g. a London midnight becomes the
+// previous day's 23:00 UTC in summer). Format them back to the property's local
+// calendar date (Europe/London) so the calendar greys out the exact booked days
+// rather than being shifted a day. `end` stays exclusive (checkout day bookable).
+const londonDateFormatter = new Intl.DateTimeFormat('en-CA', { timeZone: 'Europe/London' });
+function toLondonDate(ts) {
+  const hasTz = /(Z|[+-]\d{2}:?\d{2})$/.test(ts);
+  return londonDateFormatter.format(new Date(hasTz ? ts : `${ts}Z`));
+}
+
+// GET /api/availability/calendar?unitSlug=chambers-9-1
+// Returns the blocked date ranges (from synced iCal) for one unit, so the
+// booking calendar can grey out dates that are already reserved.
+app.get('/api/availability/calendar', async (req, res) => {
+  const { unitSlug } = req.query;
+  if (!unitSlug) return res.status(400).json({ error: 'unitSlug required' });
+
+  const nowIso = new Date().toISOString();
+
+  const { data: blocked, error } = await supabase
+    .from('BlockedDate')
+    .select('start, end')
+    .eq('unitSlug', unitSlug)
+    .gt('end', nowIso)
+    .order('start');
+
+  if (error) return res.status(500).json({ error: error.message });
+
+  // configured = the unit exists and has at least one iCal feed wired up.
+  const { data: unit } = await supabase
+    .from('Unit')
+    .select('icalAirbnbUrl, icalVrboUrl')
+    .eq('unitSlug', unitSlug)
+    .maybeSingle();
+  const configured = Boolean(unit && (unit.icalAirbnbUrl || unit.icalVrboUrl));
+
+  res.json({
+    unitSlug,
+    configured,
+    blocked: (blocked || []).map((b) => ({ start: toLondonDate(b.start), end: toLondonDate(b.end) })),
+  });
+});
+
 // Health check
 app.get('/api/health', (_, res) => res.json({ ok: true }));
+
+// Serve the built React SPA — must come after all /api routes
+const distDir = path.join(__dirname, '..', 'dist');
+if (fs.existsSync(distDir)) {
+  app.use(express.static(distDir));
+  app.get('*', (req, res) => {
+    res.sendFile(path.join(distDir, 'index.html'));
+  });
+}
 
 const PORT = process.env.API_PORT || 3001;
 boot()

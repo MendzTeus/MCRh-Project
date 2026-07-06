@@ -14,8 +14,29 @@ type ExtractedListing = {
 
 const listings = (extractedListings.results || []) as ExtractedListing[];
 
+// Airbnb serves the same photo under several URLs that differ only by size/query
+// params (e.g. `...c80.jpg?im_w=720` vs `...c80.jpg`). Keying on the origin+path
+// collapses those to a single logical image so galleries don't repeat a photo.
+function imageIdentity(url: string) {
+  try {
+    const parsed = new URL(url);
+    return `${parsed.origin}${parsed.pathname}`;
+  } catch {
+    return url.split('?')[0];
+  }
+}
+
 function uniqueImages(images: (string | null | undefined)[]) {
-  return [...new Set(images.filter(Boolean) as string[])];
+  const seen = new Set<string>();
+  const result: string[] = [];
+  for (const image of images) {
+    if (!image) continue;
+    const key = imageIdentity(image);
+    if (seen.has(key)) continue;
+    seen.add(key);
+    result.push(image);
+  }
+  return result;
 }
 
 export function getListingMedia(unitSlug?: string) {
@@ -52,7 +73,12 @@ export function getPropertyMedia(propertySlug?: string) {
 
 export function getPropertyImage(propertySlug?: string, index = 0) {
   const media = getPropertyMedia(propertySlug);
-  return media.gallery[index] || media.heroImage;
+  const property = getPropertyBySlug(propertySlug);
+  // Combine the scraped gallery with the property's static gallery so callers that
+  // ask for distinct indices (e.g. the overlapping stack/grid feature cards) always
+  // get different photos instead of the hero image repeated.
+  const combined = uniqueImages([...media.gallery, ...(property?.gallery || []), property?.imageSrc]);
+  return combined[index] || combined[combined.length - 1] || media.heroImage;
 }
 
 export function getUnitGallery(unitSlug?: string, propertySlug?: string) {

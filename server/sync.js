@@ -1,6 +1,24 @@
 const ical = require('node-ical');
 const { supabase } = require('./db');
 
+const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
+// Fetch + parse an iCal feed, retrying transient failures. Airbnb intermittently
+// drops individual feed requests (throttle / timeout), so one retry with a short
+// backoff recovers most of them within the same run.
+async function fetchIcal(url, attempts = 3) {
+  let lastErr;
+  for (let attempt = 1; attempt <= attempts; attempt++) {
+    try {
+      return await ical.async.fromURL(url);
+    } catch (err) {
+      lastErr = err;
+      if (attempt < attempts) await sleep(2000 * attempt);
+    }
+  }
+  throw lastErr;
+}
+
 // Map propertySlug → Property.id (cached at startup)
 let propertyIdCache = {};
 
@@ -23,7 +41,7 @@ async function syncUnit(unit) {
 
   for (const url of urls) {
     try {
-      const events = await ical.async.fromURL(url);
+      const events = await fetchIcal(url);
       anyFetchOk = true;
       for (const ev of Object.values(events)) {
         if (ev.type !== 'VEVENT') continue;
@@ -76,11 +94,19 @@ async function syncUnit(unit) {
   return { unit: unit.unitSlug, events: blocked.length };
 }
 
-async function syncAll() {
+async function syncAll({ delayMs = 1500 } = {}) {
   await loadPropertyIds();
   const { data: units, error } = await supabase.from('Unit').select('*');
   if (error || !units?.length) return [];
-  return Promise.all(units.map(syncUnit));
+  // Sync one unit at a time with a small gap between them. Firing all feeds at
+  // once (Promise.all) makes Airbnb rate-limit and drop some fetches; spacing
+  // them out keeps every calendar reliable even on a tight (10-min) schedule.
+  const results = [];
+  for (const unit of units) {
+    results.push(await syncUnit(unit));
+    await sleep(delayMs);
+  }
+  return results;
 }
 
 module.exports = { syncAll, syncUnit, loadPropertyIds };

@@ -5,7 +5,7 @@ import { Link } from 'react-router-dom';
 import { Helmet } from 'react-helmet-async';
 import MediaImage from '../components/MediaImage';
 import PropertyFeatureSection from '../components/PropertyFeatureSection';
-import { locationAreas, mapLocations, type LocationArea } from '../data/locations';
+import { locationAreas, mapLocations, getLocationGroups, groupLocationsByRegion, type LocationArea } from '../data/locations';
 import { useClickOutside } from '../hooks/useClickOutside';
 import { useSiteContent, text, list } from '../hooks/useSiteContent';
 
@@ -20,6 +20,9 @@ export default function Home() {
     () => mapLocations.filter((location) => selectedArea === 'all' || location.areaId === selectedArea),
     [selectedArea],
   );
+  // Cards are grouped by region/building; the map shows one pin per group.
+  const visibleGroups = useMemo(() => getLocationGroups(visibleLocations), [visibleLocations]);
+  const groupedMapLocations = useMemo(() => groupLocationsByRegion(visibleLocations), [visibleLocations]);
 
   return (
     <div className="animate-in fade-in duration-500">
@@ -166,33 +169,44 @@ export default function Home() {
               </div>
             </div>
             
-            <div className="overflow-y-auto pr-4 pb-4 space-y-6 flex-1 scrollbar-hide">
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-                {visibleLocations.map((location) => (
-                  <Link
-                    to={`/collection/${location.collectionSlug}`}
-                    key={location.id}
-                    onClick={() => setSelectedLocationId(location.id)}
-                    className={`bg-surface-container-lowest rounded-xl overflow-hidden shadow-sm border group cursor-pointer hover:border-primary transition-all duration-300 text-left ${
-                      selectedLocationId === location.id ? 'border-primary' : 'border-outline-variant/30'
-                    }`}
-                  >
-                    <div className="aspect-[4/3] bg-surface-dim relative">
-                       <MediaImage propertySlug={location.propertySlug} alt={`${location.name} apartment`} />
-                    </div>
-                    <div className="p-6">
-                      <h3 className="font-display text-lg mb-1 text-primary">{location.name}</h3>
-                      <p className="font-body text-sm text-on-surface-variant">{location.area} - {location.postcode}</p>
-                    </div>
-                  </Link>
-                ))}
-              </div>
+            <div className="overflow-y-auto pr-4 pb-4 space-y-10 flex-1 scrollbar-hide">
+              {visibleGroups.map((group) => (
+                <div key={group.id} className="space-y-4">
+                  <div className="flex items-center gap-4">
+                    <h3 className="font-body text-label-caps text-primary tracking-widest uppercase text-xs whitespace-nowrap">{group.label}</h3>
+                    <div className="flex-1 h-px bg-outline-variant/40" />
+                    <span className="font-body text-[10px] text-on-surface-variant/60 tracking-widest uppercase whitespace-nowrap">
+                      {group.locations.length} {group.locations.length === 1 ? 'Residence' : 'Residences'}
+                    </span>
+                  </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                    {group.locations.map((location) => (
+                      <Link
+                        to={`/collection/${location.collectionSlug}`}
+                        key={location.id}
+                        onClick={() => setSelectedLocationId(location.id)}
+                        className={`bg-surface-container-lowest rounded-xl overflow-hidden shadow-sm border group cursor-pointer hover:border-primary transition-all duration-300 text-left ${
+                          selectedLocationId === location.id ? 'border-primary' : 'border-outline-variant/30'
+                        }`}
+                      >
+                        <div className="aspect-[4/3] bg-surface-dim relative">
+                           <MediaImage propertySlug={location.propertySlug} alt={`${location.name} apartment`} />
+                        </div>
+                        <div className="p-6">
+                          <h3 className="font-display text-lg mb-1 text-primary">{location.name}</h3>
+                          <p className="font-body text-sm text-on-surface-variant">{location.area} - {location.postcode}</p>
+                        </div>
+                      </Link>
+                    ))}
+                  </div>
+                </div>
+              ))}
             </div>
           </div>
           
           <div className="w-full lg:w-1/2 h-[500px] lg:h-full rounded-2xl overflow-hidden relative border border-outline-variant/30">
             <Suspense fallback={<div className="w-full h-full bg-surface-dim flex items-center justify-center"><span className="font-body text-label-caps text-on-surface-variant/50 tracking-widest uppercase">Loading map…</span></div>}>
-              <PropertyMap locations={visibleLocations} height="100%" />
+              <PropertyMap locations={groupedMapLocations} height="100%" />
             </Suspense>
           </div>
         </div>

@@ -7,12 +7,44 @@ export type MapLocation = {
   collectionSlug: string;
   area: string;
   areaId: Exclude<LocationArea, 'all'>;
+  /** Region/building the location belongs to — used to group cards and map pins. */
+  groupId: string;
   postcode: string;
   coordinates: { lat: number; lng: number };
   position: { top: string; left: string };
 };
 
-type DraftMapLocation = Omit<MapLocation, 'position'>;
+type DraftMapLocation = Omit<MapLocation, 'position' | 'groupId'>;
+
+/**
+ * Region groups used to organise the home list and to collapse the home map to a
+ * single pin per building/area. Order here is the display order on the home page.
+ */
+export const locationGroups: { id: string; label: string }[] = [
+  { id: 'chambers', label: 'Chambers Residence' },
+  { id: 'ancoats', label: 'Ancoats' },
+  { id: 'john-dalton-street', label: 'John Dalton Street' },
+  { id: 'trafford', label: 'Trafford' },
+  { id: 'wood-street', label: 'Wood Street' },
+];
+
+// Which region group each individual location belongs to (keyed by collectionSlug).
+const groupByCollectionSlug: Record<string, string> = {
+  'chambers-9': 'chambers',
+  'chambers-11': 'chambers',
+  'john-dalton-st': 'john-dalton-street',
+  'wood-street': 'wood-street',
+  'the-collective': 'wood-street',
+  'newton-street': 'ancoats',
+  'crusader': 'ancoats',
+  'loom-street': 'ancoats',
+  'lockgate-mews': 'ancoats',
+  'sezas': 'ancoats',
+  'mm2': 'ancoats',
+  'popworks': 'ancoats',
+  'spinning-mills': 'ancoats',
+  'old-trafford': 'trafford',
+};
 
 const manchesterMapBounds = {
   north: 53.495,
@@ -196,8 +228,67 @@ const draftMapLocations: DraftMapLocation[] = [
 
 export const mapLocations: MapLocation[] = draftMapLocations.map((location) => ({
   ...location,
+  groupId: groupByCollectionSlug[location.collectionSlug] ?? location.areaId,
   position: toMapPosition(location.coordinates),
 }));
+
+/**
+ * Groups a set of locations into their region groups, preserving `locationGroups`
+ * display order. Used to render grouped cards on the home page.
+ */
+export function getLocationGroups(locations: MapLocation[] = mapLocations) {
+  return locationGroups
+    .map((group) => ({
+      ...group,
+      locations: locations.filter((location) => location.groupId === group.id),
+    }))
+    .filter((group) => group.locations.length > 0);
+}
+
+/**
+ * Collapses locations to a single synthetic marker per region group (centroid of
+ * the group's coordinates). Used so the home map shows one pin per building/area
+ * instead of one per individual unit.
+ */
+export function groupLocationsByRegion(locations: MapLocation[] = mapLocations): MapLocation[] {
+  return getLocationGroups(locations).map((group, index) => {
+    const items = group.locations;
+    const lat = items.reduce((sum, item) => sum + item.coordinates.lat, 0) / items.length;
+    const lng = items.reduce((sum, item) => sum + item.coordinates.lng, 0) / items.length;
+    const coordinates = { lat, lng };
+    return {
+      ...items[0],
+      id: 10000 + index,
+      name: group.label,
+      area: group.label,
+      coordinates,
+      position: toMapPosition(coordinates),
+    };
+  });
+}
+
+// Which map locations belong to a collection/property page. Handles the grouped
+// collections (Chambers → 9 & 11 Chapel Walks, Ancoats → its mill buildings) that
+// don't share a slug with their individual locations.
+const propertyToCollectionSlugs: Record<string, string[]> = {
+  chambers: ['chambers-9', 'chambers-11'],
+  ancoats: ['newton-street', 'crusader', 'loom-street', 'lockgate-mews', 'sezas', 'mm2', 'popworks', 'spinning-mills'],
+};
+
+/**
+ * Returns the map locations relevant to a given property/collection slug so each
+ * collection map shows only its own pins (never every pin in the city).
+ */
+export function getLocationsForProperty(propertySlug?: string): MapLocation[] {
+  if (!propertySlug) return [];
+  const collectionSlugs = propertyToCollectionSlugs[propertySlug];
+  if (collectionSlugs) {
+    return mapLocations.filter((location) => collectionSlugs.includes(location.collectionSlug));
+  }
+  return mapLocations.filter(
+    (location) => location.collectionSlug === propertySlug || location.propertySlug === propertySlug,
+  );
+}
 
 export function getPropertyMapEmbedUrl(collectionSlug: string): string | null {
   const loc = draftMapLocations.find((l) => l.collectionSlug === collectionSlug);

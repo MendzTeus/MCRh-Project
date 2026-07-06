@@ -1,7 +1,8 @@
 import { useState, useRef, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import { Helmet } from 'react-helmet-async';
-import { Star, ChevronDown, BedDouble, Wifi, ChefHat, Coffee, Snowflake, Bath, ArrowRight, ArrowLeft, X, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Star, ChevronDown, BedDouble, Wifi, ChefHat, Coffee, Snowflake, Bath, ArrowRight, ArrowLeft, X } from 'lucide-react';
+import Lightbox from '../components/Lightbox';
 import { getReviewsForProperty } from '../data/reviews';
 import { getPropertyMapEmbedUrl } from '../data/locations';
 import DateRangePicker, { formatShortDate } from '../components/DateRangePicker';
@@ -10,6 +11,7 @@ import { getInventoryUnit } from '../data/airbnbInventory';
 import { getListingMedia, getUnitGallery } from '../data/listingMedia';
 import { getPropertyBySlug, getUnitBySlug, type PropertyUnit } from '../data/properties';
 import { useClickOutside } from '../hooks/useClickOutside';
+import { useUnitBlockedDates } from '../hooks/useUnitBlockedDates';
 
 export default function PropertyDetail() {
   const { propertySlug, id } = useParams();
@@ -30,6 +32,9 @@ export default function PropertyDetail() {
     : undefined;
   const unit = routedUnit || legacyUnit?.unit || inventoryBackedUnit || property?.units[0];
   const unitGallery = getUnitGallery(unit?.slug, property?.slug);
+  // Reserved dates (from the synced iCal) for this specific unit, used to block
+  // out the booking calendar.
+  const blockedDates = useUnitBlockedDates(inventoryUnit?.unitSlug || id);
   const displayRating = listingMedia?.rating || '4.98';
   const reviews = getReviewsForProperty(property?.slug || 'chambers');
   const reviewsRef = useRef<HTMLDivElement>(null);
@@ -40,17 +45,15 @@ export default function PropertyDetail() {
   const [datesOpen, setDatesOpen] = useState(false);
 
   useEffect(() => {
-    if (!galleryOpen && !amenitiesOpen) return;
+    // The gallery lightbox handles its own keyboard nav; this only closes the
+    // amenities modal on Escape.
+    if (!amenitiesOpen) return;
     function onKey(e: KeyboardEvent) {
-      if (e.key === 'Escape') { setGalleryOpen(false); setAmenitiesOpen(false); }
-      if (galleryOpen) {
-        if (e.key === 'ArrowRight') setGalleryIndex((i) => (i + 1) % unitGallery.length);
-        if (e.key === 'ArrowLeft') setGalleryIndex((i) => (i - 1 + unitGallery.length) % unitGallery.length);
-      }
+      if (e.key === 'Escape') setAmenitiesOpen(false);
     }
     document.addEventListener('keydown', onKey);
     return () => document.removeEventListener('keydown', onKey);
-  }, [galleryOpen, amenitiesOpen, unitGallery.length]);
+  }, [amenitiesOpen]);
   const [guestsOpen, setGuestsOpen] = useState(false);
   useClickOutside(guestsDropdownRef, () => setGuestsOpen(false), guestsOpen);
   const [checkIn, setCheckIn] = useState('');
@@ -162,12 +165,12 @@ export default function PropertyDetail() {
               <DateRangePicker
                 checkIn={checkIn}
                 checkOut={checkOut}
+                blockedDates={blockedDates}
                 onChange={({ checkIn: nextCheckIn, checkOut: nextCheckOut }) => {
                   setCheckIn(nextCheckIn);
                   setCheckOut(nextCheckOut);
                 }}
                 onDone={() => setDatesOpen(false)}
-                className="absolute bottom-full left-4 right-4 z-50 mb-4"
               />
             )}
 
@@ -298,7 +301,7 @@ export default function PropertyDetail() {
             {reviews.map((review, i) => {
               const initials = review.name.split(' ').map((n) => n[0]).join('').slice(0, 2);
               return (
-                <div key={i} className="min-w-[300px] md:min-w-[400px] bg-surface p-8 rounded-xl border border-outline-variant/20 snap-start shrink-0">
+                <div key={i} className="w-[300px] md:w-[400px] shrink-0 bg-surface p-8 rounded-xl border border-outline-variant/20 snap-start">
                   <div className="flex items-center gap-4 mb-6">
                     <div className="w-12 h-12 rounded-full bg-primary-container flex items-center justify-center shrink-0">
                       <span className="font-body text-label-caps text-on-primary-container font-semibold">{initials}</span>
@@ -308,7 +311,7 @@ export default function PropertyDetail() {
                       <p className="font-body text-sm text-on-surface-variant">{review.date}</p>
                     </div>
                   </div>
-                  <p className="font-display text-xl text-on-surface italic opacity-90 leading-relaxed">"{review.text}"</p>
+                  <p className="font-display text-xl text-on-surface italic opacity-90 leading-relaxed whitespace-normal break-words text-center">"{review.text}"</p>
                   {review.property && (
                     <p className="font-body text-label-caps text-on-surface-variant/60 tracking-widest uppercase mt-4">{review.property}</p>
                   )}
@@ -390,40 +393,7 @@ export default function PropertyDetail() {
 
       {/* Gallery Lightbox */}
       {galleryOpen && unitGallery.length > 0 && (
-        <div
-          className="fixed inset-0 z-50 bg-black/95 flex items-center justify-center"
-          role="dialog"
-          aria-modal="true"
-          aria-label="Photo gallery"
-        >
-          <button onClick={() => setGalleryOpen(false)} aria-label="Close gallery" className="absolute top-4 right-4 text-white/70 hover:text-white transition-colors z-10">
-            <X className="w-8 h-8" />
-          </button>
-          <button
-            onClick={() => setGalleryIndex((i) => (i - 1 + unitGallery.length) % unitGallery.length)}
-            aria-label="Previous photo"
-            className="absolute left-4 top-1/2 -translate-y-1/2 text-white/70 hover:text-white transition-colors z-10 bg-black/30 rounded-full p-2"
-          >
-            <ChevronLeft className="w-8 h-8" />
-          </button>
-          <div className="w-full h-full flex items-center justify-center px-16 py-12">
-            <img
-              src={unitGallery[galleryIndex]}
-              alt={`${unit.title} — photo ${galleryIndex + 1} of ${unitGallery.length}`}
-              className="max-w-full max-h-full object-contain"
-            />
-          </div>
-          <button
-            onClick={() => setGalleryIndex((i) => (i + 1) % unitGallery.length)}
-            aria-label="Next photo"
-            className="absolute right-4 top-1/2 -translate-y-1/2 text-white/70 hover:text-white transition-colors z-10 bg-black/30 rounded-full p-2"
-          >
-            <ChevronRight className="w-8 h-8" />
-          </button>
-          <div className="absolute bottom-4 left-1/2 -translate-x-1/2 font-body text-label-caps text-white/60 tracking-widest">
-            {galleryIndex + 1} / {unitGallery.length}
-          </div>
-        </div>
+        <Lightbox images={unitGallery} startIndex={galleryIndex} alt={unit.title} onClose={() => setGalleryOpen(false)} />
       )}
     </div>
   );

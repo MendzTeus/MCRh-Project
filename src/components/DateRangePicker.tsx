@@ -8,6 +8,8 @@ type DateRangePickerProps = {
   onChange: (range: { checkIn: string; checkOut: string }) => void;
   onDone?: () => void;
   className?: string;
+  /** ICS-synced reserved ranges. `end` is exclusive (checkout day stays bookable). */
+  blockedDates?: { start: string; end: string }[];
 };
 
 const weekdays = ['Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa', 'Su'];
@@ -47,6 +49,27 @@ function isBetweenDate(date: Date, start: Date | null, end: Date | null) {
   return value > toISODate(start) && value < toISODate(end);
 }
 
+function addDays(date: Date, amount: number) {
+  return new Date(date.getFullYear(), date.getMonth(), date.getDate() + amount);
+}
+
+// Expands blocked ranges into the set of occupied *nights* (YYYY-MM-DD). ICS end
+// dates are exclusive — the checkout day is left bookable as a new check-in.
+function blockedNightsSet(ranges: { start: string; end: string }[]) {
+  const set = new Set<string>();
+  for (const range of ranges) {
+    const start = parseDate(range.start.slice(0, 10));
+    const end = parseDate(range.end.slice(0, 10));
+    if (!start || !end) continue;
+    let cursor = start;
+    while (toISODate(cursor) < toISODate(end)) {
+      set.add(toISODate(cursor));
+      cursor = addDays(cursor, 1);
+    }
+  }
+  return set;
+}
+
 function getMonthDays(month: Date) {
   const days: (Date | null)[] = [];
   const firstDay = startOfMonth(month);
@@ -74,6 +97,7 @@ function MonthGrid({
   selectedEnd,
   today,
   hovered,
+  blockedDays,
   onSelect,
   onHover,
 }: {
@@ -82,6 +106,7 @@ function MonthGrid({
   selectedEnd: Date | null;
   today: Date;
   hovered: Date | null;
+  blockedDays: Set<string>;
   onSelect: (date: Date) => void;
   onHover: (date: Date | null) => void;
 }) {
@@ -99,7 +124,8 @@ function MonthGrid({
         ))}
         {days.map((date, i) => {
           if (!date) return <div key={`e-${i}`} />;
-          const disabled = isBeforeDate(date, today);
+          const isBlocked = blockedDays.has(toISODate(date));
+          const disabled = isBeforeDate(date, today) || isBlocked;
           const isStart = isSameDate(date, selectedStart);
           const isEnd = isSameDate(date, selectedEnd);
           const inRange = isBetweenDate(date, selectedStart, rangeEnd);
@@ -119,12 +145,15 @@ function MonthGrid({
                 onClick={() => onSelect(date)}
                 onMouseEnter={() => onHover(date)}
                 onMouseLeave={() => onHover(null)}
+                title={isBlocked ? 'Unavailable' : undefined}
                 className={`w-9 h-9 rounded-full font-body text-sm transition-colors relative z-10 ${
                   isStart || isEnd
                     ? 'bg-primary text-white font-semibold'
-                    : disabled
-                      ? 'text-on-surface-variant/25 cursor-not-allowed'
-                      : 'text-primary hover:bg-surface-container-high'
+                    : isBlocked
+                      ? 'text-on-surface-variant/40 line-through cursor-not-allowed'
+                      : disabled
+                        ? 'text-on-surface-variant/25 cursor-not-allowed'
+                        : 'text-primary hover:bg-surface-container-high'
                 }`}
               >
                 {date.getDate()}
@@ -137,16 +166,28 @@ function MonthGrid({
   );
 }
 
-export default function DateRangePicker({ checkIn, checkOut, onChange, onDone, className = '' }: DateRangePickerProps) {
+export default function DateRangePicker({ checkIn, checkOut, onChange, onDone, className = '', blockedDates = [] }: DateRangePickerProps) {
   const selectedStart = parseDate(checkIn);
   const selectedEnd = parseDate(checkOut);
   const today = useMemo(() => {
     const d = new Date();
     return new Date(d.getFullYear(), d.getMonth(), d.getDate());
   }, []);
+  const blockedDays = useMemo(() => blockedNightsSet(blockedDates), [blockedDates]);
   const [leftMonth, setLeftMonth] = useState(startOfMonth(selectedStart || today));
   const [hovered, setHovered] = useState<Date | null>(null);
   const rightMonth = addMonths(leftMonth, 1);
+
+  // True if any occupied night falls inside [start, end) — i.e. the guest's range
+  // would cover a booked date and must be rejected.
+  function rangeHasBlockedNight(start: Date, end: Date) {
+    let cursor = start;
+    while (toISODate(cursor) < toISODate(end)) {
+      if (blockedDays.has(toISODate(cursor))) return true;
+      cursor = addDays(cursor, 1);
+    }
+    return false;
+  }
 
   // Close on Escape
   useEffect(() => {
@@ -158,6 +199,9 @@ export default function DateRangePicker({ checkIn, checkOut, onChange, onDone, c
   function selectDate(date: Date) {
     const value = toISODate(date);
     if (!selectedStart || selectedEnd || isBeforeDate(date, selectedStart) || isSameDate(date, selectedStart)) {
+      onChange({ checkIn: value, checkOut: '' });
+    } else if (rangeHasBlockedNight(selectedStart, date)) {
+      // The chosen range would cover a reserved night — restart from this date.
       onChange({ checkIn: value, checkOut: '' });
     } else {
       onChange({ checkIn, checkOut: value });
@@ -202,10 +246,10 @@ export default function DateRangePicker({ checkIn, checkOut, onChange, onDone, c
             <ChevronLeft className="w-4 h-4" />
           </button>
           <MonthGrid month={leftMonth} selectedStart={selectedStart} selectedEnd={selectedEnd}
-            today={today} hovered={hovered} onSelect={selectDate} onHover={setHovered} />
+            today={today} hovered={hovered} blockedDays={blockedDays} onSelect={selectDate} onHover={setHovered} />
           <div className="w-px bg-outline-variant/20 self-stretch" />
           <MonthGrid month={rightMonth} selectedStart={selectedStart} selectedEnd={selectedEnd}
-            today={today} hovered={hovered} onSelect={selectDate} onHover={setHovered} />
+            today={today} hovered={hovered} blockedDays={blockedDays} onSelect={selectDate} onHover={setHovered} />
           <button type="button" onClick={() => setLeftMonth((m) => addMonths(m, 1))}
             className="absolute right-4 top-[4.5rem] p-2 rounded-full hover:bg-surface-container transition-colors text-primary">
             <ChevronRight className="w-4 h-4" />

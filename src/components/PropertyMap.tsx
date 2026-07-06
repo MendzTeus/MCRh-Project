@@ -93,6 +93,15 @@ export default function PropertyMap({ locations = mapLocations, height = '100%',
         markersRef.current.push(marker);
       });
 
+      // Frame the relevant pins: a single location gets a close-up; multiple pins
+      // are fit to their bounds so every map focuses on its own context.
+      if (locations.length === 1) {
+        map.setView([locations[0].coordinates.lat, locations[0].coordinates.lng], 15);
+      } else if (locations.length > 1) {
+        const bounds = L.latLngBounds(locations.map((loc) => [loc.coordinates.lat, loc.coordinates.lng]));
+        map.fitBounds(bounds, { padding: [48, 48], maxZoom: 15 });
+      }
+
       mapRef.current = map;
     });
 
@@ -113,7 +122,7 @@ export default function PropertyMap({ locations = mapLocations, height = '100%',
   }, [activeLocation]);
 
   return (
-    <div className={`relative ${className}`} style={{ height }}>
+    <div className={`relative isolate ${className}`} style={{ height }}>
       <div ref={containerRef} className="w-full h-full" />
       {activeLocation && (
         <div className="absolute bottom-4 left-4 z-[1000] bg-white rounded-xl shadow-lg border border-outline-variant/30 px-5 py-4 max-w-[220px]">

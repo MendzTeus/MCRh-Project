@@ -56,6 +56,31 @@ export const airbnbInventory: AirbnbInventoryUnit[] = [
   { propertySlug: 'old-trafford', propertyName: 'Insignia', unitSlug: 'oldtraford', unitName: 'Apartment 105', postcode: 'M16 0PG', airbnbUrl: 'https://airbnb.com/h/oldtraford' },
 ];
 
+// Region each building belongs to, for the Properties page location filter.
+const propertyRegions: Record<string, string> = {
+  'chambers-9': 'City Centre',
+  'chambers-11': 'City Centre',
+  'wood-street': 'City Centre',
+  'the-collective': 'City Centre',
+  'john-dalton-st': 'Deansgate',
+  'loom-street': 'Ancoats',
+  'newton-street': 'Ancoats',
+  'lockgate-mews': 'Ancoats',
+  'sezas': 'Ancoats',
+  'crusader': 'Ancoats',
+  'mm2': 'Ancoats',
+  'spinning-mills': 'Ancoats',
+  'popworks': 'Ancoats',
+  'old-trafford': 'Trafford',
+};
+
+// Display order for the region filter chips.
+export const inventoryRegions = ['City Centre', 'Deansgate', 'Ancoats', 'Trafford'];
+
+export function getRegionForProperty(propertySlug: string): string {
+  return propertyRegions[propertySlug] || 'Manchester';
+}
+
 export function getInventoryForProperty(propertySlug: string) {
   const groupedProperties: Record<string, string[]> = {
     chambers: ['chambers-9', 'chambers-11'],

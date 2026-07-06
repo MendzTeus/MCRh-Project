@@ -8,7 +8,7 @@ import PhotoGallery from '../components/PhotoGallery';
 import { getInventoryForProperty } from '../data/airbnbInventory';
 import { getListingMedia } from '../data/listingMedia';
 import { getPropertyBySlug } from '../data/properties';
-import { mapLocations } from '../data/locations';
+import { getLocationsForProperty } from '../data/locations';
 import { getReviewsForProperty } from '../data/reviews';
 import { useAvailability } from '../hooks/useAvailability';
 import { usePublicUnits } from '../hooks/usePublicUnits';
@@ -26,7 +26,7 @@ export default function CollectionDetail() {
   // Stable array reference so <PropertyMap> doesn't tear down and rebuild the
   // Leaflet map on every re-render (e.g. while checking availability).
   const propertyMapLocations = useMemo(
-    () => mapLocations.filter((l) => l.propertySlug === property?.slug || l.collectionSlug === property?.slug),
+    () => getLocationsForProperty(property?.slug),
     [property?.slug],
   );
 
@@ -202,7 +202,7 @@ export default function CollectionDetail() {
           <div className="md:col-span-7">
             <div className="aspect-[16/9] rounded-lg overflow-hidden border border-outline-variant/30">
               <Suspense fallback={<div className="w-full h-full bg-surface-dim flex items-center justify-center"><span className="font-body text-label-caps text-on-surface-variant/50 tracking-widest uppercase">Loading map…</span></div>}>
-                <PropertyMap locations={propertyMapLocations.length ? propertyMapLocations : undefined} height="100%" />
+                <PropertyMap locations={propertyMapLocations} height="100%" />
               </Suspense>
             </div>
           </div>
@@ -245,7 +245,7 @@ export default function CollectionDetail() {
                     <Star key={si} className="w-3 h-3 fill-[#C8A45C] text-[#C8A45C]" />
                   ))}
                 </div>
-                <p className="font-body text-body-md text-on-surface-variant flex-1 leading-relaxed">"{review.text}"</p>
+                <p className="font-body text-body-md text-on-surface-variant flex-1 leading-relaxed whitespace-normal break-words text-center">"{review.text}"</p>
                 <div className="border-t border-outline-variant/20 pt-4">
                   <p className="font-body text-label-caps text-primary tracking-widest uppercase text-xs">{review.name}</p>
                   {review.date && <p className="font-body text-xs text-on-surface-variant mt-0.5">{review.date}</p>}
