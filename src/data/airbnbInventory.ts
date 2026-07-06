@@ -6,32 +6,35 @@ export type AirbnbInventoryUnit = {
   suppliedSpecs?: string;
   postcode: string;
   airbnbUrl?: string;
+  /** VRBO *listing* URL (not the iCal feed). When set, the booking card shows a
+   * "Book on VRBO" option that opens this page. */
+  vrboUrl?: string;
 };
 
 export const airbnbInventory: AirbnbInventoryUnit[] = [
-  { propertySlug: 'john-dalton-st', propertyName: '42 John Dalton St.', unitSlug: 'jds-1', unitName: 'Apartment 1', suppliedSpecs: '1BED 1BATH', postcode: 'M2 6LE', airbnbUrl: 'https://airbnb.com/h/jds-1' },
-  { propertySlug: 'john-dalton-st', propertyName: '42 John Dalton St.', unitSlug: 'jds-2', unitName: 'Apartment 2', suppliedSpecs: '2BED 2BATH', postcode: 'M2 6LE', airbnbUrl: 'https://www.airbnb.com/h/jds-2' },
-  { propertySlug: 'john-dalton-st', propertyName: '42 John Dalton St.', unitSlug: 'jds-3', unitName: 'Apartment 3', suppliedSpecs: '2BED 2BATH', postcode: 'M2 6LE', airbnbUrl: 'https://airbnb.com/h/jds-3' },
-  { propertySlug: 'john-dalton-st', propertyName: '42 John Dalton St.', unitSlug: 'jds-4', unitName: 'Apartment 4', suppliedSpecs: '2BED 1BATH', postcode: 'M2 6LE', airbnbUrl: 'https://www.airbnb.co.uk/h/jds-4' },
+  { propertySlug: 'john-dalton-st', propertyName: '42 John Dalton St.', unitSlug: 'jds-1', unitName: 'Apartment 1', suppliedSpecs: '1BED 1BATH', postcode: 'M2 6LE', airbnbUrl: 'https://airbnb.com/h/jds-1', vrboUrl: 'https://www.vrbo.com/en-gb/p11468056' },
+  { propertySlug: 'john-dalton-st', propertyName: '42 John Dalton St.', unitSlug: 'jds-2', unitName: 'Apartment 2', suppliedSpecs: '2BED 2BATH', postcode: 'M2 6LE', airbnbUrl: 'https://www.airbnb.com/h/jds-2', vrboUrl: 'https://www.vrbo.com/en-gb/p11864316' },
+  { propertySlug: 'john-dalton-st', propertyName: '42 John Dalton St.', unitSlug: 'jds-3', unitName: 'Apartment 3', suppliedSpecs: '2BED 2BATH', postcode: 'M2 6LE', airbnbUrl: 'https://airbnb.com/h/jds-3', vrboUrl: 'https://www.vrbo.com/en-gb/p11864334' },
+  { propertySlug: 'john-dalton-st', propertyName: '42 John Dalton St.', unitSlug: 'jds-4', unitName: 'Apartment 4', suppliedSpecs: '2BED 1BATH', postcode: 'M2 6LE', airbnbUrl: 'https://www.airbnb.co.uk/h/jds-4', vrboUrl: 'https://www.vrbo.com/en-gb/p11864329' },
   { propertySlug: 'john-dalton-st', propertyName: '42 John Dalton St.', unitSlug: 'jds-1-2', unitName: 'Apartments 1 & 2', suppliedSpecs: '3BED 3BATH', postcode: 'M2 6LE', airbnbUrl: 'https://airbnb.co.uk/h/jds-1-2' },
   { propertySlug: 'john-dalton-st', propertyName: '42 John Dalton St.', unitSlug: 'jds-3-4', unitName: 'Apartments 3 & 4', suppliedSpecs: '4BED 3BATH', postcode: 'M2 6LE', airbnbUrl: 'https://www.airbnb.co.uk/h/jds-3-4' },
 
-  { propertySlug: 'chambers-9', propertyName: '9 Chapel Walks', unitSlug: 'chambers-9-1', unitName: 'Apartment 9.1', suppliedSpecs: '2BED 2BATH', postcode: 'M2 1HN', airbnbUrl: 'https://www.airbnb.com/h/chambers-9-1' },
-  { propertySlug: 'chambers-9', propertyName: '9 Chapel Walks', unitSlug: 'chambers-9-2', unitName: 'Apartment 9.2', suppliedSpecs: '3BED 2BATH', postcode: 'M2 1HN', airbnbUrl: 'https://www.airbnb.co.uk/h/chambers-9-2' },
-  { propertySlug: 'chambers-9', propertyName: '9 Chapel Walks', unitSlug: 'chambers-9-7', unitName: 'Apartment 9.7', suppliedSpecs: '2BED 1BATH', postcode: 'M2 1HN', airbnbUrl: 'https://airbnb.co.uk/h/chambers-9-7' },
+  { propertySlug: 'chambers-9', propertyName: '9 Chapel Walks', unitSlug: 'chambers-9-1', unitName: 'Apartment 9.1', suppliedSpecs: '2BED 2BATH', postcode: 'M2 1HN', airbnbUrl: 'https://www.airbnb.com/h/chambers-9-1', vrboUrl: 'https://www.vrbo.com/en-gb/p11461319' },
+  { propertySlug: 'chambers-9', propertyName: '9 Chapel Walks', unitSlug: 'chambers-9-2', unitName: 'Apartment 9.2', suppliedSpecs: '3BED 2BATH', postcode: 'M2 1HN', airbnbUrl: 'https://www.airbnb.co.uk/h/chambers-9-2', vrboUrl: 'https://www.vrbo.com/en-gb/p11864403' },
+  { propertySlug: 'chambers-9', propertyName: '9 Chapel Walks', unitSlug: 'chambers-9-7', unitName: 'Apartment 9.7', suppliedSpecs: '2BED 1BATH', postcode: 'M2 1HN', airbnbUrl: 'https://airbnb.co.uk/h/chambers-9-7', vrboUrl: 'https://www.vrbo.com/en-gb/p11864411' },
   { propertySlug: 'chambers-9', propertyName: '9 Chapel Walks', unitSlug: 'chambers-9-8', unitName: 'Apartment 9.8', suppliedSpecs: '2BED 1BATH', postcode: 'M2 1HN', airbnbUrl: 'https://airbnb.co.uk/h/chambers-9-8' },
-  { propertySlug: 'chambers-9', propertyName: '9 Chapel Walks', unitSlug: 'chambers-9-9', unitName: 'Apartment 9.9', suppliedSpecs: '2BED 2BATH', postcode: 'M2 1HN', airbnbUrl: 'https://www.airbnb.co.uk/h/chambers-9-9' },
+  { propertySlug: 'chambers-9', propertyName: '9 Chapel Walks', unitSlug: 'chambers-9-9', unitName: 'Apartment 9.9', suppliedSpecs: '2BED 2BATH', postcode: 'M2 1HN', airbnbUrl: 'https://www.airbnb.co.uk/h/chambers-9-9', vrboUrl: 'https://www.vrbo.com/en-gb/p11864427' },
   { propertySlug: 'chambers-9', propertyName: '9 Chapel Walks', unitSlug: 'chambers-7-9', unitName: 'Apartments 7 & 9', suppliedSpecs: '4BED 3BATH', postcode: 'M2 1HN', airbnbUrl: 'https://airbnb.com/h/chambers-7-9' },
   { propertySlug: 'chambers-9', propertyName: '9 Chapel Walks', unitSlug: 'chambers-9-1-9-2', unitName: 'Apartment 9.1 & 9.2', suppliedSpecs: '5BED 4BATH', postcode: 'M2 1HN' },
 
-  { propertySlug: 'chambers-11', propertyName: '11 Chapel Walks', unitSlug: 'chambers-11-1', unitName: 'Apartment 11.1', suppliedSpecs: '1BED 1BATH', postcode: 'M2 1HN', airbnbUrl: 'https://www.airbnb.com/h/chambers-11-1' },
-  { propertySlug: 'chambers-11', propertyName: '11 Chapel Walks', unitSlug: 'chambers-11-2', unitName: 'Apartment 11.2', suppliedSpecs: '2BED 2BATH', postcode: 'M2 1HN', airbnbUrl: 'https://www.airbnb.com/h/chambers-11-2' },
-  { propertySlug: 'chambers-11', propertyName: '11 Chapel Walks', unitSlug: 'chambers-11-3', unitName: 'Apartment 11.3', suppliedSpecs: '1BED 1BATH', postcode: 'M2 1HN', airbnbUrl: 'https://www.airbnb.co.uk/h/chambers-11-3' },
-  { propertySlug: 'chambers-11', propertyName: '11 Chapel Walks', unitSlug: 'chambers-11-4', unitName: 'Apartment 11.4', suppliedSpecs: '2BED 2BATH', postcode: 'M2 1HN', airbnbUrl: 'https://www.airbnb.co.uk/h/chambers-11-4' },
-  { propertySlug: 'chambers-11', propertyName: '11 Chapel Walks', unitSlug: 'chambers-11-5', unitName: 'Apartment 11.5', suppliedSpecs: '3BED 2BATH', postcode: 'M2 1HN', airbnbUrl: 'https://www.airbnb.co.uk/h/chambers-11-5' },
+  { propertySlug: 'chambers-11', propertyName: '11 Chapel Walks', unitSlug: 'chambers-11-1', unitName: 'Apartment 11.1', suppliedSpecs: '1BED 1BATH', postcode: 'M2 1HN', airbnbUrl: 'https://www.airbnb.com/h/chambers-11-1', vrboUrl: 'https://www.vrbo.com/en-gb/p11864400' },
+  { propertySlug: 'chambers-11', propertyName: '11 Chapel Walks', unitSlug: 'chambers-11-2', unitName: 'Apartment 11.2', suppliedSpecs: '2BED 2BATH', postcode: 'M2 1HN', airbnbUrl: 'https://www.airbnb.com/h/chambers-11-2', vrboUrl: 'https://www.vrbo.com/en-gb/p11864397' },
+  { propertySlug: 'chambers-11', propertyName: '11 Chapel Walks', unitSlug: 'chambers-11-3', unitName: 'Apartment 11.3', suppliedSpecs: '1BED 1BATH', postcode: 'M2 1HN', airbnbUrl: 'https://www.airbnb.co.uk/h/chambers-11-3', vrboUrl: 'https://www.vrbo.com/en-gb/p11986224' },
+  { propertySlug: 'chambers-11', propertyName: '11 Chapel Walks', unitSlug: 'chambers-11-4', unitName: 'Apartment 11.4', suppliedSpecs: '2BED 2BATH', postcode: 'M2 1HN', airbnbUrl: 'https://www.airbnb.co.uk/h/chambers-11-4', vrboUrl: 'https://www.vrbo.com/en-gb/p11986223' },
+  { propertySlug: 'chambers-11', propertyName: '11 Chapel Walks', unitSlug: 'chambers-11-5', unitName: 'Apartment 11.5', suppliedSpecs: '3BED 2BATH', postcode: 'M2 1HN', airbnbUrl: 'https://www.airbnb.co.uk/h/chambers-11-5', vrboUrl: 'https://www.vrbo.com/en-gb/p11864390' },
   { propertySlug: 'chambers-11', propertyName: '11 Chapel Walks', unitSlug: 'chambers-11-1-11-2', unitName: 'Apartment 11.1 & 11.2', suppliedSpecs: '3BED 2BATH', postcode: 'M2 1HN' },
 
-  { propertySlug: 'wood-street', propertyName: '18 Wood Street', unitSlug: 'wood-st-2', unitName: '2 Bedrooms', postcode: 'M3 3EF', airbnbUrl: 'https://airbnb.com/h/wood-st-2' },
+  { propertySlug: 'wood-street', propertyName: '18 Wood Street', unitSlug: 'wood-st-2', unitName: '2 Bedrooms', postcode: 'M3 3EF', airbnbUrl: 'https://airbnb.com/h/wood-st-2', vrboUrl: 'https://www.vrbo.com/en-gb/p11864470' },
   { propertySlug: 'wood-street', propertyName: '18 Wood Street', unitSlug: 'wood-st-3', unitName: '3 Bedrooms', postcode: 'M3 3EF', airbnbUrl: 'https://airbnb.com/h/wood-st-3' },
 
   { propertySlug: 'the-collective', propertyName: 'Wood Street Collective', unitSlug: '20-1-wsc', unitName: 'Room 1', postcode: 'M3 3EF', airbnbUrl: 'https://airbnb.com/h/20-1-wsc' },

@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import { Helmet } from 'react-helmet-async';
-import { Star, ChevronDown, BedDouble, Wifi, ChefHat, Coffee, Snowflake, Bath, ArrowRight, ArrowLeft, X } from 'lucide-react';
+import { Star, ChevronDown, BedDouble, Wifi, ChefHat, Coffee, Snowflake, Bath, ArrowRight, ArrowLeft, X, MessageCircle, Mail } from 'lucide-react';
 import Lightbox from '../components/Lightbox';
 import { getReviewsForProperty } from '../data/reviews';
 import { getPropertyMapEmbedUrl } from '../data/locations';
@@ -12,6 +12,7 @@ import { getListingMedia, getUnitGallery } from '../data/listingMedia';
 import { getPropertyBySlug, getUnitBySlug, type PropertyUnit } from '../data/properties';
 import { useClickOutside } from '../hooks/useClickOutside';
 import { useUnitBlockedDates } from '../hooks/useUnitBlockedDates';
+import { useSiteContent, text } from '../hooks/useSiteContent';
 
 export default function PropertyDetail() {
   const { propertySlug, id } = useParams();
@@ -32,13 +33,24 @@ export default function PropertyDetail() {
     : undefined;
   const unit = routedUnit || legacyUnit?.unit || inventoryBackedUnit || property?.units[0];
   const unitGallery = getUnitGallery(unit?.slug, property?.slug);
-  // Reserved dates (from the synced iCal) for this specific unit, used to block
-  // out the booking calendar.
+  // Reserved dates (from the synced iCal) for this unit, to grey out the calendar.
   const blockedDates = useUnitBlockedDates(inventoryUnit?.unitSlug || id);
+  // Booking links. VRBO uses the per-unit listing URL (not the iCal feed), so the
+  // option only appears once a real VRBO listing link is configured.
+  const airbnbUrl = inventoryUnit?.airbnbUrl || listingMedia?.finalUrl;
+  const vrboUrl = inventoryUnit?.vrboUrl;
+  // Central company contact (editable in SiteContent). WhatsApp is optional — its
+  // option only shows once a number is configured; e-mail always works.
+  const site = useSiteContent();
+  const whatsappNumber = text(site.content, 'contact.whatsapp', '').replace(/\D/g, '');
+  const contactEmail = text(site.content, 'contact.email', 'hello@mcrh.co.uk');
   const displayRating = listingMedia?.rating || '4.98';
   const reviews = getReviewsForProperty(property?.slug || 'chambers');
   const reviewsRef = useRef<HTMLDivElement>(null);
   const guestsDropdownRef = useRef<HTMLDivElement>(null);
+  const contactRef = useRef<HTMLDivElement>(null);
+  const [contactOpen, setContactOpen] = useState(false);
+  useClickOutside(contactRef, () => setContactOpen(false), contactOpen);
   const [amenitiesOpen, setAmenitiesOpen] = useState(false);
   const [galleryOpen, setGalleryOpen] = useState(false);
   const [galleryIndex, setGalleryIndex] = useState(0);
@@ -61,6 +73,15 @@ export default function PropertyDetail() {
   const [guests, setGuests] = useState(2);
 
   if (!property || !unit) return null;
+
+  // Pre-filled enquiry message for the "Contact us directly" options.
+  const hasDates = Boolean(checkIn && checkOut);
+  const fmtDate = (d: string) => (d ? new Date(`${d}T00:00`).toLocaleDateString('pt-BR') : '');
+  const enquiryText = hasDates
+    ? `Olá! Gostaria de reservar o apartamento ${unit.title} de ${fmtDate(checkIn)} a ${fmtDate(checkOut)} para ${guests} ${guests === 1 ? 'hóspede' : 'hóspedes'}.`
+    : `Olá! Gostaria de saber mais sobre o apartamento ${unit.title}.`;
+  const whatsappHref = `https://wa.me/${whatsappNumber}?text=${encodeURIComponent(enquiryText)}`;
+  const emailHref = `mailto:${contactEmail}?subject=${encodeURIComponent(`Reserva - ${unit.title}`)}&body=${encodeURIComponent(enquiryText)}`;
 
   return (
     <div className="animate-in fade-in duration-500">
@@ -174,28 +195,67 @@ export default function PropertyDetail() {
               />
             )}
 
-            <button
-              type="button"
-              onClick={() => {
-                if (!checkIn || !checkOut) {
-                  setDatesOpen(true);
-                  setGuestsOpen(false);
-                  return;
-                }
-                const bookingUrl = inventoryUnit?.airbnbUrl || listingMedia?.finalUrl;
-                if (bookingUrl) {
-                  window.open(bookingUrl, '_blank', 'noopener,noreferrer');
-                } else {
-                  window.location.href = `/contact`;
-                }
-              }}
-              className="w-full py-4 bg-primary text-on-primary font-body text-label-caps tracking-widest hover:opacity-90 transition-opacity uppercase rounded"
-            >
-              {checkIn && checkOut ? 'Book on Airbnb' : 'Reserve Now'}
-            </button>
-            <p className="text-center font-body text-sm text-on-surface-variant mt-4">
-              {checkIn && checkOut ? 'Opens Airbnb in a new tab' : "You won't be charged yet"}
-            </p>
+            <div className="space-y-3">
+              {/* 1. Airbnb — primary, always shown */}
+              <div>
+                <button
+                  type="button"
+                  onClick={() => { if (airbnbUrl) window.open(airbnbUrl, '_blank', 'noopener,noreferrer'); }}
+                  className="w-full py-4 bg-primary text-on-primary font-body text-label-caps tracking-widest hover:opacity-90 transition-opacity uppercase rounded"
+                >
+                  Book on Airbnb
+                </button>
+                <p className="text-center font-body text-sm text-on-surface-variant mt-2">Opens Airbnb in a new tab</p>
+              </div>
+
+              {/* 2. VRBO — secondary outline, only when a VRBO link exists */}
+              {vrboUrl && (
+                <div>
+                  <button
+                    type="button"
+                    onClick={() => window.open(vrboUrl, '_blank', 'noopener,noreferrer')}
+                    className="w-full py-4 border border-primary bg-surface text-primary font-body text-label-caps tracking-widest hover:bg-surface-dim transition-colors uppercase rounded"
+                  >
+                    Book on VRBO
+                  </button>
+                  <p className="text-center font-body text-sm text-on-surface-variant mt-2">Opens VRBO in a new tab</p>
+                </div>
+              )}
+
+              {/* 3. Contact us directly — tertiary outline + WhatsApp/E-mail menu */}
+              <div className="relative" ref={contactRef}>
+                <button
+                  type="button"
+                  onClick={() => { setContactOpen((open) => !open); setDatesOpen(false); setGuestsOpen(false); }}
+                  className="w-full py-4 border border-outline-variant/50 text-on-surface-variant font-body text-label-caps tracking-widest hover:border-primary hover:text-primary transition-colors uppercase rounded flex items-center justify-center gap-2"
+                >
+                  Contact us directly
+                  <ChevronDown className={`w-4 h-4 transition-transform ${contactOpen ? 'rotate-180' : ''}`} />
+                </button>
+                {contactOpen && (
+                  <div className="absolute left-0 right-0 top-full mt-2 z-50 rounded-xl border border-outline-variant/30 bg-surface p-2 shadow-2xl space-y-1">
+                    {whatsappNumber && (
+                      <a
+                        href={whatsappHref}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-surface-container transition-colors"
+                      >
+                        <MessageCircle className="w-5 h-5 text-[#25D366]" />
+                        <span className="font-body text-body-md text-primary">WhatsApp</span>
+                      </a>
+                    )}
+                    <a
+                      href={emailHref}
+                      className="flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-surface-container transition-colors"
+                    >
+                      <Mail className="w-5 h-5 text-on-surface-variant" />
+                      <span className="font-body text-body-md text-primary">E-mail</span>
+                    </a>
+                  </div>
+                )}
+              </div>
+            </div>
           </div>
         </div>
       </section>

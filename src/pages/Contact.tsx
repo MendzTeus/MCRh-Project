@@ -10,7 +10,7 @@ const inputClass = 'w-full bg-transparent border-b border-outline-variant/50 py-
 export default function Contact() {
   const [status, setStatus] = useState<FormStatus>('idle');
   const site = useSiteContent();
-  const email = text(site.content, 'contact.email', 'contact@mcrh.co.uk');
+  const email = text(site.content, 'contact.email', 'hello@mcrh.co.uk');
   const phone = text(site.content, 'contact.phone', '');
   const address = text(site.content, 'contact.address', 'Chambers Building\nDeansgate\nManchester, M3 3EW\nUnited Kingdom');
 
