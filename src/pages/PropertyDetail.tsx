@@ -225,7 +225,6 @@ export default function PropertyDetail() {
                 >
                   Book on Airbnb
                 </button>
-                <p className="text-center font-body text-sm text-on-surface-variant mt-2">Opens Airbnb in a new tab</p>
               </div>
 
               {/* 2. VRBO — secondary outline, only when a VRBO link exists */}
@@ -238,7 +237,6 @@ export default function PropertyDetail() {
                   >
                     Book on VRBO
                   </button>
-                  <p className="text-center font-body text-sm text-on-surface-variant mt-2">Opens VRBO in a new tab</p>
                 </div>
               )}
 
