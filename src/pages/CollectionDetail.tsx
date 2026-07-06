@@ -33,8 +33,13 @@ export default function CollectionDetail() {
   if (!property) return null;
 
   // Hide apartments the admin has hidden; layer admin edits/photos over the rest.
-  const inventoryUnits = getInventoryForProperty(property.slug).filter((unit) => !publicUnits.hidden.has(unit.unitSlug));
-  const collectionUnits = inventoryUnits.length
+  // When a property is wired to Airbnb inventory, show only its visible units —
+  // if the admin has hidden them all (e.g. every listing paused), show none rather
+  // than falling back to static cards. The static fallback is only for properties
+  // that were never wired to Airbnb inventory at all.
+  const wiredInventory = getInventoryForProperty(property.slug);
+  const inventoryUnits = wiredInventory.filter((unit) => !publicUnits.hidden.has(unit.unitSlug));
+  const collectionUnits = wiredInventory.length
     ? inventoryUnits.map((unit) => {
         const media = getListingMedia(unit.unitSlug);
         const o = publicUnits.overrides.get(unit.unitSlug);
@@ -150,6 +155,13 @@ export default function CollectionDetail() {
             <span className="flex items-center gap-1 text-xs font-body text-green-700 bg-green-50 border border-green-200 px-2 py-0.5 rounded-full">
               <span className="w-1.5 h-1.5 rounded-full bg-green-500 inline-block" /> {availability.units.filter(u => u.available).length} available
             </span>
+          </div>
+        )}
+        {collectionUnits.length === 0 && (
+          <div className="mt-12 rounded-lg border border-outline-variant/30 bg-surface-dim px-6 py-12 text-center">
+            <p className="font-body text-body-lg text-on-surface-variant">
+              No residences are available to book here right now. Please check back soon or get in touch.
+            </p>
           </div>
         )}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-12 mt-12">

@@ -53,6 +53,34 @@ function uniqueImages(images: (string | null | undefined)[]) {
   return result;
 }
 
+/**
+ * Tidies an Airbnb marketing title for display: drops "2BR"/"| 3BR |" bedroom
+ * tags and turns pipe separators into em dashes. Used as the automatic fallback
+ * when no custom display title has been set in the admin.
+ * e.g. "Chambers Residence | 2BR | Urban Oasis Prime Spot" → "Chambers Residence — Urban Oasis Prime Spot"
+ */
+export function cleanListingTitle(raw?: string | null): string {
+  if (!raw) return '';
+  return raw
+    .replace(/\s*\|?\s*\d+\s*br\b\.?/gi, ' ')   // drop "2BR" / "| 3BR" tags
+    .replace(/\s*\|\s*/g, ' — ')                // remaining pipes → em dash
+    .replace(/\s{2,}/g, ' ')
+    .replace(/^\s*[—-]\s*|\s*[—-]\s*$/g, '')    // strip leading/trailing separators
+    .trim();
+}
+
+/**
+ * Whether a unit's Airbnb listing is bookable. Returns false only when the unit
+ * was scraped and Airbnb served its "404/paused" page (likelyInvalid) — used to
+ * hide the "Book on Airbnb" deep-link so we never send guests to a dead listing.
+ * Units with no scrape entry get the benefit of the doubt (returns true).
+ */
+export function isListingActive(unitSlug?: string): boolean {
+  if (!unitSlug) return true;
+  const listing = listings.find((item) => item.unitSlug === unitSlug);
+  return !listing?.likelyInvalid;
+}
+
 export function getListingMedia(unitSlug?: string) {
   if (!unitSlug) return undefined;
   const listing = listings.find((item) => item.unitSlug === unitSlug && !item.likelyInvalid);

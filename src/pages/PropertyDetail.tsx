@@ -8,7 +8,7 @@ import { getPropertyMapEmbedUrl } from '../data/locations';
 import DateRangePicker, { formatShortDate } from '../components/DateRangePicker';
 import MediaImage from '../components/MediaImage';
 import { getInventoryUnit } from '../data/airbnbInventory';
-import { getListingMedia, getUnitGallery, getUnitSpecs } from '../data/listingMedia';
+import { getListingMedia, getUnitGallery, getUnitSpecs, cleanListingTitle, isListingActive } from '../data/listingMedia';
 import { getPropertyBySlug, getUnitBySlug, type PropertyUnit } from '../data/properties';
 import { useClickOutside } from '../hooks/useClickOutside';
 import { useUnitBlockedDates } from '../hooks/useUnitBlockedDates';
@@ -88,19 +88,27 @@ export default function PropertyDetail() {
 
   if (!property || !unit) return null;
 
+  // Display title: the admin's custom title (SiteContent → unit.displayTitles) wins;
+  // otherwise the raw Airbnb title is auto-cleaned as a fallback.
+  const titleMap = (site.content['unit.displayTitles'] || {}) as Record<string, string>;
+  const displayTitle = titleMap[inventoryUnit?.unitSlug || id || '']?.trim() || cleanListingTitle(unit.title) || unit.title;
+
   // Pre-filled enquiry message for the "Contact us directly" options.
   const hasDates = Boolean(checkIn && checkOut);
   const fmtDate = (d: string) => (d ? new Date(`${d}T00:00`).toLocaleDateString('pt-BR') : '');
   const enquiryText = hasDates
-    ? `Olá! Gostaria de reservar o apartamento ${unit.title} de ${fmtDate(checkIn)} a ${fmtDate(checkOut)} para ${guests} ${guests === 1 ? 'hóspede' : 'hóspedes'}.`
-    : `Olá! Gostaria de saber mais sobre o apartamento ${unit.title}.`;
+    ? `Olá! Gostaria de reservar o apartamento ${displayTitle} de ${fmtDate(checkIn)} a ${fmtDate(checkOut)} para ${guests} ${guests === 1 ? 'hóspede' : 'hóspedes'}.`
+    : `Olá! Gostaria de saber mais sobre o apartamento ${displayTitle}.`;
   const whatsappHref = `https://wa.me/${whatsappNumber}?text=${encodeURIComponent(enquiryText)}`;
-  const emailHref = `mailto:${contactEmail}?subject=${encodeURIComponent(`Reserva - ${unit.title}`)}&body=${encodeURIComponent(enquiryText)}`;
+  const emailHref = `mailto:${contactEmail}?subject=${encodeURIComponent(`Reserva - ${displayTitle}`)}&body=${encodeURIComponent(enquiryText)}`;
 
   // Booking deep-links carrying the selected dates + guests. Airbnb prefers the
   // resolved rooms/<id> URL (query params survive there; /h/ short links can drop
   // them on redirect). When no dates are selected yet, the links stay pure.
-  const airbnbBase = listingMedia?.finalUrl || airbnbUrl;
+  // Suppress the Airbnb deep-link when the listing is paused/removed on Airbnb
+  // (scraped as a 404). The admin re-shows it by making the unit visible again
+  // after republishing, and the next scrape clears the invalid flag.
+  const airbnbBase = isListingActive(inventoryUnit?.unitSlug || id) ? (listingMedia?.finalUrl || airbnbUrl) : undefined;
   const airbnbHref = airbnbBase
     ? withBookingParams(airbnbBase, hasDates ? { check_in: checkIn, check_out: checkOut, adults: guests } : {})
     : undefined;
@@ -127,9 +135,9 @@ export default function PropertyDetail() {
   return (
     <div className="animate-in fade-in duration-500">
       <Helmet>
-        <title>{unit.title} — {property.name} | MCRh Manchester</title>
+        <title>{displayTitle} — {property.name} | MCRh Manchester</title>
         <meta name="description" content={`${unit.description} ${unit.specs}. Located in ${property.area}, Manchester.`} />
-        <meta property="og:title" content={`${unit.title} | MCRh Manchester`} />
+        <meta property="og:title" content={`${displayTitle} | MCRh Manchester`} />
         <meta property="og:description" content={unit.description} />
         {unitGallery[0] && <meta property="og:image" content={unitGallery[0]} />}
       </Helmet>
@@ -143,7 +151,7 @@ export default function PropertyDetail() {
         <div className="relative z-10 w-full max-w-[1280px] mx-auto px-margin-mobile md:px-margin-desktop flex flex-col md:flex-row justify-between items-end gap-gutter pb-12 md:pb-0">
           <div className="text-white w-full md:w-2/3">
             <p className="font-body text-label-caps tracking-widest mb-4 opacity-80 uppercase">{unit.label}</p>
-            <h1 className="font-display text-display-lg-mobile md:text-display-lg mb-6 leading-tight">{unit.title}</h1>
+            <h1 className="font-display text-display-lg-mobile md:text-display-lg mb-6 leading-tight">{displayTitle}</h1>
             <p className="font-body text-body-lg opacity-90 max-w-2xl">{unit.description}</p>
             <p className="font-body text-label-caps tracking-widest uppercase text-sm text-white/80 mt-5">{specsLine}</p>
           </div>
@@ -241,16 +249,18 @@ export default function PropertyDetail() {
             )}
 
             <div className="space-y-3">
-              {/* 1. Airbnb — primary, always shown */}
-              <div>
-                <button
-                  type="button"
-                  onClick={() => { if (airbnbHref) window.open(airbnbHref, '_blank', 'noopener,noreferrer'); }}
-                  className="w-full py-4 bg-primary text-on-primary font-body text-label-caps tracking-widest hover:opacity-90 transition-opacity uppercase rounded"
-                >
-                  Book on Airbnb
-                </button>
-              </div>
+              {/* 1. Airbnb — primary, shown when the listing is live on Airbnb */}
+              {airbnbHref && (
+                <div>
+                  <button
+                    type="button"
+                    onClick={() => { window.open(airbnbHref, '_blank', 'noopener,noreferrer'); }}
+                    className="w-full py-4 bg-primary text-on-primary font-body text-label-caps tracking-widest hover:opacity-90 transition-opacity uppercase rounded"
+                  >
+                    Book on Airbnb
+                  </button>
+                </div>
+              )}
 
               {/* 2. VRBO — secondary outline, only when a VRBO link exists */}
               {vrboUrl && (

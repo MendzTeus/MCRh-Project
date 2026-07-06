@@ -140,7 +140,12 @@ async function fetchListing(unit, attempt = 1) {
     reviewsCount,
     primaryImage: meta(html, 'og:image') || imageUrls[0] || null,
     imageUrls: imageUrls.slice(0, 30),
-    likelyInvalid: response.status !== 200 || response.url.includes('/s/homes') || response.url.includes('/users/show/'),
+    // Airbnb serves its "404 Page Not Found" (removed/inactive listing) with an
+    // HTTP 200, so also treat that error page as invalid.
+    likelyInvalid: response.status !== 200
+      || response.url.includes('/s/homes')
+      || response.url.includes('/users/show/')
+      || /404 Page Not Found/i.test(html),
     importedAt: new Date().toISOString(),
   };
 }

@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useRef, type FormEvent, type ReactNode } from 'react';
+import { getListingMedia, cleanListingTitle } from '../data/listingMedia';
 
 // Quiet Luxury signature accent
 const GOLD = '#C5A059';
@@ -125,16 +126,21 @@ function moveInArray(arr: string[], slug: string, toIndex: number): string[] {
 }
 
 // ── Unit card ───────────────────────────────────────────────────────
-function UnitCard({ unit, api, onChanged, featured, onSaveFeatured }: { unit: Unit; api: ReturnType<typeof useApi>; onChanged: () => void; featured: string[]; onSaveFeatured: (next: string[]) => void }) {
+function UnitCard({ unit, api, onChanged, featured, onSaveFeatured, displayTitles, onSaveDisplayTitle }: { unit: Unit; api: ReturnType<typeof useApi>; onChanged: () => void; featured: string[]; onSaveFeatured: (next: string[]) => void; displayTitles: Record<string, string>; onSaveDisplayTitle: (slug: string, value: string) => void }) {
   const isFeatured = featured.includes(unit.unitSlug);
   const featuredPos = featured.indexOf(unit.unitSlug); // 0-based
+  // Original Airbnb title (from the scrape) + its auto-cleaned fallback for preview.
+  const originalTitle = getListingMedia(unit.unitSlug)?.title || unit.unitName;
+  const storedDisplayTitle = displayTitles[unit.unitSlug] || '';
   const [name, setName] = useState(unit.unitName);
   const [specs, setSpecs] = useState(unit.suppliedSpecs || '');
   const [airbnb, setAirbnb] = useState(unit.airbnbUrl || '');
+  const [dispTitle, setDispTitle] = useState(storedDisplayTitle);
   const [status, setStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
   const fileRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => { setName(unit.unitName); setSpecs(unit.suppliedSpecs || ''); setAirbnb(unit.airbnbUrl || ''); }, [unit]);
+  useEffect(() => { setDispTitle(storedDisplayTitle); }, [storedDisplayTitle]);
 
   const save = useCallback(async (patch: Record<string, unknown>) => {
     setStatus('saving');
@@ -190,6 +196,16 @@ function UnitCard({ unit, api, onChanged, featured, onSaveFeatured }: { unit: Un
       <div className="grid gap-4 mb-5">
         <div><label className={label}>Nome</label>
           <input value={name} onChange={(e) => setName(e.target.value)} onBlur={() => name !== unit.unitName && save({ unitName: name })} className={`${field} font-display text-base`} /></div>
+        <div>
+          <label className={label}>Título de exibição no site <span className="text-on-surface-variant/40 normal-case tracking-normal">(opcional)</span></label>
+          <input value={dispTitle} onChange={(e) => setDispTitle(e.target.value)}
+            onBlur={() => { if (dispTitle.trim() !== storedDisplayTitle) onSaveDisplayTitle(unit.unitSlug, dispTitle.trim()); }}
+            placeholder={cleanListingTitle(originalTitle) || originalTitle} className={field} />
+          <p className="font-body text-[10px] text-on-surface-variant/60 mt-1.5 leading-relaxed">
+            No site aparece: <span style={{ color: GOLD }}>{dispTitle.trim() || cleanListingTitle(originalTitle) || originalTitle}</span>
+            <br />Original do Airbnb: <span className="text-on-surface-variant/50">{originalTitle}</span>
+          </p>
+        </div>
         <div><label className={label}>Specs</label>
           <input value={specs} onChange={(e) => setSpecs(e.target.value)} onBlur={() => specs !== (unit.suppliedSpecs || '') && save({ suppliedSpecs: specs })} placeholder="2BED 2BATH" className={field} /></div>
         <div><label className={label}>Link do Airbnb</label>
@@ -380,6 +396,13 @@ export default function Admin() {
   const featured = Array.isArray(site.content['home.featured']) ? (site.content['home.featured'] as string[]) : [];
   const saveFeatured = (next: string[]) =>
     api('/admin/content/home.featured', { method: 'PUT', body: JSON.stringify({ value: next }) }).then(load).catch(() => {});
+  const displayTitles = (site.content['unit.displayTitles'] && typeof site.content['unit.displayTitles'] === 'object'
+    ? site.content['unit.displayTitles'] : {}) as Record<string, string>;
+  const saveDisplayTitle = (slug: string, value: string) => {
+    const next = { ...displayTitles };
+    if (value) next[slug] = value; else delete next[slug];
+    return api('/admin/content/unit.displayTitles', { method: 'PUT', body: JSON.stringify({ value: next }) }).then(load).catch(() => {});
+  };
 
   const tabs: { id: Tab; label: string }[] = [
     { id: 'apartments', label: 'Apartamentos' },
@@ -442,7 +465,7 @@ export default function Admin() {
                   <span className="font-body text-[10px] uppercase tracking-widest text-on-surface-variant/60">{groupUnits.length} apê(s)</span>
                 </div>
                 <div className="grid gap-5" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))' }}>
-                  {groupUnits.map((u) => <div key={u.unitSlug} style={{ display: 'contents' }}><UnitCard unit={u} api={api} onChanged={load} featured={featured} onSaveFeatured={saveFeatured} /></div>)}
+                  {groupUnits.map((u) => <div key={u.unitSlug} style={{ display: 'contents' }}><UnitCard unit={u} api={api} onChanged={load} featured={featured} onSaveFeatured={saveFeatured} displayTitles={displayTitles} onSaveDisplayTitle={saveDisplayTitle} /></div>)}
                 </div>
               </div>
             ))}

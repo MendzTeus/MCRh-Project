@@ -33,13 +33,24 @@ export default function Home() {
     () => mapLocations.filter((location) => selectedArea === 'all' || location.areaId === selectedArea),
     [selectedArea],
   );
+  const publicUnits = usePublicUnits();
+  // Drop location cards whose collection has no bookable (visible) units left —
+  // e.g. a single-unit collection whose only listing is paused/hidden in the
+  // admin — so the list never links to an empty collection page. Collections
+  // never wired to Airbnb inventory keep their card (they render static units).
+  const listableLocations = useMemo(
+    () => visibleLocations.filter((location) => {
+      const inv = getInventoryForProperty(location.collectionSlug);
+      return inv.length === 0 || inv.some((unit) => !publicUnits.hidden.has(unit.unitSlug));
+    }),
+    [visibleLocations, publicUnits],
+  );
   // Cards are grouped by region/building; the map shows one pin per group.
-  const visibleGroups = useMemo(() => getLocationGroups(visibleLocations), [visibleLocations]);
+  const visibleGroups = useMemo(() => getLocationGroups(listableLocations), [listableLocations]);
   const groupedMapLocations = useMemo(() => groupLocationsByRegion(visibleLocations), [visibleLocations]);
 
   // Featured units are chosen in the admin (SiteContent → home.featured: ordered
   // list of unitSlugs). Falls back to the Chambers block when none are set.
-  const publicUnits = usePublicUnits();
   const featuredUnits = useMemo<FeaturedUnit[]>(() => {
     const slugs = list<string>(site.content, 'home.featured', []);
     return slugs.flatMap((slug): FeaturedUnit[] => {

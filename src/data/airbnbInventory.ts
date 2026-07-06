@@ -46,11 +46,11 @@ export const airbnbInventory: AirbnbInventoryUnit[] = [
   { propertySlug: 'the-collective', propertyName: 'Wood Street Collective', unitSlug: 'wood-street-collective-full-house', unitName: 'Full House', postcode: 'M3 3EF' },
 
   { propertySlug: 'loom-street', propertyName: '8 Loom Street', unitSlug: 'mill-conversion-8', unitName: 'Apartment 8', postcode: 'M4 6AN', airbnbUrl: 'https://www.airbnb.com/h/mill-conversion-8' },
-  { propertySlug: 'loom-street', propertyName: '8 Loom Street', unitSlug: 'mill-conversion-3', unitName: 'Apartment 3', postcode: 'M4 6AN', airbnbUrl: 'https://www.airbnb.com/h/mill-conversion-3' },
+  { propertySlug: 'loom-street', propertyName: '8 Loom Street', unitSlug: 'mill-conversion-3', unitName: 'Apartment 3', postcode: 'M4 6AN', airbnbUrl: 'https://www.airbnb.co.uk/h/mill-conversion-3' },
   { propertySlug: 'newton-street', propertyName: '113 Newton Street', unitSlug: '21-loft-conversion', unitName: 'Apartment 21', postcode: 'M1 1AE', airbnbUrl: 'https://www.airbnb.com/h/21-loft-conversion' },
   { propertySlug: 'lockgate-mews', propertyName: 'Lockgate Mews', unitSlug: 'lockgate-504', unitName: 'Apartment 504', postcode: 'M4 6GE' },
   { propertySlug: 'sezas', propertyName: "Seza's", unitSlug: 'sezas-conversion', unitName: 'Apartment 15', postcode: 'M4 5BR', airbnbUrl: 'https://airbnb.com/h/sezas-conversion' },
-  { propertySlug: 'crusader', propertyName: 'Crusader', unitSlug: 'mill-conversion-6', unitName: 'Apartment 6', postcode: 'M1 2WQ', airbnbUrl: 'https://airbnb.com/h/mill-conversion-6' },
+  { propertySlug: 'crusader', propertyName: 'Crusader', unitSlug: 'mill-conversion-6', unitName: 'Apartment 6', postcode: 'M1 2WQ', airbnbUrl: 'https://www.airbnb.co.uk/h/crusader' },
   { propertySlug: 'mm2', propertyName: 'MM2', unitSlug: 'ancoats-14', unitName: 'Apartment 14', postcode: 'M4 5BS', airbnbUrl: 'https://airbnb.com/h/ancoats-14' },
   { propertySlug: 'mm2', propertyName: 'MM2', unitSlug: 'ancoats-15', unitName: 'Apartment 15', postcode: 'M4 5BS', airbnbUrl: 'https://airbnb.com/h/ancoats-15' },
   { propertySlug: 'spinning-mills', propertyName: 'Spinning Mills', unitSlug: 'redbrick-mill-2', unitName: 'Apartment 212', postcode: 'M40 7LY', airbnbUrl: 'https://airbnb.com/h/redbrick-mill-2' },
