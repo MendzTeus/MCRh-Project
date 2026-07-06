@@ -114,8 +114,20 @@ function PhotoTile({ photo, onSetCover, onDelete }: { photo: Photo; onSetCover: 
   );
 }
 
+// Move a slug to a target index within the featured list (for the order control).
+function moveInArray(arr: string[], slug: string, toIndex: number): string[] {
+  const from = arr.indexOf(slug);
+  if (from === -1) return arr;
+  const next = [...arr];
+  next.splice(from, 1);
+  next.splice(Math.max(0, Math.min(next.length, toIndex)), 0, slug);
+  return next;
+}
+
 // ── Unit card ───────────────────────────────────────────────────────
-function UnitCard({ unit, api, onChanged }: { unit: Unit; api: ReturnType<typeof useApi>; onChanged: () => void }) {
+function UnitCard({ unit, api, onChanged, featured, onSaveFeatured }: { unit: Unit; api: ReturnType<typeof useApi>; onChanged: () => void; featured: string[]; onSaveFeatured: (next: string[]) => void }) {
+  const isFeatured = featured.includes(unit.unitSlug);
+  const featuredPos = featured.indexOf(unit.unitSlug); // 0-based
   const [name, setName] = useState(unit.unitName);
   const [specs, setSpecs] = useState(unit.suppliedSpecs || '');
   const [airbnb, setAirbnb] = useState(unit.airbnbUrl || '');
@@ -148,6 +160,31 @@ function UnitCard({ unit, api, onChanged }: { unit: Unit; api: ReturnType<typeof
             <span className="absolute top-0.5 w-4 h-4 bg-white transition-all" style={{ left: unit.visible ? 18 : 2 }} />
           </span>
         </button>
+      </div>
+
+      {/* Featured on homepage */}
+      <div className="flex items-center justify-between mb-4 pb-4 border-b border-outline-variant/20">
+        <button type="button"
+          onClick={() => onSaveFeatured(isFeatured ? featured.filter((s) => s !== unit.unitSlug) : [...featured, unit.unitSlug])}
+          aria-pressed={isFeatured}
+          className="flex items-center gap-2 font-body text-[10px] uppercase tracking-[0.15em]"
+          style={{ color: isFeatured ? GOLD : 'var(--on-surface-variant, #44474c)' }}>
+          <span>{isFeatured ? '★ Em destaque' : '☆ Destaque na home'}</span>
+          <span className="relative inline-block w-9 h-5 transition-colors" style={{ background: isFeatured ? GOLD : '#c5c6cd' }}>
+            <span className="absolute top-0.5 w-4 h-4 bg-white transition-all" style={{ left: isFeatured ? 18 : 2 }} />
+          </span>
+        </button>
+        {isFeatured && (
+          <label className="flex items-center gap-2 font-body text-[10px] uppercase tracking-[0.12em] text-on-surface-variant/70">
+            Ordem
+            <input type="number" min={1} max={featured.length} value={featuredPos + 1}
+              onChange={(e) => {
+                const pos = Number(e.target.value);
+                if (Number.isFinite(pos)) onSaveFeatured(moveInArray(featured, unit.unitSlug, pos - 1));
+              }}
+              className="w-14 bg-transparent border-b border-outline-variant/50 py-1 text-center font-body text-sm text-on-surface focus:outline-none focus:border-[#C5A059]" />
+          </label>
+        )}
       </div>
 
       <div className="grid gap-4 mb-5">
@@ -340,6 +377,9 @@ export default function Admin() {
   const groups: Record<string, Unit[]> = {};
   filtered.forEach((u) => { (groups[u.propertyName] ||= []).push(u); });
   const visibleCount = units.filter((u) => u.visible).length;
+  const featured = Array.isArray(site.content['home.featured']) ? (site.content['home.featured'] as string[]) : [];
+  const saveFeatured = (next: string[]) =>
+    api('/admin/content/home.featured', { method: 'PUT', body: JSON.stringify({ value: next }) }).then(load).catch(() => {});
 
   const tabs: { id: Tab; label: string }[] = [
     { id: 'apartments', label: 'Apartamentos' },
@@ -382,6 +422,17 @@ export default function Admin() {
 
         {tab === 'apartments' && !loading && (
           <>
+            {/* Featured summary / counter */}
+            <div className="mb-8 flex flex-wrap items-center gap-x-3 gap-y-1 border-l-2 pl-4 py-1" style={{ borderColor: GOLD }}>
+              <span className="font-body text-[11px] uppercase tracking-[0.15em]" style={{ color: GOLD }}>
+                ★ {featured.length} em destaque na home
+              </span>
+              {featured.length > 0 && (
+                <span className="font-body text-[11px] text-on-surface-variant/70">
+                  {featured.map((slug) => units.find((u) => u.unitSlug === slug)?.unitName || slug).join(' · ')}
+                </span>
+              )}
+            </div>
             <input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Buscar apartamento ou prédio…" className={`${field} max-w-sm mb-10`} />
             {Object.entries(groups).map(([propertyName, groupUnits]) => (
               <div key={propertyName} className="mb-12">
@@ -391,7 +442,7 @@ export default function Admin() {
                   <span className="font-body text-[10px] uppercase tracking-widest text-on-surface-variant/60">{groupUnits.length} apê(s)</span>
                 </div>
                 <div className="grid gap-5" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))' }}>
-                  {groupUnits.map((u) => <div key={u.unitSlug} style={{ display: 'contents' }}><UnitCard unit={u} api={api} onChanged={load} /></div>)}
+                  {groupUnits.map((u) => <div key={u.unitSlug} style={{ display: 'contents' }}><UnitCard unit={u} api={api} onChanged={load} featured={featured} onSaveFeatured={saveFeatured} /></div>)}
                 </div>
               </div>
             ))}

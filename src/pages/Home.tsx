@@ -8,6 +8,19 @@ import PropertyFeatureSection from '../components/PropertyFeatureSection';
 import { locationAreas, mapLocations, getLocationGroups, groupLocationsByRegion, type LocationArea } from '../data/locations';
 import { useClickOutside } from '../hooks/useClickOutside';
 import { useSiteContent, text, list } from '../hooks/useSiteContent';
+import { airbnbInventory, getInventoryForProperty } from '../data/airbnbInventory';
+import { getUnitGallery, getListingMedia } from '../data/listingMedia';
+import { getPropertyBySlug, properties } from '../data/properties';
+import { usePublicUnits } from '../hooks/usePublicUnits';
+
+type FeaturedUnit = {
+  slug: string;
+  propertySlug: string;
+  name: string;
+  description: string;
+  images: string[];
+  href: string;
+};
 
 export default function Home() {
   const site = useSiteContent();
@@ -23,6 +36,32 @@ export default function Home() {
   // Cards are grouped by region/building; the map shows one pin per group.
   const visibleGroups = useMemo(() => getLocationGroups(visibleLocations), [visibleLocations]);
   const groupedMapLocations = useMemo(() => groupLocationsByRegion(visibleLocations), [visibleLocations]);
+
+  // Featured units are chosen in the admin (SiteContent → home.featured: ordered
+  // list of unitSlugs). Falls back to the Chambers block when none are set.
+  const publicUnits = usePublicUnits();
+  const featuredUnits = useMemo<FeaturedUnit[]>(() => {
+    const slugs = list<string>(site.content, 'home.featured', []);
+    return slugs.flatMap((slug): FeaturedUnit[] => {
+      if (publicUnits.hidden.has(slug)) return [];
+      const inv = airbnbInventory.find((u) => u.unitSlug === slug);
+      if (!inv) return [];
+      const media = getListingMedia(slug);
+      const override = publicUnits.overrides.get(slug);
+      // Description: the unit's own collection, or the collection that groups it
+      // (e.g. chambers-11 → the Chambers collection), else the listing title.
+      const property = getPropertyBySlug(inv.propertySlug)
+        || properties.find((p) => getInventoryForProperty(p.slug).some((iu) => iu.unitSlug === slug));
+      return [{
+        slug,
+        propertySlug: inv.propertySlug,
+        name: override?.unitName || media?.title || inv.unitName,
+        description: override?.description || property?.description || media?.title || '',
+        images: getUnitGallery(slug, inv.propertySlug),
+        href: `/properties/${inv.propertySlug}/${slug}`,
+      }];
+    });
+  }, [site.content, publicUnits]);
 
   return (
     <div className="animate-in fade-in duration-500">
@@ -57,16 +96,35 @@ export default function Home() {
         </div>
       </section>
 
-      <PropertyFeatureSection
-        propertySlug="chambers"
-        eyebrow="Featured Property"
-        name="Chambers Residence"
-        description="Experience the perfect blend of Manchester's rich industrial heritage and contemporary luxury. Located in the heart of the city, Chambers Residence offers a serene escape with bespoke furnishings, towering ceilings, and an atmosphere of curated calm."
-        collectionSlug="chambers"
-        cta="Book Now"
-        imageLayout="stack"
-        compact
-      />
+      {featuredUnits.length > 0 ? (
+        featuredUnits.map((u: FeaturedUnit) => (
+          <div key={u.slug} style={{ display: 'contents' }}>
+            <PropertyFeatureSection
+              propertySlug={u.propertySlug}
+              eyebrow="Featured Property"
+              name={u.name}
+              description={u.description}
+              images={u.images}
+              href={u.href}
+              collectionSlug={u.propertySlug}
+              cta="Book Now"
+              imageLayout="stack"
+              compact
+            />
+          </div>
+        ))
+      ) : (
+        <PropertyFeatureSection
+          propertySlug="chambers"
+          eyebrow="Featured Property"
+          name="Chambers Residence"
+          description="Experience the perfect blend of Manchester's rich industrial heritage and contemporary luxury. Located in the heart of the city, Chambers Residence offers a serene escape with bespoke furnishings, towering ceilings, and an atmosphere of curated calm."
+          collectionSlug="chambers"
+          cta="Book Now"
+          imageLayout="stack"
+          compact
+        />
+      )}
 
       <PropertyFeatureSection
         propertySlug="john-dalton-st"
