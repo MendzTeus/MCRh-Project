@@ -58,6 +58,22 @@ function splitOgTitle(value) {
   };
 }
 
+// Parse the "· 2 bedrooms · 2 beds · 1 private bath" fragment into numbers.
+function parseSpecNumbers(specs) {
+  const s = (specs || []).join(' ').toLowerCase();
+  const int = (re) => { const m = s.match(re); return m ? Number(m[1]) : null; };
+  const bedrooms = s.includes('studio') ? 0 : int(/(\d+)\s*bedroom/);
+  const beds = int(/(\d+)\s*bed(?!room)/);
+  const bathsMatch = s.match(/([\d.]+)\s*(?:private |shared |half[- ])?bath/);
+  const baths = bathsMatch ? Number(bathsMatch[1]) : null;
+  return { bedrooms, beds, baths };
+}
+
+function firstNumber(html, re) {
+  const m = html.match(re);
+  return m ? Number(m[1]) : null;
+}
+
 function uniqueImageUrls(html) {
   return [...new Set(
     [...html.matchAll(/https:\/\/a0\.muscache\.com\/im\/pictures\/[^"'\\< ]+/g)]
@@ -93,6 +109,12 @@ async function fetchListing(unit, attempt = 1) {
 
   const ogTitle = meta(html, 'og:title');
   const imageUrls = uniqueImageUrls(html);
+  const og = splitOgTitle(ogTitle);
+  const specNumbers = parseSpecNumbers(og.specsFromAirbnb);
+  // Fields only present in the listing page's embedded data (not the og:title):
+  const guests = firstNumber(html, /"personCapacity":(\d+)/);
+  const reviewsCount = firstNumber(html, /"reviewCount":(\d+)/);
+  const ratingValue = html.match(/"ratingValue":"?([\d.]+)"?/)?.[1] || null;
 
   return {
     propertySlug: unit.propertySlug,
@@ -108,7 +130,14 @@ async function fetchListing(unit, attempt = 1) {
     title: decode(html.match(/<title[^>]*>([^<]*)<\/title>/i)?.[1]) || null,
     airbnbName: meta(html, 'og:description') || null,
     ogTitle: ogTitle || null,
-    ...splitOgTitle(ogTitle),
+    ...og,
+    // Structured specs for the property page ("4 guests · 2 bedrooms · …").
+    guests,
+    bedrooms: specNumbers.bedrooms,
+    beds: specNumbers.beds,
+    baths: specNumbers.baths,
+    rating: og.rating || ratingValue || null,
+    reviewsCount,
     primaryImage: meta(html, 'og:image') || imageUrls[0] || null,
     imageUrls: imageUrls.slice(0, 30),
     likelyInvalid: response.status !== 200 || response.url.includes('/s/homes') || response.url.includes('/users/show/'),
@@ -127,21 +156,36 @@ for (const [index, unit] of selected.entries()) {
     continue;
   }
 
+  const priorGood = (entry) => Boolean(entry && ((entry.imageUrls && entry.imageUrls.length) || entry.ogTitle));
+
   console.log(`[${index + 1}/${selected.length}] ${unit.unitSlug}`);
   try {
-    resultBySlug.set(unit.unitSlug, await fetchListing(unit));
+    const fresh = await fetchListing(unit);
+    const prev = resultBySlug.get(unit.unitSlug);
+    const freshEmpty = !fresh.ogTitle && !(fresh.imageUrls && fresh.imageUrls.length);
+    // Never let an empty refetch (Airbnb stub/throttle) wipe good existing data.
+    if (freshEmpty && priorGood(prev)) {
+      console.log(`[keep] ${unit.unitSlug} — refetch vazio, mantendo dados existentes`);
+    } else {
+      resultBySlug.set(unit.unitSlug, fresh);
+    }
   } catch (error) {
-    resultBySlug.set(unit.unitSlug, {
-      propertySlug: unit.propertySlug,
-      propertyName: unit.propertyName,
-      unitSlug: unit.unitSlug,
-      unitName: unit.unitName,
-      suppliedSpecs: unit.suppliedSpecs || null,
-      postcode: unit.postcode,
-      inputUrl: unit.airbnbUrl,
-      error: error instanceof Error ? error.message : String(error),
-      importedAt: new Date().toISOString(),
-    });
+    const prev = resultBySlug.get(unit.unitSlug);
+    if (priorGood(prev)) {
+      console.log(`[keep] ${unit.unitSlug} — erro no refetch, mantendo dados existentes`);
+    } else {
+      resultBySlug.set(unit.unitSlug, {
+        propertySlug: unit.propertySlug,
+        propertyName: unit.propertyName,
+        unitSlug: unit.unitSlug,
+        unitName: unit.unitName,
+        suppliedSpecs: unit.suppliedSpecs || null,
+        postcode: unit.postcode,
+        inputUrl: unit.airbnbUrl,
+        error: error instanceof Error ? error.message : String(error),
+        importedAt: new Date().toISOString(),
+      });
+    }
   }
 
   await mkdir(path.dirname(outputPath), { recursive: true });

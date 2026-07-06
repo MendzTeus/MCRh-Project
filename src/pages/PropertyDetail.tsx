@@ -8,7 +8,7 @@ import { getPropertyMapEmbedUrl } from '../data/locations';
 import DateRangePicker, { formatShortDate } from '../components/DateRangePicker';
 import MediaImage from '../components/MediaImage';
 import { getInventoryUnit } from '../data/airbnbInventory';
-import { getListingMedia, getUnitGallery } from '../data/listingMedia';
+import { getListingMedia, getUnitGallery, getUnitSpecs } from '../data/listingMedia';
 import { getPropertyBySlug, getUnitBySlug, type PropertyUnit } from '../data/properties';
 import { useClickOutside } from '../hooks/useClickOutside';
 import { useUnitBlockedDates } from '../hooks/useUnitBlockedDates';
@@ -83,6 +83,22 @@ export default function PropertyDetail() {
   const whatsappHref = `https://wa.me/${whatsappNumber}?text=${encodeURIComponent(enquiryText)}`;
   const emailHref = `mailto:${contactEmail}?subject=${encodeURIComponent(`Reserva - ${unit.title}`)}&body=${encodeURIComponent(enquiryText)}`;
 
+  // Per-unit specs from the Airbnb scrape, falling back to the property's own
+  // figures when a listing didn't scrape (e.g. Crusader's intermittently blocked page).
+  const scrapedSpecs = getUnitSpecs(inventoryUnit?.unitSlug || id);
+  const specGuests = scrapedSpecs?.guests ?? property.maxGuests;
+  const specBedrooms = scrapedSpecs?.bedrooms ?? property.bedrooms;
+  const specBeds = scrapedSpecs?.beds ?? property.beds;
+  const specBaths = scrapedSpecs?.baths ?? property.bathrooms;
+  const reviewsCount = scrapedSpecs?.reviewsCount ?? null;
+  const plural = (n: number, word: string) => `${n} ${n === 1 ? word : `${word}s`}`;
+  const specsLine = [
+    plural(specGuests, 'guest'),
+    specBedrooms != null && plural(specBedrooms, 'bedroom'),
+    specBeds != null && plural(specBeds, 'bed'),
+    specBaths != null && plural(specBaths, 'bathroom'),
+  ].filter(Boolean).join(' · ');
+
   return (
     <div className="animate-in fade-in duration-500">
       <Helmet>
@@ -104,13 +120,17 @@ export default function PropertyDetail() {
             <p className="font-body text-label-caps tracking-widest mb-4 opacity-80 uppercase">{unit.label}</p>
             <h1 className="font-display text-display-lg-mobile md:text-display-lg mb-6 leading-tight">{unit.title}</h1>
             <p className="font-body text-body-lg opacity-90 max-w-2xl">{unit.description}</p>
+            <p className="font-body text-label-caps tracking-widest uppercase text-sm text-white/80 mt-5">{specsLine}</p>
           </div>
 
           <div className="relative w-full md:w-1/3 bg-surface p-8 rounded-xl shadow-2xl md:translate-y-1/4 backdrop-blur-md bg-opacity-95 border border-outline-variant/20">
             <div className="flex justify-end items-center mb-6 border-b border-outline-variant/30 pb-4">
-              <div className="flex items-center gap-1 text-on-surface-variant">
+              <div className="flex items-center gap-1.5 text-on-surface-variant">
                 <Star className="w-4 h-4 fill-current text-secondary" />
                 <span className="font-body text-body-md font-semibold">{displayRating}</span>
+                {reviewsCount != null && (
+                  <span className="font-body text-sm text-on-surface-variant/70">· {plural(reviewsCount, 'review')}</span>
+                )}
               </div>
             </div>
             
@@ -275,8 +295,8 @@ export default function PropertyDetail() {
             <h3 className="font-display text-headline-sm text-primary mb-8">Curated Amenities</h3>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-y-6 gap-x-8">
               {[
-                { icon: BedDouble, label: `${property.bedrooms} Bedroom${property.bedrooms === 1 ? '' : 's'}` },
-                { icon: Bath, label: `${property.bathrooms} Bathroom${property.bathrooms === 1 ? '' : 's'}` },
+                { icon: BedDouble, label: plural(specBedrooms, 'Bedroom') },
+                { icon: Bath, label: plural(specBaths, 'Bathroom') },
                 { icon: Wifi, label: property.amenities[0] || "Wi-Fi" },
                 { icon: ChefHat, label: property.amenities[1] || "Fully equipped kitchen" },
                 { icon: Coffee, label: property.amenities[2] || "Smart TV" },
@@ -437,8 +457,8 @@ export default function PropertyDetail() {
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-y-6 gap-x-8">
               {[
-                { icon: BedDouble, label: `${property.bedrooms} Bedroom${property.bedrooms === 1 ? '' : 's'}` },
-                { icon: Bath, label: `${property.bathrooms} Bathroom${property.bathrooms === 1 ? '' : 's'}` },
+                { icon: BedDouble, label: plural(specBedrooms, 'Bedroom') },
+                { icon: Bath, label: plural(specBaths, 'Bathroom') },
                 ...property.amenities.map((a) => ({ icon: Snowflake, label: a })),
               ].map((item, i) => (
                 <div key={i} className="flex items-center gap-4 border-b border-outline-variant/20 pb-4">

@@ -6,10 +6,24 @@ type ExtractedListing = {
   unitSlug: string;
   airbnbName?: string | null;
   rating?: string | null;
+  guests?: number | null;
+  bedrooms?: number | null;
+  beds?: number | null;
+  baths?: number | null;
+  reviewsCount?: number | null;
   primaryImage?: string | null;
   imageUrls?: string[];
   finalUrl?: string | null;
   likelyInvalid?: boolean;
+};
+
+export type UnitSpecs = {
+  guests: number | null;
+  bedrooms: number | null;
+  beds: number | null;
+  baths: number | null;
+  rating: string | null;
+  reviewsCount: number | null;
 };
 
 const listings = (extractedListings.results || []) as ExtractedListing[];
@@ -51,6 +65,21 @@ export function getListingMedia(unitSlug?: string) {
     primaryImage: gallery[0],
     gallery,
     finalUrl: listing.finalUrl || undefined,
+  };
+}
+
+/** Per-unit specs scraped from the Airbnb listing (guests/rooms/beds/baths/rating). */
+export function getUnitSpecs(unitSlug?: string): UnitSpecs | undefined {
+  if (!unitSlug) return undefined;
+  const listing = listings.find((item) => item.unitSlug === unitSlug && !item.likelyInvalid);
+  if (!listing) return undefined;
+  return {
+    guests: listing.guests ?? null,
+    bedrooms: listing.bedrooms ?? null,
+    beds: listing.beds ?? null,
+    baths: listing.baths ?? null,
+    rating: listing.rating ?? null,
+    reviewsCount: listing.reviewsCount ?? null,
   };
 }
 
