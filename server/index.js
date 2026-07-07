@@ -5,6 +5,7 @@ const path = require('path');
 const fs = require('fs');
 const { supabase } = require('./db');
 const { syncAll, syncUnit, loadPropertyIds } = require('./sync');
+const { checkAllListings } = require('./airbnb-listing');
 const adminRouter = require('./admin');
 const contentRouter = require('./content');
 
@@ -106,6 +107,19 @@ app.post('/api/sync/:unitSlug', async (req, res) => {
   res.json({ ok: true, ...result });
 });
 
+// POST /api/airbnb-check — probe every Airbnb listing and update `airbnbListed`
+// so unlisted units drop off the site and re-listed ones come back. Runs
+// automatically once a day (see scheduleAirbnbCheck) and can be triggered here.
+app.post('/api/airbnb-check', async (req, res) => {
+  if (!requireSyncSecret(req, res)) return;
+  try {
+    const results = await checkAllListings();
+    res.json({ ok: true, changed: results.filter((r) => r.changed).length, results });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // GET /api/units/:property — list units and sync status
 app.get('/api/units/:property', async (req, res) => {
   const { data, error } = await supabase
@@ -198,9 +212,26 @@ if (fs.existsSync(distDir)) {
   });
 }
 
+// Run the Airbnb listing check once a day so unlisted units drop off the site
+// and re-listed ones return — with no manual step. The first run is delayed a
+// couple of minutes after boot so it never competes with startup, and a fresh
+// deploy doesn't hammer Airbnb immediately.
+const DAY_MS = 24 * 60 * 60 * 1000;
+function scheduleAirbnbCheck() {
+  const run = () => checkAllListings()
+    .then((results) => {
+      const changed = results.filter((r) => r.changed).length;
+      console.log(`[airbnb-check] Checked ${results.length} listings, ${changed} changed`);
+    })
+    .catch((err) => console.error('[airbnb-check] Run failed:', err.message));
+  setTimeout(run, 2 * 60 * 1000);
+  setInterval(run, DAY_MS);
+}
+
 const PORT = process.env.API_PORT || 3001;
 boot()
   .catch((err) => console.error('[api] Boot failed, starting anyway:', err.message))
   .finally(() => {
     app.listen(PORT, () => console.log(`[api] Listening on :${PORT}`));
+    scheduleAirbnbCheck();
   });

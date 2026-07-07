@@ -29,7 +29,7 @@ router.use(requireAdmin);
 router.get('/units', async (_req, res) => {
   const { data: units, error } = await supabase
     .from('Unit')
-    .select('unitSlug, unitName, propertySlug, propertyName, suppliedSpecs, postcode, airbnbUrl, description, squareFeet, visible, displayOrder')
+    .select('unitSlug, unitName, propertySlug, propertyName, suppliedSpecs, postcode, airbnbUrl, description, squareFeet, visible, airbnbListed, displayOrder')
     .order('displayOrder');
   if (error) return res.status(500).json({ error: error.message });
 

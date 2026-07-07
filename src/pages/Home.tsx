@@ -89,9 +89,14 @@ export default function Home() {
       {/* Hero Section */}
       <section className="relative h-[90vh] min-h-[600px] w-full overflow-hidden flex items-end">
         <div className="absolute inset-0 z-0 bg-surface-dim">
-           {site.images['home.hero']
-             ? <img src={site.images['home.hero'].url} alt={site.images['home.hero'].alt || 'MCRh Manchester apartment interior'} className="w-full h-full object-cover" />
-             : <MediaImage propertySlug="chambers" alt="MCRh Manchester apartment interior" loading="eager" />}
+           {/* Wait for the admin overlay to load before painting an image, so the
+               chosen hero doesn't get flashed over by the static fallback first.
+               The dark bg-surface-dim covers this brief loading instant. */}
+           {!site.loaded
+             ? null
+             : site.images['home.hero']
+               ? <img src={site.images['home.hero'].url} alt={site.images['home.hero'].alt || 'MCRh Manchester apartment interior'} className="w-full h-full object-cover" />
+               : <MediaImage propertySlug="chambers" alt="MCRh Manchester apartment interior" loading="eager" />}
           <div className="absolute inset-0 bg-gradient-to-t from-primary/90 via-primary/40 to-primary/10"></div>
         </div>
         <div className="relative z-10 w-full px-margin-mobile md:px-margin-desktop pb-12 md:pb-24 max-w-[1280px] mx-auto flex flex-col md:flex-row justify-between items-end gap-8">

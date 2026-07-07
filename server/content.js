@@ -3,12 +3,15 @@ const { supabase } = require('./db');
 
 const router = express.Router();
 
-// Public read model for the site. Only VISIBLE units, with their photos ordered.
+// Public read model for the site. A unit is shown only when it is both manually
+// VISIBLE (admin toggle) AND still LISTED on Airbnb (daily auto-check). With
+// their photos ordered.
 router.get('/units', async (_req, res) => {
   const { data: units, error } = await supabase
     .from('Unit')
     .select('unitSlug, unitName, propertySlug, propertyName, suppliedSpecs, postcode, airbnbUrl, description, squareFeet, displayOrder')
     .eq('visible', true)
+    .eq('airbnbListed', true)
     .order('displayOrder');
   if (error) return res.status(500).json({ error: error.message });
 
@@ -29,7 +32,9 @@ router.get('/units', async (_req, res) => {
 
   // Explicit list of hidden slugs so the site knows exactly what to remove
   // (never inferred from absence — keeps the public site safe if the DB lags).
-  const { data: hidden } = await supabase.from('Unit').select('unitSlug').eq('visible', false);
+  // Hidden = manually hidden OR unlisted on Airbnb by the daily check.
+  const { data: hidden } = await supabase
+    .from('Unit').select('unitSlug').or('visible.eq.false,airbnbListed.eq.false');
   const hiddenSlugs = (hidden || []).map((h) => h.unitSlug);
 
   res.json({ units: result, hiddenSlugs, count: result.length });

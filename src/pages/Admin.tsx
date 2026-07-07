@@ -11,7 +11,7 @@ type Photo = { id: string; url: string; alt: string | null; isPrimary: boolean; 
 type Unit = {
   unitSlug: string; unitName: string; propertySlug: string; propertyName: string;
   suppliedSpecs: string | null; postcode: string | null; airbnbUrl: string | null;
-  description: string | null; visible: boolean; displayOrder: number; photos: Photo[];
+  description: string | null; visible: boolean; airbnbListed?: boolean; displayOrder: number; photos: Photo[];
 };
 type SiteData = { content: Record<string, unknown>; images: Record<string, { url: string; alt: string | null }> };
 
@@ -159,6 +159,12 @@ function UnitCard({ unit, api, onChanged, featured, onSaveFeatured, displayTitle
     <div className="bg-surface-container-lowest border border-outline-variant/40 p-5" style={{ opacity: unit.visible ? 1 : 0.55 }}>
       <div className="flex justify-between items-center mb-4">
         <span className="font-body text-[10px] uppercase tracking-[0.12em] text-on-surface-variant/70">{unit.unitSlug}</span>
+        {unit.airbnbListed === false && (
+          <span title="A verificação diária detectou que este anúncio está 'não listado' no Airbnb, por isso ele não aparece no site. Volta automaticamente quando você reativar no Airbnb."
+            className="font-body text-[9px] uppercase tracking-[0.12em] text-red-600 border border-red-300 px-1.5 py-0.5">
+            Não listado no Airbnb
+          </span>
+        )}
         <button type="button" onClick={() => save({ visible: !unit.visible })} aria-pressed={unit.visible}
           className="flex items-center gap-2 font-body text-[10px] uppercase tracking-[0.15em] text-on-surface-variant">
           <span>{unit.visible ? 'Visível' : 'Oculto'}</span>
