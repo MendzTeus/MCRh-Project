@@ -18,6 +18,12 @@ type SiteData = { content: Record<string, unknown>; images: Record<string, { url
 // Image slots the admin can override (friendly labels for the UI).
 const IMAGE_SLOTS: { slot: string; label: string; page: string }[] = [
   { slot: 'home.hero', label: 'Foto de capa (hero)', page: 'Home' },
+  { slot: 'home.block.chambers', label: 'Bloco Chambers', page: 'Home' },
+  { slot: 'home.block.john-dalton-st', label: 'Bloco John Dalton St', page: 'Home' },
+  { slot: 'home.block.wood-street', label: 'Bloco Wood Street', page: 'Home' },
+  { slot: 'home.block.ancoats', label: 'Bloco Ancoats', page: 'Home' },
+  { slot: 'home.block.old-trafford', label: 'Bloco Old Trafford', page: 'Home' },
+  { slot: 'home.block.the-collective', label: 'Bloco The Collective', page: 'Home' },
   { slot: 'design.hero', label: 'Hero', page: 'Design Services' },
   { slot: 'design.approach', label: 'Seção "Our Approach"', page: 'Design Services' },
   { slot: 'management.hero', label: 'Hero', page: 'Management Services' },
@@ -411,6 +417,23 @@ function ContentTab({ site, api, onChanged }: { site: SiteData; api: ReturnType<
           <StringField k="home.testimonials.title" title="Depoimentos — título" />
         </div>
         <ListEditor k="home.testimonials" title="Depoimentos" blank={{ text: '', name: '', property: '' }} cols={[{ key: 'text', label: 'Depoimento', wide: true }, { key: 'name', label: 'Nome' }, { key: 'property', label: 'Propriedade' }]} />
+      </Section>
+
+      <Section title="Home — Blocos de propriedade">
+        {(['chambers','john-dalton-st','wood-street','ancoats','old-trafford','the-collective'] as const).map((slug) => (
+          <div key={slug} className="border border-outline-variant/30 rounded-lg p-4 space-y-3">
+            <p className="font-body text-label-caps text-secondary tracking-widest uppercase text-xs">{slug}</p>
+            <div className="grid grid-cols-2 gap-3">
+              <StringField k={`home.block.${slug}.eyebrow`} title="Eyebrow" />
+              <StringField k={`home.block.${slug}.name`} title="Nome" />
+            </div>
+            <StringField k={`home.block.${slug}.description`} title="Descrição" textarea />
+            <div className="grid grid-cols-2 gap-3">
+              <StringField k={`home.block.${slug}.cta`} title="Botão" />
+              <StringField k={`home.block.${slug}.quote`} title="Citação (opcional)" />
+            </div>
+          </div>
+        ))}
       </Section>
 
       <Section title="Navegação (menu)">

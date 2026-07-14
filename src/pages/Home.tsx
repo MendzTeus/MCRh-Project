@@ -116,13 +116,13 @@ export default function Home() {
           <div key={u.slug} style={{ display: 'contents' }}>
             <PropertyFeatureSection
               propertySlug={u.propertySlug}
-              eyebrow="Featured Property"
+              eyebrow={text(site.content, 'home.block.chambers.eyebrow', 'Featured Property')}
               name={u.name}
               description={u.description}
-              images={u.images}
+              images={site.images['home.block.chambers'] ? [site.images['home.block.chambers'].url, ...u.images.slice(1)] : u.images}
               href={u.href}
               collectionSlug={u.propertySlug}
-              cta="Book Now"
+              cta={text(site.content, 'home.block.chambers.cta', 'Book Now')}
               imageLayout="stack"
               compact
             />
@@ -131,11 +131,12 @@ export default function Home() {
       ) : (
         <PropertyFeatureSection
           propertySlug="chambers"
-          eyebrow="Featured Property"
-          name="Chambers Residence"
-          description="Experience the perfect blend of Manchester's rich industrial heritage and contemporary luxury. Located in the heart of the city, Chambers Residence offers a serene escape with bespoke furnishings, towering ceilings, and an atmosphere of curated calm."
+          eyebrow={text(site.content, 'home.block.chambers.eyebrow', 'Featured Property')}
+          name={text(site.content, 'home.block.chambers.name', 'Chambers Residence')}
+          description={text(site.content, 'home.block.chambers.description', "Experience the perfect blend of Manchester's rich industrial heritage and contemporary luxury. Located in the heart of the city, Chambers Residence offers a serene escape with bespoke furnishings, towering ceilings, and an atmosphere of curated calm.")}
+          images={site.images['home.block.chambers'] ? [site.images['home.block.chambers'].url] : undefined}
           collectionSlug="chambers"
-          cta="Book Now"
+          cta={text(site.content, 'home.block.chambers.cta', 'Book Now')}
           imageLayout="stack"
           compact
         />
@@ -143,12 +144,13 @@ export default function Home() {
 
       <PropertyFeatureSection
         propertySlug="john-dalton-st"
-        eyebrow="Heritage Collection"
-        name="John Dalton Street"
-        description="Set within a meticulously restored historic building, this residence celebrates architectural grandeur while providing uncompromising modern comfort. Expansive arched windows frame city views, while tactile brickwork and rich textiles create a deeply comforting environment."
+        eyebrow={text(site.content, 'home.block.john-dalton-st.eyebrow', 'Heritage Collection')}
+        name={text(site.content, 'home.block.john-dalton-st.name', 'John Dalton Street')}
+        description={text(site.content, 'home.block.john-dalton-st.description', 'Set within a meticulously restored historic building, this residence celebrates architectural grandeur while providing uncompromising modern comfort. Expansive arched windows frame city views, while tactile brickwork and rich textiles create a deeply comforting environment.')}
+        images={site.images['home.block.john-dalton-st'] ? [site.images['home.block.john-dalton-st'].url] : undefined}
         collectionSlug="john-dalton-st"
-        cta="Explore Details"
-        quote="A masterclass in urban sanctuary."
+        cta={text(site.content, 'home.block.john-dalton-st.cta', 'Explore Details')}
+        quote={text(site.content, 'home.block.john-dalton-st.quote', 'A masterclass in urban sanctuary.')}
         imageLayout="grid"
         tinted
         compact
@@ -156,23 +158,25 @@ export default function Home() {
 
       <PropertyFeatureSection
         propertySlug="wood-street"
-        eyebrow="Wood Street Collection"
-        name="Wood Street"
-        description="Situated in a vibrant, historic quarter, Wood Street properties offer an unmatched blend of privacy and proximity to Manchester's cultural landmarks. Featuring tailored interiors, warm wood tones, and expansive natural light."
+        eyebrow={text(site.content, 'home.block.wood-street.eyebrow', 'Wood Street Collection')}
+        name={text(site.content, 'home.block.wood-street.name', 'Wood Street')}
+        description={text(site.content, 'home.block.wood-street.description', "Situated in a vibrant, historic quarter, Wood Street properties offer an unmatched blend of privacy and proximity to Manchester's cultural landmarks. Featuring tailored interiors, warm wood tones, and expansive natural light.")}
+        images={site.images['home.block.wood-street'] ? [site.images['home.block.wood-street'].url] : undefined}
         collectionSlug="wood-street"
-        cta="View Details"
+        cta={text(site.content, 'home.block.wood-street.cta', 'View Details')}
         imageLayout="stack"
         compact
       />
 
       <PropertyFeatureSection
         propertySlug="ancoats"
-        eyebrow="Ancoats District"
-        name="Ancoats"
-        description="Embrace the spirit of innovation in Ancoats. These residences lean into their industrial roots with polished concrete, exposed beams, and contemporary art, creating a dynamic yet refined living space for the modern traveler."
+        eyebrow={text(site.content, 'home.block.ancoats.eyebrow', 'Ancoats District')}
+        name={text(site.content, 'home.block.ancoats.name', 'Ancoats')}
+        description={text(site.content, 'home.block.ancoats.description', 'Embrace the spirit of innovation in Ancoats. These residences lean into their industrial roots with polished concrete, exposed beams, and contemporary art, creating a dynamic yet refined living space for the modern traveler.')}
+        images={site.images['home.block.ancoats'] ? [site.images['home.block.ancoats'].url] : undefined}
         collectionSlug="ancoats"
-        cta="Explore Details"
-        quote="Industrial roots, contemporary luxury."
+        cta={text(site.content, 'home.block.ancoats.cta', 'Explore Details')}
+        quote={text(site.content, 'home.block.ancoats.quote', 'Industrial roots, contemporary luxury.')}
         imageLayout="grid"
         tinted
         compact
@@ -180,23 +184,25 @@ export default function Home() {
 
       <PropertyFeatureSection
         propertySlug="old-trafford"
-        eyebrow="Trafford Exclusives"
-        name="Trafford"
-        description="A collection of spacious, tranquil retreats on the outskirts of the city bustle. Trafford properties are defined by their generous proportions, lush surroundings, and uncompromising commitment to elegant comfort."
+        eyebrow={text(site.content, 'home.block.old-trafford.eyebrow', 'Trafford Exclusives')}
+        name={text(site.content, 'home.block.old-trafford.name', 'Trafford')}
+        description={text(site.content, 'home.block.old-trafford.description', 'A collection of spacious, tranquil retreats on the outskirts of the city bustle. Trafford properties are defined by their generous proportions, lush surroundings, and uncompromising commitment to elegant comfort.')}
+        images={site.images['home.block.old-trafford'] ? [site.images['home.block.old-trafford'].url] : undefined}
         collectionSlug="old-trafford"
-        cta="View Details"
+        cta={text(site.content, 'home.block.old-trafford.cta', 'View Details')}
         imageLayout="stack"
         compact
       />
 
       <PropertyFeatureSection
         propertySlug="the-collective"
-        eyebrow="Curated Experiences"
-        name="The Collective"
-        description="An exclusive assortment of highly stylized and uniquely positioned properties. The Collective brings together the sharpest design, immersive aesthetics, and premier locations for the ultimate city escape."
+        eyebrow={text(site.content, 'home.block.the-collective.eyebrow', 'Curated Experiences')}
+        name={text(site.content, 'home.block.the-collective.name', 'The Collective')}
+        description={text(site.content, 'home.block.the-collective.description', 'An exclusive assortment of highly stylized and uniquely positioned properties. The Collective brings together the sharpest design, immersive aesthetics, and premier locations for the ultimate city escape.')}
+        images={site.images['home.block.the-collective'] ? [site.images['home.block.the-collective'].url] : undefined}
         collectionSlug="the-collective"
-        cta="Explore Details"
-        quote="The sharpest design, immersive aesthetics."
+        cta={text(site.content, 'home.block.the-collective.cta', 'Explore Details')}
+        quote={text(site.content, 'home.block.the-collective.quote', 'The sharpest design, immersive aesthetics.')}
         imageLayout="grid"
         tinted
         compact

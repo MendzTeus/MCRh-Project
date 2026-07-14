@@ -257,10 +257,10 @@ CREATE TABLE "Review" (
 
 ## ▸ FASE C — Corpo das páginas institucionais (só add chave + trocar texto)
 
-### C1. Home — 6 blocos de destaque (texto de cada card)
-Hoje só é editável **quais apês** aparecem (`home.featured`) — não o **texto** dos blocos.
-- **SC[`home.blocks`]** = `[{slug, eyebrow, name, description, quote, ctaLabel}]`. UI: `ListEditor` amplo, ou um editor por bloco.
-- Imagem de cada bloco: **IMG[`home.block.<slug>`]** (hoje puxa a 1ª foto do apê).
+### ✅ C1 + C6. Home — 6 blocos de destaque (texto + imagens)
+- Chaves `home.block.<slug>.{eyebrow,name,description,cta,quote}` seedadas e wired.
+- Admin ContentTab: editor por bloco (eyebrow, nome, descrição, botão, citação).
+- 6 slots de imagem `home.block.<slug>` adicionados a IMAGE_SLOTS (aba Imagens).
 
 ### ✅ C2. Design Services (corpo — hoje tudo hardcoded exceto o hero)
 | Seção | Mecanismo | Chave |
@@ -293,8 +293,8 @@ Hoje só é editável **quais apês** aparecem (`home.featured`) — não o **te
 ### ✅ C5. Properties (`/properties`)
 - Título "Find Property": **SC[`properties.title`]**.
 
-### C6. Novos slots de imagem desta fase (adicionar a `IMAGE_SLOTS`)
-`home.block.<slug>` (×6) · `about.philosophy` (opcional) · imagens de card se necessário.
+### ✅ C6. Novos slots de imagem desta fase (adicionar a `IMAGE_SLOTS`)
+`home.block.<slug>` (×6) — feito. `about.philosophy` (opcional) · imagens de card se necessário.
 
 ---
 
