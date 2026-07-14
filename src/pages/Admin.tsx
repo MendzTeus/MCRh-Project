@@ -449,8 +449,109 @@ function ContentTab({ site, api, onChanged }: { site: SiteData; api: ReturnType<
   );
 }
 
+// ── Properties tab ──────────────────────────────────────────────────
+const PROPERTY_SLUGS: { slug: string; label: string }[] = [
+  { slug: 'chambers', label: 'Chambers Residence' },
+  { slug: 'john-dalton-st', label: 'John Dalton Street' },
+  { slug: 'wood-street', label: 'Wood Street' },
+  { slug: 'the-collective', label: 'The Collective' },
+  { slug: 'ancoats', label: 'Ancoats' },
+  { slug: 'old-trafford', label: 'Old Trafford' },
+];
+
+function PropertiesTab({ site, api, onChanged }: { site: SiteData; api: ReturnType<typeof useApi>; onChanged: () => void }) {
+  const save = useCallback((key: string, value: unknown) => api(`/admin/content/${key}`, { method: 'PUT', body: JSON.stringify({ value }) }).then(onChanged), [api, onChanged]);
+  const [open, setOpen] = useState<string>(PROPERTY_SLUGS[0].slug);
+
+  function SF({ k, title, textarea }: { k: string; title: string; textarea?: boolean }) {
+    const [v, setV] = useState(String(site.content[k] ?? ''));
+    const [s, setS] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
+    const commit = () => { if (v !== String(site.content[k] ?? '')) { setS('saving'); save(k, v).then(() => { setS('saved'); setTimeout(() => setS('idle'), 1500); }).catch(() => setS('error')); } };
+    return (
+      <div>
+        <div className="flex items-center justify-between"><label className={label}>{title}</label><Status s={s} /></div>
+        {textarea ? <textarea value={v} onChange={(e) => setV(e.target.value)} onBlur={commit} rows={3} className={`${field} resize-none`} /> : <input value={v} onChange={(e) => setV(e.target.value)} onBlur={commit} className={field} />}
+      </div>
+    );
+  }
+
+  function SpecsField({ slug }: { slug: string }) {
+    const k = `property.${slug}.specs`;
+    const init = (site.content[k] as { maxGuests?: number; bedrooms?: number; beds?: number; bathrooms?: number }) ?? {};
+    const [v, setV] = useState({ maxGuests: String(init.maxGuests ?? ''), bedrooms: String(init.bedrooms ?? ''), beds: String(init.beds ?? ''), bathrooms: String(init.bathrooms ?? '') });
+    const [s, setS] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
+    const commit = () => { setS('saving'); save(k, { maxGuests: Number(v.maxGuests), bedrooms: Number(v.bedrooms), beds: Number(v.beds), bathrooms: Number(v.bathrooms) }).then(() => { setS('saved'); setTimeout(() => setS('idle'), 1500); }).catch(() => setS('error')); };
+    const inp = (fld: keyof typeof v, pl: string) => (
+      <div key={fld}><label className={label}>{pl}</label><input type="number" value={v[fld]} onChange={(e) => setV({ ...v, [fld]: e.target.value })} onBlur={commit} className={field} /></div>
+    );
+    return (
+      <div>
+        <div className="flex items-center justify-between mb-2"><label className={label}>Specs (números)</label><Status s={s} /></div>
+        <div className="grid grid-cols-4 gap-3">{inp('maxGuests','Hóspedes')}{inp('bedrooms','Quartos')}{inp('beds','Camas')}{inp('bathrooms','Banheiros')}</div>
+      </div>
+    );
+  }
+
+  function LE<T extends Record<string, string>>({ k, title, cols, blank }: { k: string; title: string; cols: { key: keyof T; label: string; wide?: boolean }[]; blank: T }) {
+    const [rows, setRows] = useState<T[]>(Array.isArray(site.content[k]) ? (site.content[k] as T[]) : []);
+    const [s, setS] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
+    const commit = (next: T[]) => { setRows(next); setS('saving'); save(k, next).then(() => { setS('saved'); setTimeout(() => setS('idle'), 1500); }).catch(() => setS('error')); };
+    return (
+      <div>
+        <div className="flex items-center justify-between mb-2"><label className={label}>{title}</label><Status s={s} /></div>
+        <div className="space-y-2">
+          {rows.map((row, i) => (
+            <div key={i} className="flex gap-2 items-end">
+              {cols.map((c) => <div key={String(c.key)} style={{ flex: c.wide ? 3 : 1 }}><input value={row[c.key]} placeholder={c.label} onChange={(e) => setRows(rows.map((r, j) => j === i ? { ...r, [c.key]: e.target.value } : r))} onBlur={() => commit(rows)} className={field} /></div>)}
+              <button onClick={() => commit(rows.filter((_, j) => j !== i))} className="text-on-surface-variant/50 hover:text-red-500 pb-1.5 text-sm">✕</button>
+            </div>
+          ))}
+          <button onClick={() => setRows([...rows, { ...blank }])} className="font-body text-[10px] uppercase tracking-[0.15em] text-[#C5A059] mt-1">+ Adicionar</button>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="max-w-3xl">
+      <p className="font-body text-body-md text-on-surface-variant mb-8">Edite o conteúdo de cada coleção. Clique no nome para expandir.</p>
+      <div className="divide-y divide-outline-variant/30 border-y border-outline-variant/30">
+        {PROPERTY_SLUGS.map(({ slug, label: propLabel }) => (
+          <div key={slug}>
+            <button type="button" onClick={() => setOpen(open === slug ? '' : slug)}
+              className="w-full flex items-center justify-between py-5 text-left">
+              <span className="font-display text-lg text-primary">{propLabel}</span>
+              <span className="font-body text-[10px] uppercase tracking-[0.12em] text-on-surface-variant/60">{open === slug ? '▲ fechar' : '▼ editar'}</span>
+            </button>
+            {open === slug && (
+              <div className="grid gap-6 pb-8">
+                <div className="grid grid-cols-2 gap-4">
+                  <SF k={`property.${slug}.name`} title="Nome" />
+                  <SF k={`property.${slug}.area`} title="Área / bairro" />
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <SF k={`property.${slug}.eyebrow`} title="Sobretítulo (eyebrow)" />
+                  <SF k={`property.${slug}.neighborhoodTitle`} title="Título do bairro" />
+                </div>
+                <SF k={`property.${slug}.headline`} title="Headline" />
+                <SF k={`property.${slug}.description`} title="Descrição" textarea />
+                <SF k={`property.${slug}.quote`} title="Citação" textarea />
+                <SpecsField slug={slug} />
+                <LE k={`property.${slug}.amenities`} title="Amenidades" blank={{ item: '' } as unknown as Record<string,string>}
+                  cols={[{ key: 'item' as never, label: 'Amenidade', wide: true }]} />
+                <LE k={`property.${slug}.nearby`} title="Distâncias / Nearby" blank={{ location: '', time: '' } as Record<string,string>}
+                  cols={[{ key: 'location', label: 'Local', wide: true }, { key: 'time', label: 'Tempo' }]} />
+              </div>
+            )}
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 // ── Main ────────────────────────────────────────────────────────────
-type Tab = 'apartments' | 'images' | 'content';
+type Tab = 'apartments' | 'images' | 'content' | 'properties';
 
 export default function Admin() {
   const [token, setToken] = useState<string | null>(() => localStorage.getItem(TOKEN_KEY));
@@ -497,6 +598,7 @@ export default function Admin() {
     { id: 'apartments', label: 'Apartamentos' },
     { id: 'images', label: 'Imagens' },
     { id: 'content', label: 'Conteúdo' },
+    { id: 'properties', label: 'Propriedades' },
   ];
 
   return (
@@ -564,6 +666,7 @@ export default function Admin() {
 
         {tab === 'images' && !loading && <ImagesTab site={site} api={api} onChanged={load} />}
         {tab === 'content' && !loading && <ContentTab site={site} api={api} onChanged={load} />}
+        {tab === 'properties' && !loading && <PropertiesTab site={site} api={api} onChanged={load} />}
       </main>
     </div>
   );

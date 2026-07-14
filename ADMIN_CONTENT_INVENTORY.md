@@ -209,7 +209,7 @@ cards refinados) e organizado em **abas por área**. Abas existentes hoje:
 > **Nova aba de admin: "Propriedades"** — um editor por coleção (as 6: Chambers,
 > John Dalton, Wood St, Ancoats, Trafford, The Collective).
 
-### B1. Campos de texto/número da coleção
+### ✅ B1. Campos de texto/número da coleção
 Por coleção `<slug>` (ex.: `chambers`, `john-dalton-st`, `wood-st`, `ancoats`, `trafford`, `the-collective`):
 
 | Campo | Mecanismo | Chave sugerida |
@@ -223,10 +223,10 @@ Por coleção `<slug>` (ex.: `chambers`, `john-dalton-st`, `wood-st`, `ancoats`,
 | Nº hóspedes / quartos / camas / banheiros | SC | `property.<slug>.specs` → `{maxGuests,bedrooms,beds,bathrooms}` |
 | Título do bairro | SC | `property.<slug>.neighborhoodTitle` |
 
-### B2. Amenidades (lista editável — add/remover/reordenar)
+### ✅ B2. Amenidades (lista editável — add/remover/reordenar)
 - **SC[`property.<slug>.amenities`]** = `string[]`. UI: `ListEditor` (1 coluna).
 
-### B3. Distâncias / "nearby" (pares local + tempo)
+### ✅ B3. Distâncias / "nearby" (pares local + tempo)
 - **SC[`property.<slug>.nearby`]** = `[{location, time}]`. UI: `ListEditor` (2 colunas).
 - Resolve o issue do CODE_REVIEW "distâncias iguais para todos os imóveis".
 
