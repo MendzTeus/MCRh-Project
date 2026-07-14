@@ -463,6 +463,12 @@ function ContentTab({ site, api, onChanged }: { site: SiteData; api: ReturnType<
         <ListEditor k="management.partner.bullets" title="Management — Partner Criteria bullets" blank={{ item: '' }} cols={[{ key: 'item', label: 'Item', wide: true }]} />
         <StringField k="about.hero.eyebrow" title="About — sobretítulo" />
         <StringField k="about.hero.title" title="About — título" />
+        <StringField k="about.philosophy.title" title="About — The Philosophy título" />
+        <StringField k="about.philosophy.p1" title="About — parágrafo 1 (destaque)" textarea />
+        <StringField k="about.philosophy.p2" title="About — parágrafo 2" textarea />
+        <StringField k="about.philosophy.p3" title="About — parágrafo 3" textarea />
+        <StringField k="about.quote.text" title="About — citação" textarea />
+        <StringField k="about.quote.signature" title="About — assinatura da citação" />
       </Section>
     </div>
   );

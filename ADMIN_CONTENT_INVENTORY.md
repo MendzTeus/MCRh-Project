@@ -282,7 +282,7 @@ Hoje só é editável **quais apês** aparecem (`home.featured`) — não o **te
 | "Partner Criteria": título, intro | SC | `management.partner.{title,intro}` |
 | "Partner Criteria": 3 bullets | SC (lista) | `management.partner.bullets` = `string[]` |
 
-### C4. About (corpo)
+### ✅ C4. About (corpo)
 | Seção | Mecanismo | Chave |
 |---|---|---|
 | "The Philosophy": título | SC | `about.philosophy.title` |
