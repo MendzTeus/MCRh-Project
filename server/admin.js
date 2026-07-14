@@ -2,6 +2,7 @@ const express = require('express');
 const crypto = require('crypto');
 const { supabase } = require('./db');
 const { signToken, requireAdmin } = require('./auth');
+const { syncAll, syncUnit } = require('./sync');
 
 const router = express.Router();
 const BUCKET = 'property-media';
@@ -281,6 +282,59 @@ router.delete('/reviews/:id', async (req, res) => {
   const { error } = await supabase.from('Review').delete().eq('id', req.params.id);
   if (error) return res.status(500).json({ error: error.message });
   res.json({ ok: true });
+});
+
+// ── Availability / iCal sync ────────────────────────────────────────
+// Read-only status per unit: does it have an iCal feed, when did it last sync,
+// and how many future date ranges are currently blocked. Powers the admin panel.
+router.get('/availability', async (_req, res) => {
+  const { data: units, error } = await supabase
+    .from('Unit')
+    .select('unitSlug, unitName, propertySlug, propertyName, icalAirbnbUrl, icalVrboUrl, lastSyncedAt')
+    .order('propertySlug')
+    .order('unitSlug');
+  if (error) return res.status(500).json({ error: error.message });
+
+  // Count only future/ongoing blocks (end >= today) so past bookings don't inflate.
+  const today = new Date().toISOString().slice(0, 10);
+  const { data: blocks } = await supabase
+    .from('BlockedDate')
+    .select('unitSlug')
+    .gte('end', today);
+  const blockedCount = {};
+  for (const b of blocks || []) blockedCount[b.unitSlug] = (blockedCount[b.unitSlug] || 0) + 1;
+
+  res.json((units || []).map((u) => ({
+    unitSlug: u.unitSlug,
+    unitName: u.unitName,
+    propertySlug: u.propertySlug,
+    propertyName: u.propertyName,
+    hasIcal: Boolean(u.icalAirbnbUrl || u.icalVrboUrl),
+    lastSyncedAt: u.lastSyncedAt || null,
+    blockedCount: blockedCount[u.unitSlug] || 0,
+  })));
+});
+
+// Admin-authed proxies to the sync engine. These reuse the admin token instead of
+// SYNC_SECRET, so the panel never has to hold the sync secret in the browser.
+router.post('/sync', async (_req, res) => {
+  try {
+    const results = await syncAll();
+    res.json({ ok: true, results });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+router.post('/sync/:unitSlug', async (req, res) => {
+  const { data: unit, error } = await supabase.from('Unit').select('*').eq('unitSlug', req.params.unitSlug).single();
+  if (error || !unit) return res.status(404).json({ error: 'Unit not found' });
+  try {
+    const result = await syncUnit(unit);
+    res.json({ ok: true, ...result });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
 });
 
 // ── Leads (Enquiry) ──────────────────────────────────────────────────
