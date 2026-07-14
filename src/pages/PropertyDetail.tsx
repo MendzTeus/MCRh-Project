@@ -13,6 +13,7 @@ import { getPropertyBySlug, getUnitBySlug, type PropertyUnit } from '../data/pro
 import { useClickOutside } from '../hooks/useClickOutside';
 import { useUnitBlockedDates } from '../hooks/useUnitBlockedDates';
 import { useSiteContent, text } from '../hooks/useSiteContent';
+import { usePublicUnits } from '../hooks/usePublicUnits';
 
 // Append/update query params on a saved listing URL, preserving any existing ones
 // (e.g. ?source=…). Returns the base untouched if it isn't a valid absolute URL.
@@ -46,7 +47,7 @@ export default function PropertyDetail() {
       }
     : undefined;
   const unit = routedUnit || legacyUnit?.unit || inventoryBackedUnit || property?.units[0];
-  const unitGallery = getUnitGallery(unit?.slug, property?.slug);
+  const staticGallery = getUnitGallery(unit?.slug, property?.slug);
   // Reserved dates (from the synced iCal) for this unit, to grey out the calendar.
   const blockedDates = useUnitBlockedDates(inventoryUnit?.unitSlug || id);
   // Booking links. VRBO uses the per-unit listing URL (not the iCal feed), so the
@@ -56,6 +57,11 @@ export default function PropertyDetail() {
   // Central company contact (editable in SiteContent). WhatsApp is optional — its
   // option only shows once a number is configured; e-mail always works.
   const site = useSiteContent();
+  const publicUnits = usePublicUnits();
+  const adminUnit = publicUnits.overrides.get(inventoryUnit?.unitSlug || id || '');
+  // Admin-uploaded photos override the scraped/static gallery when present.
+  const adminPhotos = adminUnit?.photos || [];
+  const unitGallery = adminPhotos.length > 0 ? adminPhotos.map((p) => p.url) : staticGallery;
   const whatsappNumber = text(site.content, 'contact.whatsapp', '').replace(/\D/g, '');
   const contactEmail = text(site.content, 'contact.email', 'hello@mcrh.co.uk');
   const displayRating = listingMedia?.rating || '4.98';
@@ -116,13 +122,15 @@ export default function PropertyDetail() {
     ? withBookingParams(vrboUrl, hasDates ? { startDate: checkIn, endDate: checkOut, adults: guests } : {})
     : undefined;
 
-  // Per-unit specs from the Airbnb scrape, falling back to the property's own
-  // figures when a listing didn't scrape (e.g. Crusader's intermittently blocked page).
+  // Per-unit specs: admin suppliedSpecs string wins; otherwise use Airbnb scrape;
+  // fall back to the property's own figures as last resort.
   const scrapedSpecs = getUnitSpecs(inventoryUnit?.unitSlug || id);
   const specGuests = scrapedSpecs?.guests ?? property.maxGuests;
   const specBedrooms = scrapedSpecs?.bedrooms ?? property.bedrooms;
   const specBeds = scrapedSpecs?.beds ?? property.beds;
   const specBaths = scrapedSpecs?.baths ?? property.bathrooms;
+  // Admin description overrides the auto-generated fallback.
+  const unitDescription = adminUnit?.description || inventoryBackedUnit?.description || unit?.description || '';
   const reviewsCount = scrapedSpecs?.reviewsCount ?? null;
   const plural = (n: number, word: string) => `${n} ${n === 1 ? word : `${word}s`}`;
   const specsLine = [
@@ -136,9 +144,9 @@ export default function PropertyDetail() {
     <div className="animate-in fade-in duration-500">
       <Helmet>
         <title>{displayTitle} — {property.name} | MCRh Manchester</title>
-        <meta name="description" content={`${unit.description} ${unit.specs}. Located in ${property.area}, Manchester.`} />
+        <meta name="description" content={`${unitDescription} ${unit.specs}. Located in ${property.area}, Manchester.`} />
         <meta property="og:title" content={`${displayTitle} | MCRh Manchester`} />
-        <meta property="og:description" content={unit.description} />
+        <meta property="og:description" content={unitDescription} />
         {unitGallery[0] && <meta property="og:image" content={unitGallery[0]} />}
       </Helmet>
 
@@ -152,7 +160,7 @@ export default function PropertyDetail() {
           <div className="text-white w-full md:w-2/3">
             <p className="font-body text-label-caps tracking-widest mb-4 opacity-80 uppercase">{unit.label}</p>
             <h1 className="font-display text-display-lg-mobile md:text-display-lg mb-6 leading-tight">{displayTitle}</h1>
-            <p className="font-body text-body-lg opacity-90 max-w-2xl">{unit.description}</p>
+            <p className="font-body text-body-lg opacity-90 max-w-2xl">{unitDescription}</p>
             <p className="font-body text-label-caps tracking-widest uppercase text-sm text-white/80 mt-5">{specsLine}</p>
           </div>
 
@@ -318,7 +326,7 @@ export default function PropertyDetail() {
           <div>
             <h2 className="font-display text-headline-md text-primary mb-6">The Space</h2>
             <div className="font-body text-on-surface-variant text-body-lg space-y-6">
-              <p>{unit.description}</p>
+              <p>{unitDescription}</p>
               <p>{property.description}</p>
               <p>{unit.specs}{unit.squareFeet ? ` / ${unit.squareFeet}` : ''}</p>
             </div>

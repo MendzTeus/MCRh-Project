@@ -249,7 +249,7 @@ CREATE TABLE "Review" (
 - UI: mesmo componente de fotos do `UnitCard` (upload/reordenar/capa/alt/excluir), na aba Propriedades.
 - Religar o **hero + galeria** de `CollectionDetail` para usar essas fotos.
 
-### B6. Página do apartamento (`/property/:prop/:unit`)
+### ✅ B6. Página do apartamento (`/property/:prop/:unit`)
 - Fazer a **galeria** ler as fotos do admin (`MediaAsset` do unit) em vez do scrape do Airbnb (`airbnbListings.generated.json`). *(Resolve o item 5 do inventário.)*
 - Descrição/specs: já editáveis no admin, mas esta página ainda lê estático → religar.
 
