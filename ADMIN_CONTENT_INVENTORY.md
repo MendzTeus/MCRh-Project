@@ -52,7 +52,7 @@ Com essas duas peças + o Unit que já existe, dá pra cobrir 100% do site.
 | Botão do hero | "EXPLORE PROPERTIES" → `/properties` | ✅ (`home.hero.ctaLabel/ctaHref`) |
 | **6 blocos de destaque** (Chambers, John Dalton, Wood St, Ancoats, Trafford, The Collective) | **quais apês** = ✅ (`home.featured`+ordem); **texto/imagem de cada bloco** = ❌ | 🟡 (ver Fase C1) |
 | Título da seção do mapa | "Discover Our Locations" | ✅ (`home.map.title`) |
-| Pins do mapa (nome, área, postcode, coordenadas) | `locations.ts` | 🟡 (ver Fase D2) |
+| Pins do mapa (postcode, coordenadas) | `locations.ts` | ✅ (aba Conteúdo → Mapa; nome/área estruturais) |
 | **Números/stats** | "30+ Properties", "500+ Guest Reviews", "100% 5-Star", "7 Neighbourhoods" | ✅ (`home.stats`) |
 | Seção "Guest Experiences" | título + **3 depoimentos** | ✅ (`home.testimonials*`) |
 | SEO | title, description, og:image, twitter:card | 🟡 já existe **estático** (Helmet) — falta editar (Fase D1) |
@@ -310,15 +310,19 @@ CREATE TABLE "Review" (
   `seo.property.<slug>`, com fallback ao texto que já está no Helmet hoje. Imagem OG via IMG slot.
 - **Não precisa** instalar dependência nem criar a infra de meta tags — só ler do SiteContent.
 
-### D2. Pins do mapa
-- Origem: `src/data/locations.ts`. **TABELA** `MapLocation` **ou** SC[`map.locations`] = `[{name, propertySlug, area, areaId, postcode, lat, lng}]`.
-- UI ideal: **editor visual** (arrastar o pin define lat/lng) — evita repetir o ajuste manual de coords no código.
-- Gerenciar as **áreas/filtros** (City Centre, Deansgate, Ancoats…): SC[`map.areas`].
+### ✅ D2. Pins do mapa
+- **Feito via SC[`map.locations`]** (sem tabela nova): overrides de `lat`/`lng`/`postcode` por pin,
+  mesclados sobre os defaults de `src/data/locations.ts` por `buildMapLocations()` — sem override o
+  mapa fica idêntico. Editor na aba **Conteúdo → "Mapa — pins"**; Home e CollectionDetail leem via
+  `useMapLocations()`.
+- **Fora do escopo (opcional):** nome/área/grupo de cada pin e as **áreas/filtros** (SC[`map.areas`])
+  seguem estruturais no código; o editor visual de arrastar o pin não foi feito (form de lat/lng).
 
-### D3. Painel de disponibilidade & sync de iCal
-- Aba mostrando por unidade: `lastSyncedAt`, nº de datas bloqueadas, se tem iCal configurado.
-- Botão **"Sincronizar agora"** (por unidade e global) → chama `POST /api/sync` (já existe, protegido por `SYNC_SECRET`).
-- (Recomendado) sync agendado por cron — hoje é manual.
+### ✅ D3. Painel de disponibilidade & sync de iCal
+- **Feito:** aba **Disponibilidade** mostra por unidade `hasIcal`, `lastSyncedAt` e nº de períodos
+  bloqueados; botões **"Sincronizar tudo"** e por unidade via rotas admin-autenticadas
+  `POST /api/admin/sync` e `/api/admin/sync/:unitSlug` (proxy pro engine, sem expor `SYNC_SECRET`).
+- (Recomendado, não feito) sync agendado por cron — hoje continua manual (ou via `POST /api/sync`).
 
 ### ✅ D4. Caixa de Leads (**aba "Leads"**)
 - Tabela `Enquiry` **já existe** (vazia). Hoje o formulário de Contato vai só pro Formspree fixo (`xkgjeqvb`) e **não salva**.
@@ -340,7 +344,7 @@ CREATE TABLE "Review" (
 | Tabela | Fase | Status |
 |---|---|---|
 | `Review` | B4 | criar |
-| `MapLocation` (opcional; alternativa: SC) | D2 | criar/opcional |
+| `MapLocation` (opcional; alternativa: SC) | D2 | **não precisou** — feito via SC[`map.locations`] |
 | `Enquiry` | D4 | **já existe** — falta rota + UI |
 | `MediaAsset(ownerType='property')` | B5 | **tabela já existe** — falta UI + wiring |
 
