@@ -397,6 +397,7 @@ function ContentTab({ site, api, onChanged }: { site: SiteData; api: ReturnType<
   return (
     <div className="max-w-3xl">
       <Section title="Home">
+        <StringField k="properties.title" title="Properties — título 'Find Property'" />
         <StringField k="home.hero.title" title="Título do hero" />
         <StringField k="home.hero.subtitle" title="Subtítulo do hero" textarea />
         <div className="grid grid-cols-2 gap-6">

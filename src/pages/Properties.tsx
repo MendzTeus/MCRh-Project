@@ -7,6 +7,7 @@ import { mapLocations } from '../data/locations';
 import { airbnbInventory, inventoryRegions, getRegionForProperty, type AirbnbInventoryUnit } from '../data/airbnbInventory';
 import { getListingMedia, getPropertyMedia } from '../data/listingMedia';
 import { usePublicUnits } from '../hooks/usePublicUnits';
+import { useSiteContent, text } from '../hooks/useSiteContent';
 import DateRangePicker from '../components/DateRangePicker';
 
 function specsToNumbers(specs?: string) {
@@ -135,6 +136,7 @@ const SORT_OPTIONS = [
 export default function Properties() {
   const isMobile = useIsMobile();
   const publicUnits = usePublicUnits();
+  const site = useSiteContent();
   const [datesOpen, setDatesOpen] = useState(false);
   const [checkIn, setCheckIn] = useState('');
   const [checkOut, setCheckOut] = useState('');
@@ -255,7 +257,7 @@ export default function Properties() {
           {/* Sticky filter header */}
           <div style={{ position: 'sticky', top: 80, zIndex: 20, background: '#fdf9f3', borderBottom: '1px solid rgba(197,198,205,0.2)', padding: isMobile ? '16px 16px 12px' : '24px 24px 16px' }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
-              <h1 className="font-display text-headline-md text-primary">Find Property</h1>
+              <h1 className="font-display text-headline-md text-primary">{text(site.content, 'properties.title', 'Find Property')}</h1>
               {isMobile && (
                 <button onClick={() => setShowMobileMap((v) => !v)} style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '7px 14px', border: '1px solid rgba(197,198,205,0.5)', borderRadius: 8, background: showMobileMap ? '#1c1c18' : 'transparent', color: showMobileMap ? '#fff' : '#1c1c18', cursor: 'pointer', fontSize: 12, fontWeight: 600, letterSpacing: '0.06em' }}>
                   {showMobileMap ? 'List' : 'Map'}

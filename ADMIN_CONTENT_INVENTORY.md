@@ -290,7 +290,7 @@ Hoje só é editável **quais apês** aparecem (`home.featured`) — não o **te
 | Citação + assinatura | SC | `about.quote.{text,signature}` |
 | (imagem) | IMG | já existe `about.hero`; add `about.philosophy` se quiser 2ª imagem |
 
-### C5. Properties (`/properties`)
+### ✅ C5. Properties (`/properties`)
 - Título "Find Property": **SC[`properties.title`]**.
 
 ### C6. Novos slots de imagem desta fase (adicionar a `IMAGE_SLOTS`)
