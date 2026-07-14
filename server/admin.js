@@ -6,19 +6,50 @@ const { signToken, requireAdmin } = require('./auth');
 const router = express.Router();
 const BUCKET = 'property-media';
 
+// ── Login rate-limit ────────────────────────────────────────────────
+// In-memory sliding window per IP. A single shared password is the only secret,
+// so throttle brute-force: after MAX_ATTEMPTS failures inside WINDOW_MS, reject
+// with 429 until the window clears. A successful login resets that IP.
+const WINDOW_MS = 15 * 60 * 1000;
+const MAX_ATTEMPTS = 10;
+const attempts = new Map(); // ip → number[] (timestamps of recent failures)
+
+function loginThrottle(req, res, next) {
+  // nginx sets (and overwrites) X-Real-IP with the real client address, so it's
+  // trustworthy here; fall back to the socket address for direct/local calls.
+  const ip = req.headers['x-real-ip'] || req.socket?.remoteAddress || 'unknown';
+  const now = Date.now();
+  const recent = (attempts.get(ip) || []).filter((t) => now - t < WINDOW_MS);
+  if (recent.length >= MAX_ATTEMPTS) {
+    res.set('Retry-After', String(Math.ceil(WINDOW_MS / 1000)));
+    return res.status(429).json({ error: 'Muitas tentativas. Tente novamente mais tarde.' });
+  }
+  attempts.set(ip, recent);
+  req._loginIp = ip;
+  next();
+}
+
+function recordFailure(ip) {
+  const recent = attempts.get(ip) || [];
+  recent.push(Date.now());
+  attempts.set(ip, recent);
+}
+
 // Fields an admin is allowed to edit on a Unit (allowlist — nothing else gets through).
 const EDITABLE = ['unitName', 'suppliedSpecs', 'postcode', 'airbnbUrl', 'description', 'squareFeet', 'visible', 'displayOrder'];
 
 // ── Login: password → signed token ──────────────────────────────────
-router.post('/login', (req, res) => {
+router.post('/login', loginThrottle, (req, res) => {
   const { password } = req.body || {};
   const expected = process.env.ADMIN_PASSWORD;
   if (!expected) return res.status(500).json({ error: 'ADMIN_PASSWORD not configured' });
   const a = Buffer.from(String(password || ''));
   const b = Buffer.from(expected);
   if (a.length !== b.length || !crypto.timingSafeEqual(a, b)) {
+    recordFailure(req._loginIp);
     return res.status(401).json({ error: 'Invalid password' });
   }
+  attempts.delete(req._loginIp); // success clears this IP's failure count
   res.json({ token: signToken({ role: 'admin' }) });
 });
 

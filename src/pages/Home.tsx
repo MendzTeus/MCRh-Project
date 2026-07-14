@@ -207,7 +207,7 @@ export default function Home() {
         <div className="max-w-[1280px] mx-auto flex flex-col lg:flex-row gap-8 lg:gap-16 h-auto lg:h-[800px]">
           <div className="w-full lg:w-1/2 flex flex-col h-full">
             <div className="flex justify-between items-center mb-8">
-              <h2 className="font-display text-headline-md text-primary">Discover Our Locations</h2>
+              <h2 className="font-display text-headline-md text-primary">{text(site.content, 'home.map.title', 'Discover Our Locations')}</h2>
               <div className="flex items-center gap-4 relative" ref={filterRef}>
                 <button
                   type="button"
@@ -306,8 +306,8 @@ export default function Home() {
       <section className="py-section-gap bg-surface-container-lowest border-t border-outline-variant/30">
         <div className="max-w-[1280px] mx-auto px-margin-mobile md:px-margin-desktop">
           <div className="text-center mb-16 md:mb-24">
-            <span className="font-body text-label-caps text-secondary mb-4 block tracking-widest uppercase">Testimonials</span>
-            <h2 className="font-display text-headline-md text-primary">Guest Experiences</h2>
+            <span className="font-body text-label-caps text-secondary mb-4 block tracking-widest uppercase">{text(site.content, 'home.testimonials.eyebrow', 'Testimonials')}</span>
+            <h2 className="font-display text-headline-md text-primary">{text(site.content, 'home.testimonials.title', 'Guest Experiences')}</h2>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-16 md:gap-12 lg:gap-24">
             {list<{ text: string; name: string; property: string }>(site.content, 'home.testimonials', [

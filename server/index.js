@@ -10,11 +10,14 @@ const adminRouter = require('./admin');
 const contentRouter = require('./content');
 
 const app = express();
-// Larger limit so base64 photo uploads fit in the JSON body.
-app.use(express.json({ limit: '15mb' }));
-
-app.use('/api/admin', adminRouter);
-app.use('/api/content', contentRouter);
+// Body-size limits are scoped per-route: only the admin upload endpoints need a
+// large body (base64 photos). The admin router gets 15mb; everything else gets a
+// small limit so a public, unauthenticated request can't push a huge payload.
+// The admin parser runs first and marks the body as read, so the small global
+// parser below skips it.
+app.use('/api/admin', express.json({ limit: '15mb' }), adminRouter);
+app.use('/api/content', contentRouter); // read-only, GET only — no body to parse
+app.use(express.json({ limit: '100kb' }));
 
 // Map propertySlug → Property.id
 const slugToId = {};

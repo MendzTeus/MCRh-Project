@@ -882,3 +882,120 @@ const visibleLocations = useMemo(
 | 🟢 22 | Página 404 | App.tsx |
 | 🟢 23 | focus-visible styles | index.css |
 | 🟢 24 | Sitemap.xml | public/ |
+
+---
+---
+
+# 11. ADMIN / BACK-END — Review e Plano de Implementação
+**Adicionado:** 2026-07-14
+**Escopo:** `server/` (Express + Supabase), `supabase/migrations/`, `src/pages/Admin.tsx`,
+hooks `useSiteContent`/`usePublicUnits`, e o *wiring* das páginas públicas.
+**Contexto:** o review original (jun/15) é sobre o site estático. Desde então nasceu o
+painel `/admin` com back-end próprio. Esta seção cobre esse código novo e o que falta
+para **finalizar o projeto** (editar 100% de texto/imagem/links + ligar/desligar imóveis).
+
+> **Estado atual (Fase A):** login por senha + JWT, aba **Apartamentos** (nome, título de
+> exibição, specs, link Airbnb, visível, destaque na home + ordem, fotos com upload/reordenar/
+> capa/alt/excluir, auto-ocultar quando "não listado" no Airbnb), aba **Imagens** (5 slots
+> de hero) e aba **Conteúdo** (hero/stats/depoimentos da Home, menu, contato, rodapé, heróis
+> das páginas de serviço). Typecheck ✅ e build ✅. **7 arquivos ainda não commitados** (o
+> polimento final da fase). Fundação de dados: `SiteContent`, `SiteImage`, `MediaAsset`.
+
+## 11.1 Achados de code review (back-end/admin)
+
+### [WARNING] RLS não habilitado nas tabelas novas
+**Arquivos:** `supabase/migrations/001,002,003`
+**Problema:** `MediaAsset`, `SiteImage`, `SiteContent` são criadas sem `ENABLE ROW LEVEL SECURITY`.
+A escrita passa 100% pela API com **service key** (correto), mas se a **anon key** estiver
+exposta no browser com acesso a essas tabelas, há risco de leitura/escrita direta.
+**Ação:** confirmar no painel Supabase que RLS está ligado; policies: leitura pública só do
+público, escrita só via service role. Adicionar migration `004_rls.sql` explícita.
+
+### [WARNING] Campos no allowlist do servidor sem input na UI
+**Arquivos:** `server/admin.js:39` (`EDITABLE`) × `src/pages/Admin.tsx` (`UnitCard`)
+**Problema:** o servidor aceita editar `postcode`, `description`, `squareFeet`, mas a UI de
+apartamento só renderiza `unitName`, título de exibição, `suppliedSpecs`, `airbnbUrl`.
+**Ação:** ou remover do allowlist, ou (melhor) adicionar os campos na UI. Ver Fase 0.3.
+
+### [WARNING] iCal não editável pelo admin
+**Arquivos:** `server/sync.js`, `scripts/seed-ical-urls.cjs`
+**Problema:** `icalAirbnbUrl`/`icalVrboUrl` (alimentam a disponibilidade) só são definidos via
+script de seed; se um link mudar, exige mexer em código. Não estão no allowlist nem na UI.
+**Ação:** adicionar ao `EDITABLE` + campos na UI (com validação de URL). Ver Fase 0.4.
+
+### [SUGGESTION] Reorder de fotos faz N `await` sequenciais
+**Arquivo:** `server/admin.js:143` (`/photos/reorder`)
+**Problema:** um `UPDATE` por foto em loop. Ok para poucas fotos; ineficiente se crescer.
+**Ação:** trocar por um `upsert` em lote (uma chamada). Baixa prioridade.
+
+### [SUGGESTION] Rate-limit e sessão em memória (single-instance)
+**Arquivo:** `server/admin.js` (`attempts` Map)
+**Problema:** o throttle de login e a contagem resetam a cada restart e não são
+compartilhados entre instâncias. Aceitável para 1 instância; anotar se escalar.
+
+### [NITPICK] `window.prompt`/`confirm` para alt e exclusão
+**Arquivo:** `src/pages/Admin.tsx` (`editAlt`, `onDelete`)
+**Problema:** UX cru e bloqueante. Funciona; trocar por modal quando sobrar tempo.
+
+### [INFO] Validação de payload sem schema (Zod)
+As rotas de escrita confiam no allowlist mas não validam formato (URL/número). O roadmap
+prevê Zod no autosave para "não gravar lixo". Recomendado ao abrir a aba Propriedades.
+
+**Positivos:** service key só no servidor; frontend com cache + *fallback* aos dados estáticos
+(o site nunca quebra se a API cair); `hiddenSlugs` explícito (nunca infere ocultação por
+ausência); `visible` manual separado de `airbnbListed` automático (uma automação nunca
+sobrepõe um "ocultar" manual); body-limit por rota; `timingSafeEqual` no login.
+
+## 11.2 Plano de implementação (para finalizar o projeto)
+
+> Detalhamento **item por item** (chave de dados, UI, página a religar) está em
+> `ADMIN_CONTENT_INVENTORY.md` → seção "PLANO DE EXECUÇÃO". Resumo técnico por fase:
+
+**Fase 0 — Fechar a Fase A** *(rápido, destrava o resto)*
+- [ ] Commitar os 7 arquivos pendentes (rate-limit, body-limit, nav/footer/home wiring).
+- [ ] Migration `004_rls.sql` + confirmar RLS no Supabase.
+- [ ] Campos `postcode`/`description`/`squareFeet` na UI do apê.
+- [ ] iCal (`icalAirbnbUrl`/`icalVrboUrl`) no allowlist + UI, com validação de URL.
+
+**Fase B — Conteúdo profundo das propriedades** *(maior volume de texto)*
+- [ ] Nova aba **Propriedades** (editor por coleção): `property.<slug>.*` em `SiteContent`
+      (name, area, eyebrow, headline, description, quote, specs, neighborhoodTitle).
+- [ ] Amenidades (`property.<slug>.amenities`) e distâncias (`property.<slug>.nearby`) via `ListEditor`.
+- [ ] **Reviews**: migration `Review` + rotas `/api/admin/reviews` e `/api/content/reviews` +
+      UI CRUD (nota editável — hoje fixa "5.0"/"4.98"). *Resolve #8 e #48 do review original.*
+- [ ] Galeria por coleção via `MediaAsset(ownerType='property')` (tabela já suporta).
+- [ ] Religar `CollectionDetail`/`PropertyDetail` para ler do banco; galeria do apê usar as
+      fotos do admin em vez do scrape do Airbnb.
+
+**Fase C — Corpo das páginas institucionais** *(mecânico: add chave + trocar texto por leitura)*
+- [ ] Home: texto/imagem dos **6 blocos** (`home.blocks`, `home.block.<slug>`).
+- [ ] Design: `design.approach.*`, `design.disciplines.*`, `design.cta.*`.
+- [ ] Management: `management.services.*`, `management.reporting.*`, `management.partner.*`.
+- [ ] About: `about.philosophy.*`, `about.quote.*`.
+- [ ] Properties: `properties.title`.
+
+**Fase D — SEO, Mapa, Disponibilidade, Leads**
+- [ ] SEO por página (`seo.<page>`, `seo.property.<slug>`) — **`react-helmet-async` já instalado e em
+      uso; meta tags já existem em todas as páginas (estáticas).** #7 do review já ✅. Falta só ler do
+      SiteContent em vez do texto fixo — não recriar a infra.
+- [ ] Pins do mapa editáveis (`MapLocation` ou `map.locations`) com editor visual de lat/lng.
+- [ ] Painel de disponibilidade + botão "Sincronizar agora" (`POST /api/sync`, já existe).
+- [ ] Aba **Leads**: persistir envios em `Enquiry` (tabela já existe) + inbox novo/lido/arquivado.
+
+## 11.3 Ordem de correção — back-end/admin
+
+| Prioridade | Issue | Onde |
+|-----------|-------|------|
+| 🔴 A1 | Commitar Fase A pendente | git (7 arquivos) |
+| 🔴 A2 | RLS nas tabelas novas | migration `004` + Supabase |
+| 🟡 A3 | Campos postcode/description/squareFeet na UI | Admin.tsx `UnitCard` |
+| 🟡 A4 | iCal editável (allowlist + UI + validação) | admin.js + Admin.tsx |
+| 🟡 A5 | Aba Propriedades (texto/amenidades/distâncias) | Admin.tsx + content.js |
+| 🟡 A6 | Reviews (tabela + CRUD + wiring) | migration + server + páginas |
+| 🟡 A7 | Galeria por coleção | Admin.tsx + CollectionDetail |
+| 🟢 A8 | Corpo das páginas (Design/Management/About/Home blocks) | SiteContent + páginas |
+| 🟢 A9 | SEO por página **editável** (Helmet já existe e funciona) | SiteContent + páginas |
+| 🟢 A10 | Mapa editável | migration/SC + PropertyMap |
+| 🟢 A11 | Aba Leads (Enquiry) | server + Admin.tsx |
+| 🟢 A12 | Validação Zod nas rotas de escrita | server |
+| 🟢 A13 | Reorder de fotos em lote / modais no lugar de prompt | server + Admin.tsx |

@@ -38,9 +38,10 @@ function useApi(token: string | null, onUnauthorized: () => void) {
 }
 
 function fileToBase64(file: File): Promise<{ base64: string; type: string }> {
-  return new Promise((resolve) => {
+  return new Promise((resolve, reject) => {
     const reader = new FileReader();
     reader.onload = () => resolve({ base64: (reader.result as string).split(',')[1], type: file.type });
+    reader.onerror = () => reject(new Error('Falha ao ler o arquivo'));
     reader.readAsDataURL(file);
   });
 }
@@ -102,14 +103,19 @@ function Login({ onLogin }: { onLogin: (token: string) => void }) {
 }
 
 // ── Photo tile ──────────────────────────────────────────────────────
-function PhotoTile({ photo, onSetCover, onDelete }: { photo: Photo; onSetCover: () => void; onDelete: () => void }) {
+function PhotoTile({ photo, onSetCover, onDelete, onMove, onEditAlt, canLeft, canRight }: { photo: Photo; onSetCover: () => void; onDelete: () => void; onMove: (dir: -1 | 1) => void; onEditAlt: () => void; canLeft: boolean; canRight: boolean }) {
+  const btn = 'flex-1 text-white/80 text-[11px] leading-none py-1 hover:text-[#C5A059] transition-colors disabled:opacity-25 disabled:hover:text-white/80';
   return (
     <div className="relative w-24 h-24 overflow-hidden shrink-0" style={{ border: photo.isPrimary ? `2px solid ${GOLD}` : '1px solid rgba(197,198,205,0.5)' }}>
       <img src={photo.url} alt={photo.alt || ''} className="w-full h-full object-cover" />
       {photo.isPrimary && <div className="absolute top-0 left-0 font-body text-[8px] uppercase tracking-widest text-white px-1.5 py-0.5" style={{ background: GOLD }}>Capa</div>}
-      <div className="absolute bottom-0 left-0 right-0 flex" style={{ background: 'rgba(16,28,45,0.75)' }}>
-        {!photo.isPrimary && <button title="Definir como capa" onClick={onSetCover} className="flex-1 text-white text-xs py-1 hover:text-[#C5A059] transition-colors">★</button>}
-        <button title="Excluir" onClick={onDelete} className="flex-1 text-white/80 text-xs py-1 hover:text-red-300 transition-colors">✕</button>
+      {!photo.alt && <div title="Sem texto alternativo" className="absolute top-0 right-0 font-body text-[8px] uppercase tracking-widest text-white/90 px-1 py-0.5" style={{ background: '#ba1a1a' }}>alt</div>}
+      <div className="absolute bottom-0 left-0 right-0 flex" style={{ background: 'rgba(16,28,45,0.78)' }}>
+        <button title="Mover para a esquerda" onClick={() => onMove(-1)} disabled={!canLeft} className={btn}>◀</button>
+        <button title="Mover para a direita" onClick={() => onMove(1)} disabled={!canRight} className={btn}>▶</button>
+        <button title="Definir como capa" onClick={onSetCover} disabled={photo.isPrimary} className={btn} style={{ color: photo.isPrimary ? GOLD : undefined }}>★</button>
+        <button title="Editar texto alternativo (alt)" onClick={onEditAlt} className={btn}>✎</button>
+        <button title="Excluir" onClick={onDelete} className={`${btn} hover:text-red-300`}>✕</button>
       </div>
     </div>
   );
@@ -150,8 +156,31 @@ function UnitCard({ unit, api, onChanged, featured, onSaveFeatured, displayTitle
 
   async function uploadPhoto(file: File) {
     setStatus('saving');
-    const { base64, type } = await fileToBase64(file);
-    try { await api(`/admin/units/${unit.unitSlug}/photos`, { method: 'POST', body: JSON.stringify({ dataBase64: base64, contentType: type, alt: unit.unitName }) }); setStatus('saved'); onChanged(); }
+    try {
+      const { base64, type } = await fileToBase64(file);
+      await api(`/admin/units/${unit.unitSlug}/photos`, { method: 'POST', body: JSON.stringify({ dataBase64: base64, contentType: type, alt: unit.unitName }) });
+      setStatus('saved'); onChanged();
+    } catch { setStatus('error'); }
+  }
+
+  // Reorder photos: move one tile left/right and persist the new order.
+  async function movePhoto(id: string, dir: -1 | 1) {
+    const ids = unit.photos.map((p) => p.id);
+    const from = ids.indexOf(id);
+    const to = from + dir;
+    if (from === -1 || to < 0 || to >= ids.length) return;
+    [ids[from], ids[to]] = [ids[to], ids[from]];
+    setStatus('saving');
+    try { await api(`/admin/units/${unit.unitSlug}/photos/reorder`, { method: 'POST', body: JSON.stringify({ orderedIds: ids }) }); setStatus('saved'); setTimeout(() => setStatus('idle'), 1200); onChanged(); }
+    catch { setStatus('error'); }
+  }
+
+  // Edit a photo's alt text (accessibility + SEO) via a simple prompt.
+  async function editAlt(id: string, current: string | null) {
+    const next = window.prompt('Texto alternativo (descrição da imagem):', current || '');
+    if (next === null) return;
+    setStatus('saving');
+    try { await api(`/admin/photos/${id}`, { method: 'PATCH', body: JSON.stringify({ alt: next }) }); setStatus('saved'); setTimeout(() => setStatus('idle'), 1200); onChanged(); }
     catch { setStatus('error'); }
   }
 
@@ -220,9 +249,12 @@ function UnitCard({ unit, api, onChanged, featured, onSaveFeatured, displayTitle
 
       <label className={label}>Fotos</label>
       <div className="flex flex-wrap gap-2 items-center">
-        {unit.photos.map((p) => (
+        {unit.photos.map((p, i) => (
           <div key={p.id} style={{ display: 'contents' }}>
             <PhotoTile photo={p}
+              canLeft={i > 0} canRight={i < unit.photos.length - 1}
+              onMove={(dir) => movePhoto(p.id, dir)}
+              onEditAlt={() => editAlt(p.id, p.alt)}
               onSetCover={async () => { await api(`/admin/photos/${p.id}`, { method: 'PATCH', body: JSON.stringify({ isPrimary: true }) }); onChanged(); }}
               onDelete={async () => { if (confirm('Excluir esta foto?')) { await api(`/admin/photos/${p.id}`, { method: 'DELETE' }); onChanged(); } }}
             />
@@ -243,9 +275,11 @@ function ImagesTab({ site, api, onChanged }: { site: SiteData; api: ReturnType<t
 
   async function upload(slot: string, file: File) {
     setBusy(slot);
-    const { base64, type } = await fileToBase64(file);
-    try { await api(`/admin/images/${slot}`, { method: 'POST', body: JSON.stringify({ dataBase64: base64, contentType: type }) }); onChanged(); }
-    finally { setBusy(null); }
+    try {
+      const { base64, type } = await fileToBase64(file);
+      await api(`/admin/images/${slot}`, { method: 'POST', body: JSON.stringify({ dataBase64: base64, contentType: type }) });
+      onChanged();
+    } finally { setBusy(null); }
   }
 
   return (
@@ -341,25 +375,44 @@ function ContentTab({ site, api, onChanged }: { site: SiteData; api: ReturnType<
         </div>
         <StringField k="home.map.title" title="Título da seção do mapa" />
         <ListEditor k="home.stats" title="Números / estatísticas" blank={{ value: '', label: '' }} cols={[{ key: 'value', label: 'Ex.: 30+' }, { key: 'label', label: 'Rótulo', wide: true }]} />
+        <div className="grid grid-cols-2 gap-6">
+          <StringField k="home.testimonials.eyebrow" title="Depoimentos — sobretítulo" />
+          <StringField k="home.testimonials.title" title="Depoimentos — título" />
+        </div>
         <ListEditor k="home.testimonials" title="Depoimentos" blank={{ text: '', name: '', property: '' }} cols={[{ key: 'text', label: 'Depoimento', wide: true }, { key: 'name', label: 'Nome' }, { key: 'property', label: 'Propriedade' }]} />
+      </Section>
+
+      <Section title="Navegação (menu)">
+        <StringField k="brand.name" title="Nome da marca (logo)" />
+        <ListEditor k="nav.links" title="Links do menu" blank={{ label: '', to: '' }} cols={[{ key: 'label', label: 'Texto' }, { key: 'to', label: 'Caminho (ex.: /about)', wide: true }]} />
+        <div className="grid grid-cols-2 gap-6">
+          <StringField k="nav.cta.label" title="Botão — texto (ex.: Book Now)" />
+          <StringField k="nav.cta.href" title="Botão — link" />
+        </div>
       </Section>
 
       <Section title="Contato">
         <StringField k="contact.email" title="E-mail" />
-        <StringField k="contact.phone" title="Telefone / WhatsApp" />
+        <StringField k="contact.phone" title="Telefone" />
+        <StringField k="contact.whatsapp" title="WhatsApp (só números, com DDI)" />
         <StringField k="contact.address" title="Endereço" textarea />
         <StringField k="contact.intro" title="Texto de introdução" textarea />
       </Section>
 
       <Section title="Rodapé">
         <ListEditor k="footer.links" title="Links do rodapé" blank={{ label: '', href: '' }} cols={[{ key: 'label', label: 'Texto' }, { key: 'href', label: 'Link (URL)', wide: true }]} />
+        <ListEditor k="footer.social" title="Redes sociais" blank={{ label: '', href: '' }} cols={[{ key: 'label', label: 'Rede (ex.: Instagram)' }, { key: 'href', label: 'Link (URL)', wide: true }]} />
+        <StringField k="footer.copyright" title="Texto de copyright (o ano é automático)" />
       </Section>
 
       <Section title="Páginas de Serviço & Sobre">
+        <StringField k="design.hero.eyebrow" title="Design — sobretítulo" />
         <StringField k="design.hero.title" title="Design — título" />
         <StringField k="design.hero.paragraph" title="Design — parágrafo" textarea />
+        <StringField k="management.hero.eyebrow" title="Management — sobretítulo" />
         <StringField k="management.hero.title" title="Management — título" />
         <StringField k="management.hero.paragraph" title="Management — parágrafo" textarea />
+        <StringField k="about.hero.eyebrow" title="About — sobretítulo" />
         <StringField k="about.hero.title" title="About — título" />
       </Section>
     </div>
