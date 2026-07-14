@@ -300,7 +300,7 @@ CREATE TABLE "Review" (
 
 ## ▸ FASE D — SEO, Mapa, Disponibilidade e Leads
 
-### D1. SEO por página — ⚠️ **já existe estático; falta só tornar editável**
+### ✅ D1. SEO por página — ⚠️ **já existe estático; falta só tornar editável**
 - **`react-helmet-async` já está instalado E em uso** em TODAS as páginas: cada página já tem
   `<title>`, `<meta description>`, `og:title/description/image`, `twitter:card` — **mas hardcoded**
   (ver `Home.tsx:79`, `About.tsx:10`, `DesignServices.tsx:11`, etc.). CollectionDetail/PropertyDetail

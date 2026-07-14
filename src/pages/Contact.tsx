@@ -1,5 +1,6 @@
 import { useState, type FormEvent } from 'react';
 import { MapPin, ArrowRight, CheckCircle, AlertCircle } from 'lucide-react';
+import { Helmet } from 'react-helmet-async';
 import { useSiteContent, text } from '../hooks/useSiteContent';
 
 type FormStatus = 'idle' | 'sending' | 'sent' | 'error';
@@ -38,6 +39,10 @@ export default function Contact() {
 
   return (
     <div className="animate-in fade-in duration-500 bg-inverse-surface min-h-screen pt-20">
+      <Helmet>
+        <title>{text(site.content, 'seo.contact.title', 'Contact | MCRh Manchester')}</title>
+        <meta name="description" content={text(site.content, 'seo.contact.description', "Get in touch with MCRh — Manchester's premium short-let apartment specialists. Enquire about stays, management or design services.")} />
+      </Helmet>
       <div className="max-w-[1280px] mx-auto px-margin-mobile md:px-margin-desktop py-16 md:py-32 grid grid-cols-1 lg:grid-cols-2 gap-16 lg:gap-32">
         <div className="text-inverse-on-surface">
           <h1 className="font-display text-display-lg-mobile md:text-display-lg mb-8 text-white">Begin the conversation.</h1>

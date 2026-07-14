@@ -8,9 +8,9 @@ export default function About() {
   return (
     <div className="animate-in fade-in duration-500">
       <Helmet>
-        <title>About | MCRh Manchester Short-Let Apartments</title>
-        <meta name="description" content="MCRh was founded to bridge the gap between boutique hotels and short-term rentals. We manage a curated portfolio of design-led properties in Manchester." />
-        <meta property="og:title" content="About MCRh | Manchester Luxury Lettings" />
+        <title>{text(site.content, 'seo.about.title', 'About | MCRh Manchester Short-Let Apartments')}</title>
+        <meta name="description" content={text(site.content, 'seo.about.description', 'MCRh was founded to bridge the gap between boutique hotels and short-term rentals. We manage a curated portfolio of design-led properties in Manchester.')} />
+        <meta property="og:title" content={text(site.content, 'seo.about.ogTitle', 'About MCRh | Manchester Luxury Lettings')} />
       </Helmet>
 
       <section className="max-w-[1280px] mx-auto px-margin-mobile md:px-margin-desktop pt-24 md:pt-32 pb-16">

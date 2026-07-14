@@ -8,9 +8,9 @@ export default function ManagementServices() {
   return (
     <div className="animate-in fade-in duration-500">
       <Helmet>
-        <title>Management Services | MCRh Property Management Manchester</title>
-        <meta name="description" content="Full-cycle short-term rental management in Manchester. Guest screening, 24/7 concierge, dynamic pricing, housekeeping and transparent reporting for property owners." />
-        <meta property="og:title" content="MCRh Property Management | Manchester Short-Let Experts" />
+        <title>{text(site.content, 'seo.management.title', 'Management Services | MCRh Property Management Manchester')}</title>
+        <meta name="description" content={text(site.content, 'seo.management.description', 'Full-cycle short-term rental management in Manchester. Guest screening, 24/7 concierge, dynamic pricing, housekeeping and transparent reporting for property owners.')} />
+        <meta property="og:title" content={text(site.content, 'seo.management.ogTitle', 'MCRh Property Management | Manchester Short-Let Experts')} />
       </Helmet>
 
       <section className="relative w-full h-[60vh] min-h-[500px] flex items-center justify-center bg-surface border-b border-outline-variant/30">

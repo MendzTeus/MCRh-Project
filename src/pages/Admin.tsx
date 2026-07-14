@@ -494,6 +494,25 @@ function ContentTab({ site, api, onChanged }: { site: SiteData; api: ReturnType<
         <StringField k="about.quote.text" title="About — citação" textarea />
         <StringField k="about.quote.signature" title="About — assinatura da citação" />
       </Section>
+
+      <Section title="SEO — Metatags por página">
+        {([
+          { page: 'home', label: 'Home', hasOg: true },
+          { page: 'properties', label: 'Properties', hasOg: false },
+          { page: 'about', label: 'About', hasOg: true },
+          { page: 'design', label: 'Design Services', hasOg: true },
+          { page: 'management', label: 'Management Services', hasOg: true },
+          { page: 'contact', label: 'Contact', hasOg: false },
+        ] as { page: string; label: string; hasOg: boolean }[]).map(({ page, label, hasOg }) => (
+          <div key={page} className="border border-outline-variant/30 rounded-lg p-4 space-y-3">
+            <p className="font-body text-label-caps text-secondary tracking-widest uppercase text-xs">{label}</p>
+            <StringField k={`seo.${page}.title`} title="Title tag" />
+            <StringField k={`seo.${page}.description`} title="Meta description" textarea />
+            {hasOg && <StringField k={`seo.${page}.ogTitle`} title="OG title (opcional)" />}
+            {hasOg && page === 'home' && <StringField k={`seo.${page}.ogDescription`} title="OG description" textarea />}
+          </div>
+        ))}
+      </Section>
     </div>
   );
 }

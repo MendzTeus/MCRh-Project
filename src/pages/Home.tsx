@@ -77,12 +77,12 @@ export default function Home() {
   return (
     <div className="animate-in fade-in duration-500">
       <Helmet>
-        <title>MCRh | Luxury Short-Let Apartments in Manchester</title>
-        <meta name="description" content="Premium short-term furnished apartments in Manchester — Chambers Residence, Ancoats, Wood Street, John Dalton Street and more. Book direct." />
-        <meta property="og:title" content="MCRh | Luxury Short-Let Apartments in Manchester" />
-        <meta property="og:description" content="Premium short-term furnished apartments in Manchester city centre. Experts in short-term lettings." />
+        <title>{text(site.content, 'seo.home.title', 'MCRh | Luxury Short-Let Apartments in Manchester')}</title>
+        <meta name="description" content={text(site.content, 'seo.home.description', 'Premium short-term furnished apartments in Manchester — Chambers Residence, Ancoats, Wood Street, John Dalton Street and more. Book direct.')} />
+        <meta property="og:title" content={text(site.content, 'seo.home.ogTitle', 'MCRh | Luxury Short-Let Apartments in Manchester')} />
+        <meta property="og:description" content={text(site.content, 'seo.home.ogDescription', 'Premium short-term furnished apartments in Manchester city centre. Experts in short-term lettings.')} />
         <meta property="og:type" content="website" />
-        <meta property="og:image" content="/media/properties/chambers/01.jpeg" />
+        <meta property="og:image" content={site.images['home.hero']?.url || '/media/properties/chambers/01.jpeg'} />
         <meta name="twitter:card" content="summary_large_image" />
       </Helmet>
 

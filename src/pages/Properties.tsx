@@ -245,8 +245,8 @@ export default function Properties() {
   return (
     <>
       <Helmet>
-        <title>Properties | MCRh Manchester Short-Let Apartments</title>
-        <meta name="description" content="Browse MCRh's curated portfolio of short-let apartments in Manchester." />
+        <title>{text(site.content, 'seo.properties.title', 'Properties | MCRh Manchester Short-Let Apartments')}</title>
+        <meta name="description" content={text(site.content, 'seo.properties.description', "Browse MCRh's curated portfolio of short-let apartments in Manchester.")} />
       </Helmet>
 
       <div style={{ display: 'flex', alignItems: 'flex-start', marginTop: 80 }}>

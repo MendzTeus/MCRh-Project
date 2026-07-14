@@ -9,9 +9,9 @@ export default function DesignServices() {
   return (
     <div className="animate-in fade-in duration-500">
       <Helmet>
-        <title>Design Services | MCRh Interior Architecture Manchester</title>
-        <meta name="description" content="MCRh Studio — interior architecture and design for short-term rental properties in Manchester. Turnkey furnishing, spatial planning and material selection." />
-        <meta property="og:title" content="MCRh Design Studio | Interior Architecture Manchester" />
+        <title>{text(site.content, 'seo.design.title', 'Design Services | MCRh Interior Architecture Manchester')}</title>
+        <meta name="description" content={text(site.content, 'seo.design.description', 'MCRh Studio — interior architecture and design for short-term rental properties in Manchester. Turnkey furnishing, spatial planning and material selection.')} />
+        <meta property="og:title" content={text(site.content, 'seo.design.ogTitle', 'MCRh Design Studio | Interior Architecture Manchester')} />
       </Helmet>
 
       <section className="relative w-full h-[60vh] min-h-[500px] flex items-center justify-center bg-surface-container-low overflow-hidden">
