@@ -734,8 +734,101 @@ function ReviewsEditor({ slug, api }: { slug: string; api: ReturnType<typeof use
   );
 }
 
+// ── Leads tab ────────────────────────────────────────────────────────
+type Lead = { id: string; name: string; email: string; phone: string | null; propertyName: string; checkIn: string | null; checkOut: string | null; guests: number | null; message: string | null; status: string; createdAt: string; source: string | null };
+const STATUS_LABELS: Record<string, string> = { novo: 'Novo', lido: 'Lido', arquivado: 'Arquivado' };
+const STATUS_COLORS: Record<string, string> = { novo: '#16a34a', lido: '#2563eb', arquivado: '#6b7280' };
+
+function LeadsTab({ api }: { api: ReturnType<typeof useApi> }) {
+  const [leads, setLeads] = useState<Lead[]>([]);
+  const [filter, setFilter] = useState('todos');
+  const [loading, setLoading] = useState(true);
+
+  async function load() {
+    setLoading(true);
+    const data = await api('/admin/leads');
+    setLeads(Array.isArray(data) ? data : []);
+    setLoading(false);
+  }
+
+  useEffect(() => { load(); }, []);
+
+  async function setStatus(id: string, status: string) {
+    await api(`/admin/leads/${id}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ status }) });
+    setLeads((prev) => prev.map((l) => l.id === id ? { ...l, status } : l));
+  }
+
+  async function deleteLead(id: string) {
+    if (!confirm('Remover este lead?')) return;
+    await api(`/admin/leads/${id}`, { method: 'DELETE' });
+    setLeads((prev) => prev.filter((l) => l.id !== id));
+  }
+
+  const filtered = filter === 'todos' ? leads : leads.filter((l) => l.status === filter);
+
+  return (
+    <div className="max-w-4xl space-y-6">
+      <div className="flex items-center gap-3 flex-wrap">
+        {['todos', 'novo', 'lido', 'arquivado'].map((f) => (
+          <button key={f} onClick={() => setFilter(f)}
+            className={`px-4 py-1.5 rounded-full font-body text-label-caps tracking-widest uppercase text-xs border transition-colors ${filter === f ? 'bg-primary text-white border-primary' : 'border-outline-variant/40 text-on-surface-variant hover:border-primary'}`}>
+            {f === 'todos' ? 'Todos' : STATUS_LABELS[f]}
+            {f !== 'todos' && <span className="ml-1.5 opacity-60">{leads.filter((l) => l.status === f).length}</span>}
+          </button>
+        ))}
+        <span className="ml-auto font-body text-xs text-on-surface-variant">{filtered.length} {filtered.length === 1 ? 'lead' : 'leads'}</span>
+      </div>
+
+      {loading ? (
+        <p className="font-body text-sm text-on-surface-variant">Carregando…</p>
+      ) : filtered.length === 0 ? (
+        <div className="border border-outline-variant/30 rounded-lg px-6 py-12 text-center">
+          <p className="font-body text-sm text-on-surface-variant">Nenhum lead encontrado.</p>
+        </div>
+      ) : (
+        <div className="space-y-3">
+          {filtered.map((lead) => (
+            <div key={lead.id} className="border border-outline-variant/30 rounded-lg p-5 bg-surface-container-lowest space-y-3">
+              <div className="flex items-start justify-between gap-4">
+                <div>
+                  <p className="font-display text-headline-sm text-primary">{lead.name}</p>
+                  <p className="font-body text-sm text-on-surface-variant mt-0.5">{lead.email}{lead.phone ? ` · ${lead.phone}` : ''}</p>
+                </div>
+                <div className="flex items-center gap-2 shrink-0">
+                  <span className="font-body text-[10px] tracking-widest uppercase font-semibold px-2 py-0.5 rounded-full text-white" style={{ background: STATUS_COLORS[lead.status] || '#6b7280' }}>
+                    {STATUS_LABELS[lead.status] || lead.status}
+                  </span>
+                </div>
+              </div>
+              <div className="flex flex-wrap gap-3 font-body text-xs text-on-surface-variant">
+                <span className="bg-surface-dim px-2 py-0.5 rounded">{lead.propertyName}</span>
+                {lead.checkIn && <span className="bg-surface-dim px-2 py-0.5 rounded">{lead.checkIn} → {lead.checkOut}</span>}
+                {lead.guests && <span className="bg-surface-dim px-2 py-0.5 rounded">{lead.guests} hóspedes</span>}
+                {lead.source && <span className="bg-surface-dim px-2 py-0.5 rounded opacity-60">{lead.source}</span>}
+                <span className="ml-auto opacity-50">{new Date(lead.createdAt).toLocaleDateString('pt-BR', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })}</span>
+              </div>
+              {lead.message && <p className="font-body text-sm text-on-surface-variant border-t border-outline-variant/20 pt-3 leading-relaxed">{lead.message}</p>}
+              <div className="flex gap-2 pt-1">
+                {Object.keys(STATUS_LABELS).filter((s) => s !== lead.status).map((s) => (
+                  <button key={s} onClick={() => setStatus(lead.id, s)}
+                    className="font-body text-[10px] tracking-widest uppercase px-3 py-1 border border-outline-variant/40 rounded hover:border-primary transition-colors text-on-surface-variant hover:text-primary">
+                    Marcar {STATUS_LABELS[s]}
+                  </button>
+                ))}
+                <button onClick={() => deleteLead(lead.id)} className="ml-auto font-body text-[10px] tracking-widest uppercase px-3 py-1 border border-red-200 rounded hover:bg-red-50 text-red-400 transition-colors">
+                  Remover
+                </button>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ── Main ────────────────────────────────────────────────────────────
-type Tab = 'apartments' | 'images' | 'content' | 'properties';
+type Tab = 'apartments' | 'images' | 'content' | 'properties' | 'leads';
 
 export default function Admin() {
   const [token, setToken] = useState<string | null>(() => localStorage.getItem(TOKEN_KEY));
@@ -783,6 +876,7 @@ export default function Admin() {
     { id: 'images', label: 'Imagens' },
     { id: 'content', label: 'Conteúdo' },
     { id: 'properties', label: 'Propriedades' },
+    { id: 'leads', label: 'Leads' },
   ];
 
   return (
@@ -851,6 +945,7 @@ export default function Admin() {
         {tab === 'images' && !loading && <ImagesTab site={site} api={api} onChanged={load} />}
         {tab === 'content' && !loading && <ContentTab site={site} api={api} onChanged={load} />}
         {tab === 'properties' && !loading && <PropertiesTab site={site} api={api} onChanged={load} />}
+        {tab === 'leads' && !loading && <LeadsTab api={api} />}
       </main>
     </div>
   );

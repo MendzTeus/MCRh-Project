@@ -69,4 +69,27 @@ router.get('/reviews', async (req, res) => {
   res.json(data || []);
 });
 
+// Public enquiry submission.
+router.post('/enquiries', async (req, res) => {
+  const { name, email, phone, message, propertyName, checkIn, checkOut, guests, unitSlug, source } = req.body || {};
+  if (!name || !email) return res.status(400).json({ error: 'name and email required' });
+  const row = {
+    id: require('crypto').randomUUID(),
+    name, email,
+    phone: phone || null,
+    message: message || null,
+    propertyName: propertyName || 'General',
+    checkIn: checkIn || null,
+    checkOut: checkOut || null,
+    guests: guests ? parseInt(guests, 10) : null,
+    unitSlug: unitSlug || null,
+    source: source || null,
+    status: 'novo',
+    createdAt: new Date().toISOString(),
+  };
+  const { error } = await supabase.from('Enquiry').insert(row);
+  if (error) return res.status(500).json({ error: error.message });
+  res.status(201).json({ ok: true });
+});
+
 module.exports = router;

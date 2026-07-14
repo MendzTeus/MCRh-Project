@@ -320,7 +320,7 @@ CREATE TABLE "Review" (
 - Botão **"Sincronizar agora"** (por unidade e global) → chama `POST /api/sync` (já existe, protegido por `SYNC_SECRET`).
 - (Recomendado) sync agendado por cron — hoje é manual.
 
-### D4. Caixa de Leads (**aba "Leads"**)
+### ✅ D4. Caixa de Leads (**aba "Leads"**)
 - Tabela `Enquiry` **já existe** (vazia). Hoje o formulário de Contato vai só pro Formspree fixo (`xkgjeqvb`) e **não salva**.
 - **Persistir** cada envio: nova rota `POST /api/enquiries` (pública) que grava em `Enquiry`, capturando contexto (propriedade, datas, hóspedes) quando vier de uma página de imóvel.
 - UI: inbox com status `novo/lido/arquivado`.

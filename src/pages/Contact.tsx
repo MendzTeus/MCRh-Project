@@ -20,11 +20,21 @@ export default function Contact() {
     setStatus('sending');
     try {
       const form = e.currentTarget;
-      const data = new FormData(form);
-      const res = await fetch('https://formspree.io/f/xkgjeqvb', {
+      const fd = new FormData(form);
+      const firstName = (fd.get('firstName') as string || '').trim();
+      const lastName = (fd.get('lastName') as string || '').trim();
+      const inquiryType = (fd.get('inquiryType') as string || '').trim();
+      const body = {
+        name: [firstName, lastName].filter(Boolean).join(' ') || 'Unknown',
+        email: fd.get('email') as string,
+        message: fd.get('message') as string | undefined,
+        propertyName: inquiryType || 'General',
+        source: 'contact-form',
+      };
+      const res = await fetch('/api/enquiries', {
         method: 'POST',
-        body: data,
-        headers: { Accept: 'application/json' },
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
       });
       if (res.ok) {
         setStatus('sent');

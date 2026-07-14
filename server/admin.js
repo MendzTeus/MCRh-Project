@@ -283,4 +283,28 @@ router.delete('/reviews/:id', async (req, res) => {
   res.json({ ok: true });
 });
 
+// ── Leads (Enquiry) ──────────────────────────────────────────────────
+router.get('/leads', async (req, res) => {
+  const q = supabase.from('Enquiry').select('*').order('createdAt', { ascending: false });
+  if (req.query.status) q.eq('status', req.query.status);
+  const { data, error } = await q;
+  if (error) return res.status(500).json({ error: error.message });
+  res.json(data);
+});
+
+router.patch('/leads/:id', async (req, res) => {
+  const allowed = ['status'];
+  const patch = {};
+  for (const k of allowed) if (k in (req.body || {})) patch[k] = req.body[k];
+  const { data, error } = await supabase.from('Enquiry').update(patch).eq('id', req.params.id).select().single();
+  if (error) return res.status(500).json({ error: error.message });
+  res.json(data);
+});
+
+router.delete('/leads/:id', async (req, res) => {
+  const { error } = await supabase.from('Enquiry').delete().eq('id', req.params.id);
+  if (error) return res.status(500).json({ error: error.message });
+  res.json({ ok: true });
+});
+
 module.exports = router;
