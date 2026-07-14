@@ -199,7 +199,7 @@ cards refinados) e organizado em **abas por área**. Abas existentes hoje:
 | 0.1 | ✅ Commitar os 7 arquivos pendentes | — | git | rate-limit, body-limit, nav/footer/home wiring |
 | 0.2 | ✅ Confirmar **RLS** ligado nas tabelas novas | Supabase | `MediaAsset`, `SiteImage`, `SiteContent` | migrations não habilitam RLS |
 | 0.3 | ✅ Campos de apê que existem no back-end mas **não têm input** | UI | `UnitCard` (Admin.tsx) | `postcode`, `description`, `squareFeet` já estão no allowlist do servidor |
-| 0.4 | **iCal editável** por unidade | UI + allowlist | `UnitCard` + `EDITABLE` (admin.js) | `icalAirbnbUrl`, `icalVrboUrl` — hoje só via `scripts/seed-ical-urls.cjs` |
+| 0.4 | ✅ **iCal editável** por unidade | UI + allowlist | `UnitCard` + `EDITABLE` (admin.js) | `icalAirbnbUrl`, `icalVrboUrl` — hoje só via `scripts/seed-ical-urls.cjs` |
 
 ---
 

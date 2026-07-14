@@ -36,7 +36,7 @@ function recordFailure(ip) {
 }
 
 // Fields an admin is allowed to edit on a Unit (allowlist — nothing else gets through).
-const EDITABLE = ['unitName', 'suppliedSpecs', 'postcode', 'airbnbUrl', 'description', 'squareFeet', 'visible', 'displayOrder'];
+const EDITABLE = ['unitName', 'suppliedSpecs', 'postcode', 'airbnbUrl', 'description', 'squareFeet', 'visible', 'displayOrder', 'icalAirbnbUrl', 'icalVrboUrl'];
 
 // ── Login: password → signed token ──────────────────────────────────
 router.post('/login', loginThrottle, (req, res) => {
@@ -60,7 +60,7 @@ router.use(requireAdmin);
 router.get('/units', async (_req, res) => {
   const { data: units, error } = await supabase
     .from('Unit')
-    .select('unitSlug, unitName, propertySlug, propertyName, suppliedSpecs, postcode, airbnbUrl, description, squareFeet, visible, airbnbListed, displayOrder')
+    .select('unitSlug, unitName, propertySlug, propertyName, suppliedSpecs, postcode, airbnbUrl, description, squareFeet, icalAirbnbUrl, icalVrboUrl, visible, airbnbListed, displayOrder')
     .order('displayOrder');
   if (error) return res.status(500).json({ error: error.message });
 

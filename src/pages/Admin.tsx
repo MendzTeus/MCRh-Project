@@ -11,7 +11,7 @@ type Photo = { id: string; url: string; alt: string | null; isPrimary: boolean; 
 type Unit = {
   unitSlug: string; unitName: string; propertySlug: string; propertyName: string;
   suppliedSpecs: string | null; postcode: string | null; airbnbUrl: string | null;
-  description: string | null; squareFeet: number | null; visible: boolean; airbnbListed?: boolean; displayOrder: number; photos: Photo[];
+  description: string | null; squareFeet: number | null; icalAirbnbUrl: string | null; icalVrboUrl: string | null; visible: boolean; airbnbListed?: boolean; displayOrder: number; photos: Photo[];
 };
 type SiteData = { content: Record<string, unknown>; images: Record<string, { url: string; alt: string | null }> };
 
@@ -144,6 +144,8 @@ function UnitCard({ unit, api, onChanged, featured, onSaveFeatured, displayTitle
   const [postcode, setPostcode] = useState(unit.postcode || '');
   const [description, setDescription] = useState(unit.description || '');
   const [squareFeet, setSquareFeet] = useState(unit.squareFeet != null ? String(unit.squareFeet) : '');
+  const [icalAirbnb, setIcalAirbnb] = useState(unit.icalAirbnbUrl || '');
+  const [icalVrbo, setIcalVrbo] = useState(unit.icalVrboUrl || '');
   const [dispTitle, setDispTitle] = useState(storedDisplayTitle);
   const [status, setStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
   const fileRef = useRef<HTMLInputElement>(null);
@@ -152,6 +154,7 @@ function UnitCard({ unit, api, onChanged, featured, onSaveFeatured, displayTitle
     setName(unit.unitName); setSpecs(unit.suppliedSpecs || ''); setAirbnb(unit.airbnbUrl || '');
     setPostcode(unit.postcode || ''); setDescription(unit.description || '');
     setSquareFeet(unit.squareFeet != null ? String(unit.squareFeet) : '');
+    setIcalAirbnb(unit.icalAirbnbUrl || ''); setIcalVrbo(unit.icalVrboUrl || '');
   }, [unit]);
   useEffect(() => { setDispTitle(storedDisplayTitle); }, [storedDisplayTitle]);
 
@@ -264,6 +267,14 @@ function UnitCard({ unit, api, onChanged, featured, onSaveFeatured, displayTitle
           <textarea value={description} onChange={(e) => setDescription(e.target.value)}
             onBlur={() => description !== (unit.description || '') && save({ description })}
             rows={3} placeholder="Breve descrição do apartamento…" className={`${field} resize-none`} /></div>
+        <div><label className={label}>iCal Airbnb</label>
+          <input value={icalAirbnb} onChange={(e) => setIcalAirbnb(e.target.value)}
+            onBlur={() => icalAirbnb !== (unit.icalAirbnbUrl || '') && save({ icalAirbnbUrl: icalAirbnb })}
+            placeholder="https://www.airbnb.co.uk/calendar/ical/…" className={field} /></div>
+        <div><label className={label}>iCal VRBO</label>
+          <input value={icalVrbo} onChange={(e) => setIcalVrbo(e.target.value)}
+            onBlur={() => icalVrbo !== (unit.icalVrboUrl || '') && save({ icalVrboUrl: icalVrbo })}
+            placeholder="https://www.vrbo.com/icalendar/…" className={field} /></div>
       </div>
 
       <label className={label}>Fotos</label>
