@@ -13,5 +13,7 @@ CREATE TABLE IF NOT EXISTS "Review" (
 
 ALTER TABLE "Review" ENABLE ROW LEVEL SECURITY;
 
-CREATE POLICY IF NOT EXISTS "public_read_reviews"
+-- Postgres has no CREATE POLICY IF NOT EXISTS, so drop-then-create keeps this idempotent.
+DROP POLICY IF EXISTS "public_read_reviews" ON "Review";
+CREATE POLICY "public_read_reviews"
   ON "Review" FOR SELECT USING (published = true);
