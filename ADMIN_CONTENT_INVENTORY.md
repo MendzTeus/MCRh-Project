@@ -262,7 +262,7 @@ Hoje só é editável **quais apês** aparecem (`home.featured`) — não o **te
 - **SC[`home.blocks`]** = `[{slug, eyebrow, name, description, quote, ctaLabel}]`. UI: `ListEditor` amplo, ou um editor por bloco.
 - Imagem de cada bloco: **IMG[`home.block.<slug>`]** (hoje puxa a 1ª foto do apê).
 
-### C2. Design Services (corpo — hoje tudo hardcoded exceto o hero)
+### ✅ C2. Design Services (corpo — hoje tudo hardcoded exceto o hero)
 | Seção | Mecanismo | Chave |
 |---|---|---|
 | "Our Approach": eyebrow, título, 2 parágrafos | SC | `design.approach.{eyebrow,title,p1,p2}` |

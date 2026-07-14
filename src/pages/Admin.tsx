@@ -439,6 +439,17 @@ function ContentTab({ site, api, onChanged }: { site: SiteData; api: ReturnType<
         <StringField k="design.hero.eyebrow" title="Design — sobretítulo" />
         <StringField k="design.hero.title" title="Design — título" />
         <StringField k="design.hero.paragraph" title="Design — parágrafo" textarea />
+        <StringField k="design.approach.eyebrow" title="Design — Our Approach eyebrow" />
+        <StringField k="design.approach.title" title="Design — Our Approach título" />
+        <StringField k="design.approach.p1" title="Design — Our Approach parágrafo 1" textarea />
+        <StringField k="design.approach.p2" title="Design — Our Approach parágrafo 2" textarea />
+        <ListEditor k="design.approach.bullets" title="Design — Our Approach bullets" blank={{ item: '' }} cols={[{ key: 'item', label: 'Bullet', wide: true }]} />
+        <StringField k="design.disciplines.title" title="Design — Core Disciplines título" />
+        <StringField k="design.disciplines.subtitle" title="Design — Core Disciplines subtítulo" textarea />
+        <StringField k="design.cta.title" title="Design — CTA título" />
+        <StringField k="design.cta.paragraph" title="Design — CTA parágrafo" textarea />
+        <StringField k="design.cta.ctaLabel" title="Design — CTA botão texto" />
+        <StringField k="design.cta.ctaHref" title="Design — CTA botão link" />
         <StringField k="management.hero.eyebrow" title="Management — sobretítulo" />
         <StringField k="management.hero.title" title="Management — título" />
         <StringField k="management.hero.paragraph" title="Management — parágrafo" textarea />
