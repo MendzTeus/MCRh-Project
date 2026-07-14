@@ -11,7 +11,7 @@ type Photo = { id: string; url: string; alt: string | null; isPrimary: boolean; 
 type Unit = {
   unitSlug: string; unitName: string; propertySlug: string; propertyName: string;
   suppliedSpecs: string | null; postcode: string | null; airbnbUrl: string | null;
-  description: string | null; visible: boolean; airbnbListed?: boolean; displayOrder: number; photos: Photo[];
+  description: string | null; squareFeet: number | null; visible: boolean; airbnbListed?: boolean; displayOrder: number; photos: Photo[];
 };
 type SiteData = { content: Record<string, unknown>; images: Record<string, { url: string; alt: string | null }> };
 
@@ -141,11 +141,18 @@ function UnitCard({ unit, api, onChanged, featured, onSaveFeatured, displayTitle
   const [name, setName] = useState(unit.unitName);
   const [specs, setSpecs] = useState(unit.suppliedSpecs || '');
   const [airbnb, setAirbnb] = useState(unit.airbnbUrl || '');
+  const [postcode, setPostcode] = useState(unit.postcode || '');
+  const [description, setDescription] = useState(unit.description || '');
+  const [squareFeet, setSquareFeet] = useState(unit.squareFeet != null ? String(unit.squareFeet) : '');
   const [dispTitle, setDispTitle] = useState(storedDisplayTitle);
   const [status, setStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
   const fileRef = useRef<HTMLInputElement>(null);
 
-  useEffect(() => { setName(unit.unitName); setSpecs(unit.suppliedSpecs || ''); setAirbnb(unit.airbnbUrl || ''); }, [unit]);
+  useEffect(() => {
+    setName(unit.unitName); setSpecs(unit.suppliedSpecs || ''); setAirbnb(unit.airbnbUrl || '');
+    setPostcode(unit.postcode || ''); setDescription(unit.description || '');
+    setSquareFeet(unit.squareFeet != null ? String(unit.squareFeet) : '');
+  }, [unit]);
   useEffect(() => { setDispTitle(storedDisplayTitle); }, [storedDisplayTitle]);
 
   const save = useCallback(async (patch: Record<string, unknown>) => {
@@ -245,6 +252,18 @@ function UnitCard({ unit, api, onChanged, featured, onSaveFeatured, displayTitle
           <input value={specs} onChange={(e) => setSpecs(e.target.value)} onBlur={() => specs !== (unit.suppliedSpecs || '') && save({ suppliedSpecs: specs })} placeholder="2BED 2BATH" className={field} /></div>
         <div><label className={label}>Link do Airbnb</label>
           <input value={airbnb} onChange={(e) => setAirbnb(e.target.value)} onBlur={() => airbnb !== (unit.airbnbUrl || '') && save({ airbnbUrl: airbnb })} className={field} /></div>
+        <div><label className={label}>Postcode</label>
+          <input value={postcode} onChange={(e) => setPostcode(e.target.value)} onBlur={() => postcode !== (unit.postcode || '') && save({ postcode })} placeholder="M3 3EW" className={field} /></div>
+        <div><label className={label}>Área (ft²)</label>
+          <input type="number" value={squareFeet} onChange={(e) => setSquareFeet(e.target.value)}
+            onBlur={() => {
+              const v = squareFeet === '' ? null : Number(squareFeet);
+              if (v !== unit.squareFeet) save({ squareFeet: v });
+            }} placeholder="650" className={field} /></div>
+        <div><label className={label}>Descrição</label>
+          <textarea value={description} onChange={(e) => setDescription(e.target.value)}
+            onBlur={() => description !== (unit.description || '') && save({ description })}
+            rows={3} placeholder="Breve descrição do apartamento…" className={`${field} resize-none`} /></div>
       </div>
 
       <label className={label}>Fotos</label>
