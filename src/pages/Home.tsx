@@ -5,7 +5,8 @@ import { Link } from 'react-router-dom';
 import { Helmet } from 'react-helmet-async';
 import MediaImage from '../components/MediaImage';
 import PropertyFeatureSection from '../components/PropertyFeatureSection';
-import { locationAreas, mapLocations, getLocationGroups, groupLocationsByRegion, type LocationArea } from '../data/locations';
+import { locationAreas, getLocationGroups, groupLocationsByRegion, type LocationArea } from '../data/locations';
+import { useMapLocations } from '../hooks/useMapLocations';
 import { useClickOutside } from '../hooks/useClickOutside';
 import { useSiteContent, text, list } from '../hooks/useSiteContent';
 import { airbnbInventory, getInventoryForProperty } from '../data/airbnbInventory';
@@ -29,9 +30,10 @@ export default function Home() {
   useClickOutside(filterRef, () => setFiltersOpen(false), filtersOpen);
   const [selectedArea, setSelectedArea] = useState<LocationArea>('all');
   const [selectedLocationId, setSelectedLocationId] = useState(1);
+  const allLocations = useMapLocations();
   const visibleLocations = useMemo(
-    () => mapLocations.filter((location) => selectedArea === 'all' || location.areaId === selectedArea),
-    [selectedArea],
+    () => allLocations.filter((location) => selectedArea === 'all' || location.areaId === selectedArea),
+    [allLocations, selectedArea],
   );
   const publicUnits = usePublicUnits();
   // Drop location cards whose collection has no bookable (visible) units left —
@@ -231,7 +233,7 @@ export default function Home() {
                         onClick={() => {
                           setSelectedArea(area.id);
                           setFiltersOpen(false);
-                          const nextLocation = mapLocations.find(
+                          const nextLocation = allLocations.find(
                             (location) => area.id === 'all' || location.areaId === area.id,
                           );
                           if (nextLocation) setSelectedLocationId(nextLocation.id);

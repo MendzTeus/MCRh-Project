@@ -226,11 +226,44 @@ const draftMapLocations: DraftMapLocation[] = [
   },
 ];
 
-export const mapLocations: MapLocation[] = draftMapLocations.map((location) => ({
-  ...location,
-  groupId: groupByCollectionSlug[location.collectionSlug] ?? location.areaId,
-  position: toMapPosition(location.coordinates),
+// Admin overrides for a single pin — only lat/lng/postcode are editable; name,
+// area and grouping stay structural (tied to collections) so the map layout and
+// filters can't be broken from the panel. Keyed by the location's numeric id.
+export type MapLocationOverride = { lat?: number; lng?: number; postcode?: string };
+
+/**
+ * Builds the map locations from the static defaults, layering any admin overrides
+ * (coordinates/postcode) on top. `buildMapLocations()` with no overrides is
+ * byte-identical to the previous static `mapLocations`, so the map is unchanged
+ * until something is actually edited.
+ */
+export function buildMapLocations(
+  overrides: Record<string, MapLocationOverride> = {},
+): MapLocation[] {
+  return draftMapLocations.map((location) => {
+    const o = overrides[String(location.id)] || {};
+    const coordinates = {
+      lat: typeof o.lat === 'number' ? o.lat : location.coordinates.lat,
+      lng: typeof o.lng === 'number' ? o.lng : location.coordinates.lng,
+    };
+    return {
+      ...location,
+      postcode: o.postcode || location.postcode,
+      coordinates,
+      groupId: groupByCollectionSlug[location.collectionSlug] ?? location.areaId,
+      position: toMapPosition(coordinates),
+    };
+  });
+}
+
+// Default pins (id, name, collectionSlug, postcode, coordinates) — used by the
+// admin editor to render the list of pins and their current defaults.
+export const mapLocationDefaults = draftMapLocations.map((l) => ({
+  id: l.id, name: l.name, collectionSlug: l.collectionSlug, area: l.area,
+  postcode: l.postcode, coordinates: l.coordinates,
 }));
+
+export const mapLocations: MapLocation[] = buildMapLocations();
 
 /**
  * Groups a set of locations into their region groups, preserving `locationGroups`
@@ -279,13 +312,16 @@ const propertyToCollectionSlugs: Record<string, string[]> = {
  * Returns the map locations relevant to a given property/collection slug so each
  * collection map shows only its own pins (never every pin in the city).
  */
-export function getLocationsForProperty(propertySlug?: string): MapLocation[] {
+export function getLocationsForProperty(
+  propertySlug?: string,
+  locations: MapLocation[] = mapLocations,
+): MapLocation[] {
   if (!propertySlug) return [];
   const collectionSlugs = propertyToCollectionSlugs[propertySlug];
   if (collectionSlugs) {
-    return mapLocations.filter((location) => collectionSlugs.includes(location.collectionSlug));
+    return locations.filter((location) => collectionSlugs.includes(location.collectionSlug));
   }
-  return mapLocations.filter(
+  return locations.filter(
     (location) => location.collectionSlug === propertySlug || location.propertySlug === propertySlug,
   );
 }

@@ -9,6 +9,7 @@ import { getInventoryForProperty } from '../data/airbnbInventory';
 import { getListingMedia } from '../data/listingMedia';
 import { getPropertyBySlug } from '../data/properties';
 import { getLocationsForProperty } from '../data/locations';
+import { useMapLocations } from '../hooks/useMapLocations';
 import { getReviewsForProperty } from '../data/reviews';
 import { useAvailability } from '../hooks/useAvailability';
 import { usePublicUnits } from '../hooks/usePublicUnits';
@@ -27,9 +28,10 @@ export default function CollectionDetail() {
   const unitsRef = useRef<HTMLDivElement>(null);
   // Stable array reference so <PropertyMap> doesn't tear down and rebuild the
   // Leaflet map on every re-render (e.g. while checking availability).
+  const allLocations = useMapLocations();
   const propertyMapLocations = useMemo(
-    () => getLocationsForProperty(property?.slug),
-    [property?.slug],
+    () => getLocationsForProperty(property?.slug, allLocations),
+    [property?.slug, allLocations],
   );
 
   if (!property) return null;

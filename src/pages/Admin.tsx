@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, useRef, type FormEvent, type ReactNode } from 'react';
 import { getListingMedia, cleanListingTitle } from '../data/listingMedia';
+import { mapLocationDefaults } from '../data/locations';
 
 // Quiet Luxury signature accent
 const GOLD = '#C5A059';
@@ -400,6 +401,68 @@ function ContentTab({ site, api, onChanged }: { site: SiteData; api: ReturnType<
     </section>
   );
 
+  // Map pins editor — overrides lat/lng/postcode per pin (defaults come from
+  // locations.ts). Only overridden fields are stored under `map.locations`; an
+  // empty field falls back to the built-in default, so the map never breaks.
+  function MapPinsEditor() {
+    const raw = site.content['map.locations'];
+    const initial = (raw && typeof raw === 'object' ? raw : {}) as Record<string, { lat?: number; lng?: number; postcode?: string }>;
+    const [draft, setDraft] = useState(initial);
+    const [s, setS] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
+
+    const setField = (id: number, f: 'lat' | 'lng' | 'postcode', value: string) => {
+      const cur: { lat?: number; lng?: number; postcode?: string } = { ...(draft[String(id)] || {}) };
+      if (f === 'postcode') {
+        if (value.trim()) cur.postcode = value.trim(); else delete cur.postcode;
+      } else {
+        const n = parseFloat(value);
+        if (Number.isFinite(n)) cur[f] = n; else delete cur[f];
+      }
+      const next = { ...draft };
+      if (Object.keys(cur).length) next[String(id)] = cur; else delete next[String(id)];
+      setDraft(next);
+      setS('saving');
+      save('map.locations', next).then(() => { setS('saved'); setTimeout(() => setS('idle'), 1500); }).catch(() => setS('error'));
+    };
+
+    return (
+      <div>
+        <div className="flex items-center justify-between mb-3">
+          <p className="font-body text-xs text-on-surface-variant">Coordenadas e postcode de cada pin. Campo vazio usa o valor padrão.</p>
+          <Status s={s} />
+        </div>
+        <div className="space-y-4">
+          {mapLocationDefaults.map((pin) => {
+            const o = draft[String(pin.id)] || {};
+            return (
+              <div key={pin.id} className="border border-outline-variant/25 rounded-lg p-4">
+                <p className="font-display text-headline-sm text-primary">{pin.name}</p>
+                <p className="font-body text-[11px] text-on-surface-variant/60 mb-3">{pin.collectionSlug} · {pin.area}</p>
+                <div className="flex gap-3 flex-wrap">
+                  <div style={{ flex: 1, minWidth: 120 }}>
+                    <label className={label}>Latitude</label>
+                    <input type="number" step="0.0001" defaultValue={o.lat ?? pin.coordinates.lat}
+                      onBlur={(e) => setField(pin.id, 'lat', e.target.value)} className={field} />
+                  </div>
+                  <div style={{ flex: 1, minWidth: 120 }}>
+                    <label className={label}>Longitude</label>
+                    <input type="number" step="0.0001" defaultValue={o.lng ?? pin.coordinates.lng}
+                      onBlur={(e) => setField(pin.id, 'lng', e.target.value)} className={field} />
+                  </div>
+                  <div style={{ flex: 1, minWidth: 120 }}>
+                    <label className={label}>Postcode</label>
+                    <input defaultValue={o.postcode ?? pin.postcode}
+                      onBlur={(e) => setField(pin.id, 'postcode', e.target.value)} className={field} />
+                  </div>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="max-w-3xl">
       <Section title="Home">
@@ -417,6 +480,10 @@ function ContentTab({ site, api, onChanged }: { site: SiteData; api: ReturnType<
           <StringField k="home.testimonials.title" title="Depoimentos — título" />
         </div>
         <ListEditor k="home.testimonials" title="Depoimentos" blank={{ text: '', name: '', property: '' }} cols={[{ key: 'text', label: 'Depoimento', wide: true }, { key: 'name', label: 'Nome' }, { key: 'property', label: 'Propriedade' }]} />
+      </Section>
+
+      <Section title="Mapa — pins">
+        <MapPinsEditor />
       </Section>
 
       <Section title="Home — Blocos de propriedade">
