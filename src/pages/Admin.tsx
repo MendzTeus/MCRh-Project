@@ -391,14 +391,24 @@ function ContentTab({ site, api, onChanged }: { site: SiteData; api: ReturnType<
     );
   }
 
-  const Section = ({ title, children }: { title: string; children: ReactNode }) => (
+  const Section = ({ title, subtitle, children }: { title: string; subtitle?: string; children: ReactNode }) => (
     <section className="mb-14">
-      <div className="flex items-center gap-4 mb-6">
+      <div className="flex items-center gap-4 mb-1">
         <h2 className="font-display text-headline-md text-primary whitespace-nowrap">{title}</h2>
         <div className="flex-1 h-px" style={{ background: `${GOLD}55` }} />
       </div>
-      <div className="grid gap-6 max-w-2xl">{children}</div>
+      {subtitle && <p className="font-body text-xs text-on-surface-variant/70 mb-5">{subtitle}</p>}
+      <div className={`grid gap-6 max-w-2xl${subtitle ? '' : ' mt-5'}`}>{children}</div>
     </section>
+  );
+
+  // Titled card that groups related fields, so a long section reads as a few
+  // labelled blocks instead of one endless column of inputs.
+  const Group = ({ title, children }: { title: string; children: ReactNode }) => (
+    <div className="border border-outline-variant/30 rounded-lg p-5 space-y-4">
+      <p className="font-body text-label-caps tracking-widest uppercase text-xs" style={{ color: GOLD }}>{title}</p>
+      {children}
+    </div>
   );
 
   // Map pins editor — overrides lat/lng/postcode per pin (defaults come from
@@ -465,21 +475,32 @@ function ContentTab({ site, api, onChanged }: { site: SiteData; api: ReturnType<
 
   return (
     <div className="max-w-3xl">
-      <Section title="Home">
-        <StringField k="properties.title" title="Properties — título 'Find Property'" />
-        <StringField k="home.hero.title" title="Título do hero" />
-        <StringField k="home.hero.subtitle" title="Subtítulo do hero" textarea />
-        <div className="grid grid-cols-2 gap-6">
-          <StringField k="home.hero.ctaLabel" title="Texto do botão" />
-          <StringField k="home.hero.ctaHref" title="Link do botão" />
-        </div>
-        <StringField k="home.map.title" title="Título da seção do mapa" />
-        <ListEditor k="home.stats" title="Números / estatísticas" blank={{ value: '', label: '' }} cols={[{ key: 'value', label: 'Ex.: 30+' }, { key: 'label', label: 'Rótulo', wide: true }]} />
-        <div className="grid grid-cols-2 gap-6">
-          <StringField k="home.testimonials.eyebrow" title="Depoimentos — sobretítulo" />
-          <StringField k="home.testimonials.title" title="Depoimentos — título" />
-        </div>
-        <ListEditor k="home.testimonials" title="Depoimentos" blank={{ text: '', name: '', property: '' }} cols={[{ key: 'text', label: 'Depoimento', wide: true }, { key: 'name', label: 'Nome' }, { key: 'property', label: 'Propriedade' }]} />
+      <Section title="Home" subtitle="Conteúdo da página inicial.">
+        <Group title="Hero">
+          <StringField k="home.hero.title" title="Título do hero" />
+          <StringField k="home.hero.subtitle" title="Subtítulo do hero" textarea />
+          <div className="grid grid-cols-2 gap-4">
+            <StringField k="home.hero.ctaLabel" title="Botão — texto" />
+            <StringField k="home.hero.ctaHref" title="Botão — link" />
+          </div>
+        </Group>
+        <Group title="Mapa & Números">
+          <StringField k="home.map.title" title="Título da seção do mapa" />
+          <ListEditor k="home.stats" title="Números / estatísticas" blank={{ value: '', label: '' }} cols={[{ key: 'value', label: 'Ex.: 30+' }, { key: 'label', label: 'Rótulo', wide: true }]} />
+        </Group>
+        <Group title="Depoimentos">
+          <div className="grid grid-cols-2 gap-4">
+            <StringField k="home.testimonials.eyebrow" title="Sobretítulo" />
+            <StringField k="home.testimonials.title" title="Título" />
+          </div>
+          <ListEditor k="home.testimonials" title="Depoimentos" blank={{ text: '', name: '', property: '' }} cols={[{ key: 'text', label: 'Depoimento', wide: true }, { key: 'name', label: 'Nome' }, { key: 'property', label: 'Propriedade' }]} />
+        </Group>
+      </Section>
+
+      <Section title="Página — Properties" subtitle="Página /properties.">
+        <Group title="Cabeçalho">
+          <StringField k="properties.title" title="Título 'Find Property'" />
+        </Group>
       </Section>
 
       <Section title="Mapa — pins">
@@ -526,40 +547,72 @@ function ContentTab({ site, api, onChanged }: { site: SiteData; api: ReturnType<
         <StringField k="footer.copyright" title="Texto de copyright (o ano é automático)" />
       </Section>
 
-      <Section title="Páginas de Serviço & Sobre">
-        <StringField k="design.hero.eyebrow" title="Design — sobretítulo" />
-        <StringField k="design.hero.title" title="Design — título" />
-        <StringField k="design.hero.paragraph" title="Design — parágrafo" textarea />
-        <StringField k="design.approach.eyebrow" title="Design — Our Approach eyebrow" />
-        <StringField k="design.approach.title" title="Design — Our Approach título" />
-        <StringField k="design.approach.p1" title="Design — Our Approach parágrafo 1" textarea />
-        <StringField k="design.approach.p2" title="Design — Our Approach parágrafo 2" textarea />
-        <ListEditor k="design.approach.bullets" title="Design — Our Approach bullets" blank={{ item: '' }} cols={[{ key: 'item', label: 'Bullet', wide: true }]} />
-        <StringField k="design.disciplines.title" title="Design — Core Disciplines título" />
-        <StringField k="design.disciplines.subtitle" title="Design — Core Disciplines subtítulo" textarea />
-        <StringField k="design.cta.title" title="Design — CTA título" />
-        <StringField k="design.cta.paragraph" title="Design — CTA parágrafo" textarea />
-        <StringField k="design.cta.ctaLabel" title="Design — CTA botão texto" />
-        <StringField k="design.cta.ctaHref" title="Design — CTA botão link" />
-        <StringField k="management.hero.eyebrow" title="Management — sobretítulo" />
-        <StringField k="management.hero.title" title="Management — título" />
-        <StringField k="management.hero.paragraph" title="Management — parágrafo" textarea />
-        <StringField k="management.services.eyebrow" title="Management — Service Architecture eyebrow" />
-        <StringField k="management.services.title" title="Management — Service Architecture título" />
-        <StringField k="management.reporting.title" title="Management — Transparent Reporting título" />
-        <StringField k="management.reporting.paragraph" title="Management — Transparent Reporting parágrafo" textarea />
-        <ListEditor k="management.reporting.bullets" title="Management — Reporting bullets" blank={{ item: '' }} cols={[{ key: 'item', label: 'Item', wide: true }]} />
-        <StringField k="management.partner.title" title="Management — Partner Criteria título" />
-        <StringField k="management.partner.paragraph" title="Management — Partner Criteria parágrafo" textarea />
-        <ListEditor k="management.partner.bullets" title="Management — Partner Criteria bullets" blank={{ item: '' }} cols={[{ key: 'item', label: 'Item', wide: true }]} />
-        <StringField k="about.hero.eyebrow" title="About — sobretítulo" />
-        <StringField k="about.hero.title" title="About — título" />
-        <StringField k="about.philosophy.title" title="About — The Philosophy título" />
-        <StringField k="about.philosophy.p1" title="About — parágrafo 1 (destaque)" textarea />
-        <StringField k="about.philosophy.p2" title="About — parágrafo 2" textarea />
-        <StringField k="about.philosophy.p3" title="About — parágrafo 3" textarea />
-        <StringField k="about.quote.text" title="About — citação" textarea />
-        <StringField k="about.quote.signature" title="About — assinatura da citação" />
+      <Section title="Página — Design Services" subtitle="Textos da página /design-services, agrupados por seção.">
+        <Group title="Hero">
+          <StringField k="design.hero.eyebrow" title="Sobretítulo (eyebrow)" />
+          <StringField k="design.hero.title" title="Título" />
+          <StringField k="design.hero.paragraph" title="Parágrafo" textarea />
+        </Group>
+        <Group title="Our Approach">
+          <StringField k="design.approach.eyebrow" title="Sobretítulo" />
+          <StringField k="design.approach.title" title="Título" />
+          <StringField k="design.approach.p1" title="Parágrafo 1" textarea />
+          <StringField k="design.approach.p2" title="Parágrafo 2" textarea />
+          <ListEditor k="design.approach.bullets" title="Bullets" blank={{ item: '' }} cols={[{ key: 'item', label: 'Bullet', wide: true }]} />
+        </Group>
+        <Group title="Core Disciplines">
+          <StringField k="design.disciplines.title" title="Título" />
+          <StringField k="design.disciplines.subtitle" title="Subtítulo" textarea />
+          <ListEditor k="design.disciplines.cards" title="Cards (3)" blank={{ title: '', desc: '' }} cols={[{ key: 'title', label: 'Título' }, { key: 'desc', label: 'Descrição', wide: true }]} />
+        </Group>
+        <Group title="CTA final">
+          <StringField k="design.cta.title" title="Título" />
+          <StringField k="design.cta.paragraph" title="Parágrafo" textarea />
+          <div className="grid grid-cols-2 gap-4">
+            <StringField k="design.cta.ctaLabel" title="Botão — texto" />
+            <StringField k="design.cta.ctaHref" title="Botão — link" />
+          </div>
+        </Group>
+      </Section>
+
+      <Section title="Página — Management Services" subtitle="Textos da página /management-services, agrupados por seção.">
+        <Group title="Hero">
+          <StringField k="management.hero.eyebrow" title="Sobretítulo (eyebrow)" />
+          <StringField k="management.hero.title" title="Título" />
+          <StringField k="management.hero.paragraph" title="Parágrafo" textarea />
+        </Group>
+        <Group title="Service Architecture">
+          <StringField k="management.services.eyebrow" title="Sobretítulo" />
+          <StringField k="management.services.title" title="Título" />
+          <ListEditor k="management.services.cards" title="Cards de serviço (4)" blank={{ title: '', desc: '' }} cols={[{ key: 'title', label: 'Título' }, { key: 'desc', label: 'Descrição', wide: true }]} />
+        </Group>
+        <Group title="Transparent Reporting">
+          <StringField k="management.reporting.title" title="Título" />
+          <StringField k="management.reporting.paragraph" title="Parágrafo" textarea />
+          <ListEditor k="management.reporting.bullets" title="Bullets" blank={{ item: '' }} cols={[{ key: 'item', label: 'Item', wide: true }]} />
+        </Group>
+        <Group title="Partner Criteria">
+          <StringField k="management.partner.title" title="Título" />
+          <StringField k="management.partner.paragraph" title="Intro" textarea />
+          <ListEditor k="management.partner.bullets" title="Bullets" blank={{ item: '' }} cols={[{ key: 'item', label: 'Item', wide: true }]} />
+        </Group>
+      </Section>
+
+      <Section title="Página — About" subtitle="Textos da página /about.">
+        <Group title="Hero">
+          <StringField k="about.hero.eyebrow" title="Sobretítulo (eyebrow)" />
+          <StringField k="about.hero.title" title="Título" />
+        </Group>
+        <Group title="The Philosophy">
+          <StringField k="about.philosophy.title" title="Título" />
+          <StringField k="about.philosophy.p1" title="Parágrafo 1 (destaque)" textarea />
+          <StringField k="about.philosophy.p2" title="Parágrafo 2" textarea />
+          <StringField k="about.philosophy.p3" title="Parágrafo 3" textarea />
+        </Group>
+        <Group title="Citação">
+          <StringField k="about.quote.text" title="Citação" textarea />
+          <StringField k="about.quote.signature" title="Assinatura" />
+        </Group>
       </Section>
 
       <Section title="SEO — Metatags por página">
@@ -999,10 +1052,13 @@ export default function Admin() {
 
   const load = useCallback(async () => {
     setLoading(true);
-    try {
-      const [u, s] = await Promise.all([api('/admin/units'), api('/admin/site')]);
-      setUnits(u.units); setSite(s);
-    } catch { /* handled */ } finally { setLoading(false); }
+    // Settle each request independently — if one endpoint fails (e.g. a missing
+    // column on /admin/units), the other still loads so the whole panel doesn't
+    // go blank. Each tab shows whatever data it could fetch.
+    const [u, s] = await Promise.allSettled([api('/admin/units'), api('/admin/site')]);
+    if (u.status === 'fulfilled' && Array.isArray(u.value?.units)) setUnits(u.value.units);
+    if (s.status === 'fulfilled' && s.value) setSite(s.value);
+    setLoading(false);
   }, [api]);
 
   useEffect(() => { if (token) load(); }, [token, load]);
