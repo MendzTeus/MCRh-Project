@@ -453,6 +453,14 @@ function ContentTab({ site, api, onChanged }: { site: SiteData; api: ReturnType<
         <StringField k="management.hero.eyebrow" title="Management — sobretítulo" />
         <StringField k="management.hero.title" title="Management — título" />
         <StringField k="management.hero.paragraph" title="Management — parágrafo" textarea />
+        <StringField k="management.services.eyebrow" title="Management — Service Architecture eyebrow" />
+        <StringField k="management.services.title" title="Management — Service Architecture título" />
+        <StringField k="management.reporting.title" title="Management — Transparent Reporting título" />
+        <StringField k="management.reporting.paragraph" title="Management — Transparent Reporting parágrafo" textarea />
+        <ListEditor k="management.reporting.bullets" title="Management — Reporting bullets" blank={{ item: '' }} cols={[{ key: 'item', label: 'Item', wide: true }]} />
+        <StringField k="management.partner.title" title="Management — Partner Criteria título" />
+        <StringField k="management.partner.paragraph" title="Management — Partner Criteria parágrafo" textarea />
+        <ListEditor k="management.partner.bullets" title="Management — Partner Criteria bullets" blank={{ item: '' }} cols={[{ key: 'item', label: 'Item', wide: true }]} />
         <StringField k="about.hero.eyebrow" title="About — sobretítulo" />
         <StringField k="about.hero.title" title="About — título" />
       </Section>

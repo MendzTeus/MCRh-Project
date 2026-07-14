@@ -272,7 +272,7 @@ Hoje só é editável **quais apês** aparecem (`home.featured`) — não o **te
 | CTA final: título, parágrafo, botão + link | SC | `design.cta.{title,paragraph,ctaLabel,ctaHref}` |
 | (imagem "approach") | IMG | já existe `design.approach` ✅ |
 
-### C3. Management Services (corpo)
+### ✅ C3. Management Services (corpo)
 | Seção | Mecanismo | Chave |
 |---|---|---|
 | "Service Architecture": eyebrow, título | SC | `management.services.{eyebrow,title}` |
