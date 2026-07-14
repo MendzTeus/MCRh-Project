@@ -214,4 +214,37 @@ router.delete('/images/:slot', async (req, res) => {
   res.json({ ok: true });
 });
 
+// ── Reviews CRUD ────────────────────────────────────────────────────
+router.get('/reviews', async (req, res) => {
+  const q = supabase.from('Review').select('*').order('propertySlug').order('displayOrder');
+  if (req.query.property) q.eq('propertySlug', req.query.property);
+  const { data, error } = await q;
+  if (error) return res.status(500).json({ error: error.message });
+  res.json(data);
+});
+
+router.post('/reviews', async (req, res) => {
+  const { propertySlug, name, date, text, rating, published, displayOrder } = req.body || {};
+  if (!propertySlug) return res.status(400).json({ error: 'propertySlug required' });
+  const row = { id: crypto.randomUUID(), propertySlug, name: name || null, date: date || null, text: text || null, rating: rating ?? 5, published: published ?? true, displayOrder: displayOrder ?? 0, createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() };
+  const { data, error } = await supabase.from('Review').insert(row).select().single();
+  if (error) return res.status(500).json({ error: error.message });
+  res.status(201).json(data);
+});
+
+router.patch('/reviews/:id', async (req, res) => {
+  const allowed = ['name', 'date', 'text', 'rating', 'published', 'displayOrder'];
+  const patch = { updatedAt: new Date().toISOString() };
+  for (const k of allowed) if (k in (req.body || {})) patch[k] = req.body[k];
+  const { data, error } = await supabase.from('Review').update(patch).eq('id', req.params.id).select().single();
+  if (error) return res.status(500).json({ error: error.message });
+  res.json(data);
+});
+
+router.delete('/reviews/:id', async (req, res) => {
+  const { error } = await supabase.from('Review').delete().eq('id', req.params.id);
+  if (error) return res.status(500).json({ error: error.message });
+  res.json({ ok: true });
+});
+
 module.exports = router;

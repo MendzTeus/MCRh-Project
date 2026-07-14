@@ -53,4 +53,13 @@ router.get('/site', async (_req, res) => {
   res.json({ content: contentMap, images: imageMap });
 });
 
+// Public reviews — only published, ordered by displayOrder.
+router.get('/reviews', async (req, res) => {
+  const q = supabase.from('Review').select('id, propertySlug, name, date, text, rating').eq('published', true).order('displayOrder');
+  if (req.query.property) q.eq('propertySlug', req.query.property);
+  const { data, error } = await q;
+  if (error) return res.status(500).json({ error: error.message });
+  res.json(data || []);
+});
+
 module.exports = router;

@@ -230,7 +230,7 @@ Por coleção `<slug>` (ex.: `chambers`, `john-dalton-st`, `wood-st`, `ancoats`,
 - **SC[`property.<slug>.nearby`]** = `[{location, time}]`. UI: `ListEditor` (2 colunas).
 - Resolve o issue do CODE_REVIEW "distâncias iguais para todos os imóveis".
 
-### B4. Reviews — **TABELA nova** + módulo CRUD
+### ✅ B4. Reviews — **TABELA nova** + módulo CRUD
 ```sql
 CREATE TABLE "Review" (
   id text PRIMARY KEY, propertySlug text NOT NULL,

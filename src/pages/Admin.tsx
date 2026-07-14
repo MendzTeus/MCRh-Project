@@ -541,10 +541,71 @@ function PropertiesTab({ site, api, onChanged }: { site: SiteData; api: ReturnTy
                   cols={[{ key: 'item' as never, label: 'Amenidade', wide: true }]} />
                 <LE k={`property.${slug}.nearby`} title="Distâncias / Nearby" blank={{ location: '', time: '' } as Record<string,string>}
                   cols={[{ key: 'location', label: 'Local', wide: true }, { key: 'time', label: 'Tempo' }]} />
+                <ReviewsEditor slug={slug} api={api} />
               </div>
             )}
           </div>
         ))}
+      </div>
+    </div>
+  );
+}
+
+type ReviewRow = { id: string; propertySlug: string; name: string | null; date: string | null; text: string | null; rating: number; published: boolean; displayOrder: number };
+
+function ReviewsEditor({ slug, api }: { slug: string; api: ReturnType<typeof useApi> }) {
+  const [reviews, setReviews] = useState<ReviewRow[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  const load = useCallback(async () => {
+    setLoading(true);
+    try { const d = await api(`/admin/reviews?property=${slug}`); setReviews(Array.isArray(d) ? d : []); }
+    finally { setLoading(false); }
+  }, [api, slug]);
+
+  useEffect(() => { load(); }, [load]);
+
+  async function add() {
+    await api('/admin/reviews', { method: 'POST', body: JSON.stringify({ propertySlug: slug, name: 'Nome', date: 'Mês AAAA', text: '', rating: 5, displayOrder: reviews.length + 1 }) });
+    load();
+  }
+
+  async function update(id: string, patch: Partial<ReviewRow>) {
+    await api(`/admin/reviews/${id}`, { method: 'PATCH', body: JSON.stringify(patch) });
+    setReviews((prev) => prev.map((r) => r.id === id ? { ...r, ...patch } : r));
+  }
+
+  async function remove(id: string) {
+    if (!window.confirm('Remover este review?')) return;
+    await api(`/admin/reviews/${id}`, { method: 'DELETE' });
+    setReviews((prev) => prev.filter((r) => r.id !== id));
+  }
+
+  return (
+    <div>
+      <div className="flex items-center justify-between mb-3">
+        <label className={label}>Reviews</label>
+        <span className="font-body text-[10px] text-on-surface-variant/50">{loading ? 'carregando…' : `${reviews.length} reviews`}</span>
+      </div>
+      <div className="space-y-4">
+        {reviews.map((r) => (
+          <div key={r.id} className="border border-outline-variant/30 p-4 grid gap-3" style={{ opacity: r.published ? 1 : 0.5 }}>
+            <div className="flex items-center gap-3">
+              <input value={r.name || ''} placeholder="Nome" onChange={(e) => update(r.id, { name: e.target.value })} className={`${field} flex-1`} />
+              <input value={r.date || ''} placeholder="Mês AAAA" onChange={(e) => update(r.id, { date: e.target.value })} className={`${field} w-32`} />
+              <input type="number" value={r.rating} min={1} max={5} step={0.1} onChange={(e) => update(r.id, { rating: Number(e.target.value) })} className={`${field} w-16`} title="Nota" />
+            </div>
+            <textarea value={r.text || ''} placeholder="Texto do review…" rows={2} onChange={(e) => update(r.id, { text: e.target.value })} className={`${field} resize-none`} />
+            <div className="flex items-center gap-4">
+              <button type="button" onClick={() => update(r.id, { published: !r.published })}
+                className="font-body text-[10px] uppercase tracking-[0.12em] text-on-surface-variant/70">
+                {r.published ? '● Publicado' : '○ Oculto'}
+              </button>
+              <button type="button" onClick={() => remove(r.id)} className="font-body text-[10px] uppercase tracking-[0.12em] text-red-500 ml-auto">Remover</button>
+            </div>
+          </div>
+        ))}
+        <button onClick={add} className="font-body text-[10px] uppercase tracking-[0.15em] text-[#C5A059]">+ Adicionar review</button>
       </div>
     </div>
   );
