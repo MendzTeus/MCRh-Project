@@ -12,6 +12,7 @@ import { getLocationsForProperty } from '../data/locations';
 import { getReviewsForProperty } from '../data/reviews';
 import { useAvailability } from '../hooks/useAvailability';
 import { usePublicUnits } from '../hooks/usePublicUnits';
+import { usePropertyPhotos } from '../hooks/usePropertyPhotos';
 import { Star } from 'lucide-react';
 const PropertyMap = lazy(() => import('../components/PropertyMap'));
 
@@ -22,6 +23,7 @@ export default function CollectionDetail() {
   const [checkOut, setCheckOut] = useState('');
   const availability = useAvailability(property?.slug || '', checkIn, checkOut);
   const publicUnits = usePublicUnits();
+  const propertyPhotos = usePropertyPhotos(property?.slug || '');
   const unitsRef = useRef<HTMLDivElement>(null);
   // Stable array reference so <PropertyMap> doesn't tear down and rebuild the
   // Leaflet map on every re-render (e.g. while checking availability).
@@ -62,7 +64,10 @@ export default function CollectionDetail() {
       }));
 
   const reviews = getReviewsForProperty(property.slug);
-  const hasGallery = property.gallery && property.gallery.length > 1;
+  // Admin-uploaded photos override the static gallery when available.
+  const heroSrc = propertyPhotos.primary?.url || property.imageSrc;
+  const galleryUrls = propertyPhotos.gallery.length > 0 ? propertyPhotos.gallery : property.gallery;
+  const hasGallery = galleryUrls && galleryUrls.length > 1;
 
   return (
     <div className="animate-in fade-in duration-500">
@@ -71,18 +76,18 @@ export default function CollectionDetail() {
         <meta name="description" content={`${property.headline} ${property.description}`} />
         <meta property="og:title" content={`${property.name} | MCRh Manchester`} />
         <meta property="og:description" content={property.headline} />
-        {property.imageSrc && <meta property="og:image" content={property.imageSrc} />}
+        {heroSrc && <meta property="og:image" content={heroSrc} />}
       </Helmet>
 
       {/* Photo Gallery Hero */}
       {hasGallery ? (
         <section className="pt-6 px-margin-mobile md:px-margin-desktop max-w-[1280px] mx-auto">
-          <PhotoGallery images={property.gallery} alt={property.imageAlt} />
+          <PhotoGallery images={galleryUrls} alt={property.imageAlt} />
         </section>
       ) : (
         <section className="w-full h-[80vh] min-h-[600px] relative flex flex-col justify-end pb-margin-desktop px-margin-mobile md:px-margin-desktop bg-surface-dim border-b border-outline-variant/30">
           <div className="absolute inset-0 z-0">
-            <MediaImage propertySlug={property.slug} alt={property.imageAlt} loading="eager" />
+            {heroSrc ? <img src={heroSrc} alt={property.imageAlt} className="w-full h-full object-cover" loading="eager" /> : <MediaImage propertySlug={property.slug} alt={property.imageAlt} loading="eager" />}
             <div className="absolute inset-0 bg-gradient-to-t from-primary-container/80 to-transparent"></div>
           </div>
           <div className="relative z-10 max-w-[1280px] mx-auto w-full">

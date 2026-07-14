@@ -244,7 +244,7 @@ CREATE TABLE "Review" (
 - UI: lista por coleção com nome, data, texto, nota (**a nota hoje é fixa "5.0"/"4.98"** — tornar editável), toggle publicado, ordem.
 - Religar `CollectionDetail`/`PropertyDetail` para ler daqui em vez de `reviews.ts`.
 
-### B5. Galeria de fotos por coleção
+### ✅ B5. Galeria de fotos por coleção
 - **MEDIA(property)** — reusar `MediaAsset` com `ownerType='property'`, `ownerSlug=<slug>`.
 - UI: mesmo componente de fotos do `UnitCard` (upload/reordenar/capa/alt/excluir), na aba Propriedades.
 - Religar o **hero + galeria** de `CollectionDetail` para usar essas fotos.

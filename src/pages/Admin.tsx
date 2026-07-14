@@ -541,11 +541,66 @@ function PropertiesTab({ site, api, onChanged }: { site: SiteData; api: ReturnTy
                   cols={[{ key: 'item' as never, label: 'Amenidade', wide: true }]} />
                 <LE k={`property.${slug}.nearby`} title="Distâncias / Nearby" blank={{ location: '', time: '' } as Record<string,string>}
                   cols={[{ key: 'location', label: 'Local', wide: true }, { key: 'time', label: 'Tempo' }]} />
+                <PropertyGalleryEditor slug={slug} api={api} />
                 <ReviewsEditor slug={slug} api={api} />
               </div>
             )}
           </div>
         ))}
+      </div>
+    </div>
+  );
+}
+
+function PropertyGalleryEditor({ slug, api }: { slug: string; api: ReturnType<typeof useApi> }) {
+  const [photos, setPhotos] = useState<Photo[]>([]);
+  const fileRef = useRef<HTMLInputElement>(null);
+  const [busy, setBusy] = useState(false);
+
+  const load = useCallback(async () => {
+    const d = await api(`/admin/properties/${slug}/photos`);
+    setPhotos(Array.isArray(d) ? d : []);
+  }, [api, slug]);
+
+  useEffect(() => { load(); }, [load]);
+
+  async function upload(file: File) {
+    setBusy(true);
+    try {
+      const { base64, type } = await fileToBase64(file);
+      await api(`/admin/properties/${slug}/photos`, { method: 'POST', body: JSON.stringify({ dataBase64: base64, contentType: type, alt: slug }) });
+      load();
+    } finally { setBusy(false); }
+  }
+
+  async function move(id: string, dir: -1 | 1) {
+    const ids = photos.map((p) => p.id);
+    const from = ids.indexOf(id); const to = from + dir;
+    if (from === -1 || to < 0 || to >= ids.length) return;
+    [ids[from], ids[to]] = [ids[to], ids[from]];
+    await api(`/admin/properties/${slug}/photos/reorder`, { method: 'POST', body: JSON.stringify({ orderedIds: ids }) });
+    load();
+  }
+
+  return (
+    <div>
+      <label className={label}>Galeria da coleção</label>
+      <div className="flex flex-wrap gap-2 items-center mt-2">
+        {photos.map((p, i) => {
+          const tile = <PhotoTile photo={p}
+            canLeft={i > 0} canRight={i < photos.length - 1}
+            onMove={(dir) => move(p.id, dir)}
+            onEditAlt={async () => { const next = window.prompt('Alt text:', p.alt || ''); if (next !== null) { await api(`/admin/photos/${p.id}`, { method: 'PATCH', body: JSON.stringify({ alt: next }) }); load(); } }}
+            onSetCover={async () => { await api(`/admin/photos/${p.id}`, { method: 'PATCH', body: JSON.stringify({ isPrimary: true }) }); load(); }}
+            onDelete={async () => { if (confirm('Excluir foto?')) { await api(`/admin/photos/${p.id}`, { method: 'DELETE' }); load(); } }}
+          />;
+          return <div key={p.id} style={{ display: 'contents' }}>{tile}</div>;
+        })}
+        <button type="button" onClick={() => fileRef.current?.click()} disabled={busy}
+          className="w-24 h-24 border border-dashed border-outline-variant/50 flex items-center justify-center font-body text-[10px] uppercase tracking-widest text-on-surface-variant/50 hover:border-[#C5A059] transition-colors">
+          {busy ? '…' : '+ Foto'}
+        </button>
+        <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={(e) => { const f = e.target.files?.[0]; if (f) upload(f); e.target.value = ''; }} />
       </div>
     </div>
   );

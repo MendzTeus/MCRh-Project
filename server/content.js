@@ -53,6 +53,13 @@ router.get('/site', async (_req, res) => {
   res.json({ content: contentMap, images: imageMap });
 });
 
+// Public property gallery photos.
+router.get('/properties/:slug/photos', async (req, res) => {
+  const { data, error } = await supabase.from('MediaAsset').select('id, url, alt, isPrimary, displayOrder').eq('ownerType', 'property').eq('ownerSlug', req.params.slug).order('displayOrder');
+  if (error) return res.status(500).json({ error: error.message });
+  res.json(data || []);
+});
+
 // Public reviews — only published, ordered by displayOrder.
 router.get('/reviews', async (req, res) => {
   const q = supabase.from('Review').select('id, propertySlug, name, date, text, rating').eq('published', true).order('displayOrder');

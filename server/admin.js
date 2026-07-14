@@ -160,6 +160,42 @@ router.delete('/photos/:id', async (req, res) => {
   res.json({ ok: true });
 });
 
+// ── Property gallery photos (same MediaAsset table, ownerType='property') ──
+router.post('/properties/:slug/photos', async (req, res) => {
+  const { slug } = req.params;
+  const { dataBase64, contentType, alt } = req.body || {};
+  if (!dataBase64 || !contentType) return res.status(400).json({ error: 'dataBase64 and contentType required' });
+
+  const ext = (contentType.split('/')[1] || 'jpg').replace('jpeg', 'jpg');
+  const path = `properties/${slug}/${Date.now()}-${crypto.randomBytes(4).toString('hex')}.${ext}`;
+  const { error: upErr } = await supabase.storage.from(BUCKET).upload(path, Buffer.from(dataBase64, 'base64'), { contentType, upsert: false });
+  if (upErr) return res.status(500).json({ error: upErr.message });
+
+  const { data: pub } = supabase.storage.from(BUCKET).getPublicUrl(path);
+  const { count } = await supabase.from('MediaAsset').select('*', { count: 'exact', head: true }).eq('ownerType', 'property').eq('ownerSlug', slug);
+  const now = new Date().toISOString();
+  const row = { id: crypto.randomUUID(), ownerType: 'property', ownerSlug: slug, url: pub.publicUrl, storagePath: path, alt: alt || null, isPrimary: (count || 0) === 0, displayOrder: count || 0, createdAt: now, updatedAt: now };
+  const { data, error } = await supabase.from('MediaAsset').insert(row).select().single();
+  if (error) return res.status(500).json({ error: error.message });
+  res.json({ photo: data });
+});
+
+router.get('/properties/:slug/photos', async (req, res) => {
+  const { data, error } = await supabase.from('MediaAsset').select('*').eq('ownerType', 'property').eq('ownerSlug', req.params.slug).order('displayOrder');
+  if (error) return res.status(500).json({ error: error.message });
+  res.json(data || []);
+});
+
+router.post('/properties/:slug/photos/reorder', async (req, res) => {
+  const { orderedIds } = req.body || {};
+  if (!Array.isArray(orderedIds)) return res.status(400).json({ error: 'orderedIds array required' });
+  const now = new Date().toISOString();
+  for (let i = 0; i < orderedIds.length; i++) {
+    await supabase.from('MediaAsset').update({ displayOrder: i, updatedAt: now }).eq('id', orderedIds[i]);
+  }
+  res.json({ ok: true });
+});
+
 // ── Site content (text/numbers/links) + image slots ─────────────────
 
 // All content + images in one call for the admin UI.
