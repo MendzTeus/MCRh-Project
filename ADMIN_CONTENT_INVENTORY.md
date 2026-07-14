@@ -322,7 +322,9 @@ CREATE TABLE "Review" (
 - **Feito:** aba **Disponibilidade** mostra por unidade `hasIcal`, `lastSyncedAt` e nº de períodos
   bloqueados; botões **"Sincronizar tudo"** e por unidade via rotas admin-autenticadas
   `POST /api/admin/sync` e `/api/admin/sync/:unitSlug` (proxy pro engine, sem expor `SYNC_SECRET`).
-- (Recomendado, não feito) sync agendado por cron — hoje continua manual (ou via `POST /api/sync`).
+- **Sync agendado:** `scheduleIcalSync()` roda `syncAll()` a cada `SYNC_INTERVAL_MIN` minutos
+  (default 15; `0` desliga), primeira execução ~1 min após o boot. O botão manual e `POST /api/sync`
+  continuam disponíveis.
 
 ### ✅ D4. Caixa de Leads (**aba "Leads"**)
 - Tabela `Enquiry` **já existe** (vazia). Hoje o formulário de Contato vai só pro Formspree fixo (`xkgjeqvb`) e **não salva**.

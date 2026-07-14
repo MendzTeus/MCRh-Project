@@ -231,10 +231,32 @@ function scheduleAirbnbCheck() {
   setInterval(run, DAY_MS);
 }
 
+// Sync every unit's iCal on a recurring schedule so blocked dates stay fresh
+// without a manual click. Availability changes more often than listing status,
+// so this runs far more frequently. Interval is configurable via SYNC_INTERVAL_MIN
+// (minutes); set it to 0 to disable the scheduler and rely on manual sync only.
+function scheduleIcalSync() {
+  const minutes = Number(process.env.SYNC_INTERVAL_MIN ?? 15);
+  if (!Number.isFinite(minutes) || minutes <= 0) {
+    console.log('[sync] Scheduled iCal sync disabled (SYNC_INTERVAL_MIN <= 0)');
+    return;
+  }
+  const run = () => syncAll()
+    .then((results) => {
+      const ok = results.filter((r) => typeof r.events === 'number').length;
+      console.log(`[sync] iCal sync: ${ok}/${results.length} units synced`);
+    })
+    .catch((err) => console.error('[sync] Scheduled run failed:', err.message));
+  setTimeout(run, 60 * 1000); // first run ~1 min after boot
+  setInterval(run, minutes * 60 * 1000);
+  console.log(`[sync] Scheduled iCal sync every ${minutes} min`);
+}
+
 const PORT = process.env.API_PORT || 3001;
 boot()
   .catch((err) => console.error('[api] Boot failed, starting anyway:', err.message))
   .finally(() => {
     app.listen(PORT, () => console.log(`[api] Listening on :${PORT}`));
     scheduleAirbnbCheck();
+    scheduleIcalSync();
   });
