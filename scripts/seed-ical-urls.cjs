@@ -37,6 +37,21 @@ const updates = [
   { unitSlug: '22-4-wsc', icalAirbnbUrl: 'https://www.airbnb.co.uk/calendar/ical/1521765380778708080.ics?t=386c0649d3164950af843d7fa61812e1', icalVrboUrl: null },
   { unitSlug: '22-5-wsc', icalAirbnbUrl: 'https://www.airbnb.co.uk/calendar/ical/1522455244829831002.ics?t=83dc6a5d3cad47a8abfd9095debd71a5', icalVrboUrl: null },
   { unitSlug: '22-6-wsc', icalAirbnbUrl: 'https://www.airbnb.co.uk/calendar/ical/1517332573480357530.ics?t=4461df4dca224c86b4aa6e3d89cea8db', icalVrboUrl: null },
+  { unitSlug: 'wood-street-collective-full-house', icalAirbnbUrl: 'https://www.airbnb.co.uk/calendar/ical/1594918404152580741.ics?t=a5caf1d9d00546808f368dbfe5eef9fa', icalVrboUrl: null },
+  // Ancoats
+  { unitSlug: 'redbrick-mill-4', icalAirbnbUrl: 'https://www.airbnb.co.uk/calendar/ical/1394030492114500585.ics?t=1b928266fb87493197193a22549e92c4', icalVrboUrl: 'http://www.vrbo.com/icalendar/fc7cd0c2b5a14953955b6c1cad7fe694.ics?nonTentative' },
+  { unitSlug: 'redbrick-mill-2', icalAirbnbUrl: 'https://www.airbnb.co.uk/calendar/ical/1399217171891871955.ics?t=21035d2493b04c9fa6854b8f0fbf3e4b', icalVrboUrl: 'http://www.vrbo.com/icalendar/0e1aa85c68cd4657b31d0edc14e3ca8c.ics?nonTentative' },
+  { unitSlug: 'sezas-conversion', icalAirbnbUrl: 'https://www.airbnb.co.uk/calendar/ical/35638994.ics?t=8d47ee806c7f45d9a489fb0bd2c7e5ac', icalVrboUrl: 'http://www.vrbo.com/icalendar/c1295ee29f784d52a1f320eb88af7b5c.ics?nonTentative' },
+  { unitSlug: 'ancoats-14', icalAirbnbUrl: 'https://www.airbnb.co.uk/calendar/ical/728689465990557007.ics?t=469d8d85cc9f4553936cf17358fa71ee', icalVrboUrl: null },
+  { unitSlug: 'ancoats-15', icalAirbnbUrl: 'https://www.airbnb.co.uk/calendar/ical/1613050290423156598.ics?t=dbbf5b33c7174392a2031e8b7771f7b0', icalVrboUrl: null },
+  { unitSlug: '21-loft-conversion', icalAirbnbUrl: 'https://www.airbnb.co.uk/calendar/ical/1087597518240639223.ics?t=9bbc0284a82640b1a81bdb553b8aa1db', icalVrboUrl: 'http://www.vrbo.com/icalendar/d0e15044fe1b47048707e42f2bef7d6a.ics?nonTentative' },
+  { unitSlug: 'mill-conversion-3', icalAirbnbUrl: 'https://www.airbnb.co.uk/calendar/ical/1513561317507436157.ics?t=570a85e658bd46bf8c921609e9a216ab', icalVrboUrl: null },
+  { unitSlug: 'mill-conversion-8', icalAirbnbUrl: 'https://www.airbnb.co.uk/calendar/ical/52154638.ics?t=9d8cb7959383458eb1c561a5d1bf01b9', icalVrboUrl: 'http://www.vrbo.com/icalendar/95bacb1490b6472688427bbad0c8c29c.ics?nonTentative' },
+  { unitSlug: 'ancoats-pop-5', icalAirbnbUrl: 'https://www.airbnb.co.uk/calendar/ical/37374503.ics?t=d173457b3f4f4e24b2bb9511e6c79137', icalVrboUrl: null },
+  { unitSlug: 'mill-conversion-6', icalAirbnbUrl: 'https://www.airbnb.co.uk/calendar/ical/1245040143495249790.ics?t=01b7152f933b471a8bfcf7146aa159e5', icalVrboUrl: 'http://www.vrbo.com/icalendar/2dbca1abb51b4016ba0a13d2574411b7.ics?nonTentative' },
+  { unitSlug: 'lockgate-504', icalAirbnbUrl: 'https://www.airbnb.co.uk/calendar/ical/1625359841710222441.ics?t=310dfbf9a4084cfbb18766076f320d80', icalVrboUrl: null },
+  // Trafford
+  { unitSlug: 'oldtraford', icalAirbnbUrl: 'https://www.airbnb.co.uk/calendar/ical/53210544.ics?t=8ad7743681c64dc99d7c3dd1db7d6fb1', icalVrboUrl: null },
 ];
 
 async function main() {
