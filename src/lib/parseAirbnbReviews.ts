@@ -54,12 +54,25 @@ export function parseAirbnbReviews(html: string): ParsedReview[] {
     const rm = ratingText?.match(/Rating,\s*([\d.]+)\s*star/i);
     if (rm) rating = Number(rm[1]);
 
+    // Airbnb renders the host's public reply inside the same block, under a
+    // "Response from <host>" heading. Everything at/after that heading is host
+    // content — exclude it so we never capture the reply as the guest review.
+    const responseHeading = Array.from(
+      block.querySelectorAll('h1, h2, h3, [role="heading"]')
+    ).find((h) => /^\s*Response from\b/i.test(h.textContent || ''));
+    const isHostContent = (el: Element) =>
+      !!responseHeading &&
+      (responseHeading === el ||
+        !!(responseHeading.compareDocumentPosition(el) & Node.DOCUMENT_POSITION_FOLLOWING));
+
     // The review body is a <span> whose only element children (if any) are <br>.
     // Pick the longest such span that isn't the name, the rating label, the
-    // "N years on Airbnb" tag, or the translation toggle.
+    // "N years on Airbnb" tag, the translation toggle, or the host reply.
     let text = '';
-    const bodySpans = Array.from(block.querySelectorAll('span')).filter((s) =>
-      Array.from(s.querySelectorAll('*')).every((el) => el.tagName === 'BR')
+    const bodySpans = Array.from(block.querySelectorAll('span')).filter(
+      (s) =>
+        Array.from(s.querySelectorAll('*')).every((el) => el.tagName === 'BR') &&
+        !isHostContent(s)
     );
     for (const s of bodySpans) {
       const t = spanText(s);

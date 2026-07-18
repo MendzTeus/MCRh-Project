@@ -66,13 +66,14 @@ export default function PropertyDetail() {
   const whatsappNumber = text(site.content, 'contact.whatsapp', '').replace(/\D/g, '');
   const contactEmail = text(site.content, 'contact.email', 'hello@mcrh.co.uk');
   const displayRating = listingMedia?.rating || '4.98';
-  const reviewSlug = property?.slug || 'chambers';
+  // Airbnb reviews belong to the individual listing, not the whole building.
+  const reviewSlug = inventoryUnit?.unitSlug || unit?.slug || id || '';
   const dbReviews = useReviews(reviewSlug);
   // Prefer DB reviews once loaded and non-empty; otherwise keep the static set
   // so the section is never blank while loading or if none exist yet.
   const reviews = dbReviews.loaded && dbReviews.reviews.length > 0
     ? dbReviews.reviews
-    : getReviewsForProperty(reviewSlug);
+    : getReviewsForProperty(property?.slug || 'chambers');
   const reviewsRef = useRef<HTMLDivElement>(null);
   const guestsDropdownRef = useRef<HTMLDivElement>(null);
   const contactRef = useRef<HTMLDivElement>(null);

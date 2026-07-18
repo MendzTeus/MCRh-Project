@@ -11,6 +11,7 @@ import { getPropertyBySlug } from '../data/properties';
 import { getLocationsForProperty } from '../data/locations';
 import { useMapLocations } from '../hooks/useMapLocations';
 import { getReviewsForProperty } from '../data/reviews';
+import { useReviews } from '../hooks/useReviews';
 import { useAvailability } from '../hooks/useAvailability';
 import { usePublicUnits } from '../hooks/usePublicUnits';
 import { usePropertyPhotos } from '../hooks/usePropertyPhotos';
@@ -65,7 +66,13 @@ export default function CollectionDetail() {
         imageSrc: null,
       }));
 
-  const reviews = getReviewsForProperty(property.slug);
+  const reviewSlugs = useMemo(() => collectionUnits.map((unit) => unit.slug), [collectionUnits]);
+  const dbReviews = useReviews(reviewSlugs);
+  // Prefer the real, admin-managed Airbnb reviews once loaded. Keep the static
+  // set as a loading/empty-state fallback, matching the individual unit page.
+  const reviews = dbReviews.loaded && dbReviews.reviews.length > 0
+    ? dbReviews.reviews
+    : getReviewsForProperty(property.slug);
   // Admin-uploaded photos override the static gallery when available.
   const heroSrc = propertyPhotos.primary?.url || property.imageSrc;
   const galleryUrls = propertyPhotos.gallery.length > 0 ? propertyPhotos.gallery : property.gallery;
