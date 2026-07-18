@@ -4,6 +4,7 @@ import { Helmet } from 'react-helmet-async';
 import { Star, ChevronDown, BedDouble, Wifi, ChefHat, Coffee, Snowflake, Bath, ArrowRight, ArrowLeft, X, MessageCircle, Mail } from 'lucide-react';
 import Lightbox from '../components/Lightbox';
 import { getReviewsForProperty } from '../data/reviews';
+import { useReviews } from '../hooks/useReviews';
 import { getPropertyMapEmbedUrl } from '../data/locations';
 import DateRangePicker, { formatShortDate } from '../components/DateRangePicker';
 import MediaImage from '../components/MediaImage';
@@ -65,7 +66,13 @@ export default function PropertyDetail() {
   const whatsappNumber = text(site.content, 'contact.whatsapp', '').replace(/\D/g, '');
   const contactEmail = text(site.content, 'contact.email', 'hello@mcrh.co.uk');
   const displayRating = listingMedia?.rating || '4.98';
-  const reviews = getReviewsForProperty(property?.slug || 'chambers');
+  const reviewSlug = property?.slug || 'chambers';
+  const dbReviews = useReviews(reviewSlug);
+  // Prefer DB reviews once loaded and non-empty; otherwise keep the static set
+  // so the section is never blank while loading or if none exist yet.
+  const reviews = dbReviews.loaded && dbReviews.reviews.length > 0
+    ? dbReviews.reviews
+    : getReviewsForProperty(reviewSlug);
   const reviewsRef = useRef<HTMLDivElement>(null);
   const guestsDropdownRef = useRef<HTMLDivElement>(null);
   const contactRef = useRef<HTMLDivElement>(null);
@@ -424,9 +431,13 @@ export default function PropertyDetail() {
               return (
                 <div key={i} className="w-[300px] md:w-[400px] shrink-0 bg-surface p-8 rounded-xl border border-outline-variant/20 snap-start">
                   <div className="flex items-center gap-4 mb-6">
-                    <div className="w-12 h-12 rounded-full bg-primary-container flex items-center justify-center shrink-0">
-                      <span className="font-body text-label-caps text-on-primary-container font-semibold">{initials}</span>
-                    </div>
+                    {review.avatarUrl ? (
+                      <img src={review.avatarUrl} alt={review.name} loading="lazy" className="w-12 h-12 rounded-full object-cover shrink-0" />
+                    ) : (
+                      <div className="w-12 h-12 rounded-full bg-primary-container flex items-center justify-center shrink-0">
+                        <span className="font-body text-label-caps text-on-primary-container font-semibold">{initials}</span>
+                      </div>
+                    )}
                     <div>
                       <h4 className="font-body text-body-md font-semibold text-primary">{review.name}</h4>
                       <p className="font-body text-sm text-on-surface-variant">{review.date}</p>

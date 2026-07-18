@@ -261,16 +261,16 @@ router.get('/reviews', async (req, res) => {
 });
 
 router.post('/reviews', async (req, res) => {
-  const { propertySlug, name, date, text, rating, published, displayOrder } = req.body || {};
+  const { propertySlug, name, date, text, rating, published, displayOrder, avatarUrl, sourceReviewId } = req.body || {};
   if (!propertySlug) return res.status(400).json({ error: 'propertySlug required' });
-  const row = { id: crypto.randomUUID(), propertySlug, name: name || null, date: date || null, text: text || null, rating: rating ?? 5, published: published ?? true, displayOrder: displayOrder ?? 0, createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() };
+  const row = { id: crypto.randomUUID(), propertySlug, name: name || null, date: date || null, text: text || null, rating: rating ?? 5, published: published ?? true, displayOrder: displayOrder ?? 0, avatarUrl: avatarUrl || null, sourceReviewId: sourceReviewId || null, createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() };
   const { data, error } = await supabase.from('Review').insert(row).select().single();
   if (error) return res.status(500).json({ error: error.message });
   res.status(201).json(data);
 });
 
 router.patch('/reviews/:id', async (req, res) => {
-  const allowed = ['name', 'date', 'text', 'rating', 'published', 'displayOrder'];
+  const allowed = ['name', 'date', 'text', 'rating', 'published', 'displayOrder', 'avatarUrl', 'sourceReviewId'];
   const patch = { updatedAt: new Date().toISOString() };
   for (const k of allowed) if (k in (req.body || {})) patch[k] = req.body[k];
   const { data, error } = await supabase.from('Review').update(patch).eq('id', req.params.id).select().single();
@@ -282,6 +282,53 @@ router.delete('/reviews/:id', async (req, res) => {
   const { error } = await supabase.from('Review').delete().eq('id', req.params.id);
   if (error) return res.status(500).json({ error: error.message });
   res.json({ ok: true });
+});
+
+// Batch import parsed Airbnb reviews. Dedups by sourceReviewId within the same
+// property (partial unique index also guards globally). Reviews without an id
+// are always inserted. Returns counts so the admin knows what happened.
+router.post('/reviews/import', async (req, res) => {
+  const { propertySlug, reviews } = req.body || {};
+  if (!propertySlug) return res.status(400).json({ error: 'propertySlug required' });
+  if (!Array.isArray(reviews) || reviews.length === 0) return res.status(400).json({ error: 'reviews array required' });
+
+  const { data: existing, error: exErr } = await supabase
+    .from('Review')
+    .select('sourceReviewId, displayOrder')
+    .eq('propertySlug', propertySlug);
+  if (exErr) return res.status(500).json({ error: exErr.message });
+
+  const seenIds = new Set((existing || []).map((r) => r.sourceReviewId).filter(Boolean));
+  let nextOrder = (existing || []).reduce((m, r) => Math.max(m, r.displayOrder ?? 0), 0) + 1;
+  const defaultDate = new Date().toLocaleDateString('en-GB', { month: 'long', year: 'numeric' });
+
+  const now = new Date().toISOString();
+  const rows = [];
+  let skipped = 0;
+  for (const r of reviews) {
+    const sid = (r.sourceReviewId || '').trim() || null;
+    if (sid && seenIds.has(sid)) { skipped++; continue; }
+    if (sid) seenIds.add(sid);
+    rows.push({
+      id: crypto.randomUUID(),
+      propertySlug,
+      name: r.name || null,
+      date: r.date || defaultDate,
+      text: r.text || null,
+      rating: r.rating ?? 5,
+      published: true,
+      displayOrder: nextOrder++,
+      avatarUrl: r.avatarUrl || null,
+      sourceReviewId: sid,
+      createdAt: now,
+      updatedAt: now,
+    });
+  }
+
+  if (rows.length === 0) return res.json({ added: 0, skipped });
+  const { data, error } = await supabase.from('Review').insert(rows).select();
+  if (error) return res.status(500).json({ error: error.message });
+  res.json({ added: data.length, skipped });
 });
 
 // ── Availability / iCal sync ────────────────────────────────────────

@@ -265,9 +265,14 @@ export default function CollectionDetail() {
                   ))}
                 </div>
                 <p className="font-body text-body-md text-on-surface-variant flex-1 leading-relaxed whitespace-normal break-words text-center">"{review.text}"</p>
-                <div className="border-t border-outline-variant/20 pt-4">
-                  <p className="font-body text-label-caps text-primary tracking-widest uppercase text-xs">{review.name}</p>
-                  {review.date && <p className="font-body text-xs text-on-surface-variant mt-0.5">{review.date}</p>}
+                <div className="border-t border-outline-variant/20 pt-4 flex items-center gap-3">
+                  {review.avatarUrl && (
+                    <img src={review.avatarUrl} alt={review.name} loading="lazy" className="w-9 h-9 rounded-full object-cover shrink-0" />
+                  )}
+                  <div>
+                    <p className="font-body text-label-caps text-primary tracking-widest uppercase text-xs">{review.name}</p>
+                    {review.date && <p className="font-body text-xs text-on-surface-variant mt-0.5">{review.date}</p>}
+                  </div>
                 </div>
               </div>
             ))}

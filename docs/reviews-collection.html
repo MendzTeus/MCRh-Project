@@ -1,0 +1,317 @@
+<!doctype html>
+<!--
+  MCRh — Airbnb reviews collection sheet
+  ============================================================================
+  Airbnb does not allow scraping, so reviews are collected MANUALLY, on demand.
+  Reviews are per APARTMENT. Each building below is split into its apartments,
+  each with its Airbnb link and its own paste box.
+
+  HOW TO USE
+  1. Open the apartment's Airbnb link below.
+  2. Scroll to reviews, expand the ones you want.
+  3. Right-click a review → "Inspect" → right-click the reviews block →
+     "Copy" → "Copy outerHTML".
+  4. Paste into that apartment's <textarea> (backup), OR paste directly into
+     Admin → Reviews → "Importar".
+  Source of truth is Supabase via the Admin panel.
+============================================================================
+-->
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>MCRh — Reviews collection sheet</title>
+  <style>
+    body { font-family: system-ui, sans-serif; max-width: 920px; margin: 2rem auto; padding: 0 1rem; color: #222; }
+    h1 { font-size: 1.4rem; }
+    .building { margin: 2rem 0; padding: 1rem 1.25rem; border: 2px solid #ccc; border-radius: 10px; }
+    .building > h2 { font-size: 1.15rem; margin: 0 0 .1rem; }
+    .building > .pc { font-family: monospace; color: #999; font-size: .8rem; margin-bottom: .75rem; }
+    .unit { margin: 1rem 0; padding: .75rem 1rem; border: 1px solid #e2e2e2; border-radius: 8px; background: #fafafa; }
+    .unit h3 { font-size: .95rem; margin: 0 0 .2rem; }
+    .unit .meta { font-size: .8rem; color: #666; }
+    .unit .slug { font-family: monospace; color: #888; font-size: .8rem; }
+    .unit a { font-family: monospace; font-size: .8rem; color: #0a58ca; }
+    .nolink { font-family: monospace; font-size: .8rem; color: #b00; }
+    textarea { width: 100%; min-height: 100px; margin-top: .5rem; font-family: monospace; font-size: .8rem; }
+    .note { background: #fff8e1; border: 1px solid #ffe082; padding: .75rem 1rem; border-radius: 8px; font-size: .9rem; }
+  </style>
+</head>
+<body>
+  <h1>MCRh — Airbnb reviews collection sheet</h1>
+  <p class="note">
+    Manual collection, per apartment. Paste each apartment's copied Airbnb review
+    HTML into its box for backup, then import via <strong>Admin → Reviews → Importar</strong>.
+    Supabase (via Admin) is the source of truth.
+  </p>
+
+  <div class="building">
+    <h2>42 John Dalton Street</h2>
+    <div class="pc">M2 6LE</div>
+    <div class="unit">
+      <h3>Apartment 1</h3><span class="meta">1BED 1BATH</span> · <span class="slug">jds-1</span><br>
+      <a href="https://airbnb.com/h/jds-1" target="_blank" rel="noopener">airbnb.com/h/jds-1</a>
+      <textarea placeholder="<div><div class="rbqrdp7 atm_gq_1vi7ecw dir dir-ltr" data-review-id="1518808475260959560"><div class="rq1qto8 atm_9s_1txwivl atm_ar_1bp4okc atm_cx_1fwxnve atm_gq_1y44olf dir dir-ltr"><section><div class="chnzxuf atm_9s_1txwivl atm_ar_1sbvcyy atm_fc_1e5hqsa atm_h_1h6ojuz atm_cx_dlk8xv atm_fc_usich2_10saat9 dir dir-ltr"><div class="t9gtck5 atm_c8_1klthj1 atm_g3_1cdyzym atm_cs_1mexzig atm_9s_1txwivl atm_ar_1bp4okc atm_cx_yh40bf dir dir-ltr" id="review_1518808475260959560_title"><h2 tabindex="-1" role="heading" aria-level="2" class="hpipapi atm_7l_1kw7nm4 atm_c8_1x4eueo atm_cs_1kw7nm4 atm_g3_1kw7nm4 atm_gi_idpfg4 atm_l8_idpfg4 atm_kd_idpfg4_pfnrn2 dir dir-ltr" elementtiming="LCP-target">Anitta</h2><div class="s15w4qkt atm_c8_1w0928g atm_g3_1dd5bz5 s16ox6hl atm_7l_gyfspu atm_cs_1dh25pa dir dir-ltr">11 months on Airbnb</div></div><div class="c17nk5xs atm_9s_1ulexfb atm_mk_h2mmj6 dir dir-ltr" style="height: 48px; width: 48px;"><a target="_blank" aria-label="Anitta" href="/users/profile/1478152226284292990" class="_1991pnj5 l1ovpqvx atm_npmupv_14b5rvc_10saat9 atm_4s4swg_18xq13z_10saat9 atm_u9em2p_1r3889l_10saat9 atm_1ezpcqw_1u41vd9_10saat9 atm_fyjbsv_c4n71i_10saat9 atm_1rna0z7_1uk391_10saat9 dir dir-ltr"><div class="i1j4t3kq atm_26_jv14fq atm_ks_15vqwwr atm_mk_h2mmj6 dir dir-ltr" style="height: 48px; width: 48px; border-radius: 50%;"><div class="i1y91qbp atm_mk_h2mmj6 atm_1w_1xbheko atm_e2_jngzkn atm_vy_4hg7yc atm_5j_nw3v2p atm_vh_yfq0k3 dir dir-ltr" role="img" aria-busy="false" aria-label="Anitta" style="--AirImage-height: 100%; --AirImage-width: 100%; --AirImage-background-image: none;"><picture class="p1lr305w atm_vy_1osqo2v atm_e2_1osqo2v dir dir-ltr"><source srcset="https://a0.muscache.com/im/pictures/user/User/original/6211cb94-30da-4cb2-9def-25ce4bd5187b.jpeg?im_w=120 1x, https://a0.muscache.com/im/pictures/user/User/original/6211cb94-30da-4cb2-9def-25ce4bd5187b.jpeg?im_w=120 2x" media="(min-width: 0px)"><img class="i11046vh atm_e2_1osqo2v atm_vy_1osqo2v atm_jp_sm7xtg atm_jr_xm9jbw atm_5j_nw3v2p atm_vh_yfq0k3 dir dir-ltr" aria-hidden="true" alt="Anitta" elementtiming="LCP-target" src="https://a0.muscache.com/im/pictures/user/User/original/6211cb94-30da-4cb2-9def-25ce4bd5187b.jpeg?im_w=720" data-original-uri="https://a0.muscache.com/im/pictures/user/User/original/6211cb94-30da-4cb2-9def-25ce4bd5187b.jpeg" width="100%" height="100%"></picture></div></div></a></div></div></section><div class="st35etq atm_c8_1w0928g atm_g3_1dd5bz5 atm_cs_1mexzig atm_9s_1txwivl atm_h_1h6ojuz dir dir-ltr"><div class="c5dn5hn atm_9s_1txwivl atm_cx_t94yts dir dir-ltr"><span class="a8jt5op atm_3f_idpfg4 atm_7h_hxbz6r atm_7i_ysn8ba atm_e2_t94yts atm_ks_zryt35 atm_l8_idpfg4 atm_mk_stnw88 atm_vv_1q9ccgz atm_vy_t94yts dir dir-ltr">Rating, 5 stars</span><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" aria-hidden="true" role="presentation" focusable="false" style="display: block; height: 0.5625rem; width: 0.5625rem; fill: var(--palette-grey1000);"><path fill-rule="evenodd" d="m15.1 1.58-4.13 8.88-9.86 1.27a1 1 0 0 0-.54 1.74l7.3 6.57-1.97 9.85a1 1 0 0 0 1.48 1.06l8.62-5 8.63 5a1 1 0 0 0 1.48-1.06l-1.97-9.85 7.3-6.57a1 1 0 0 0-.55-1.73l-9.86-1.28-4.12-8.88a1 1 0 0 0-1.82 0z"></path></svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" aria-hidden="true" role="presentation" focusable="false" style="display: block; height: 0.5625rem; width: 0.5625rem; fill: var(--palette-grey1000);"><path fill-rule="evenodd" d="m15.1 1.58-4.13 8.88-9.86 1.27a1 1 0 0 0-.54 1.74l7.3 6.57-1.97 9.85a1 1 0 0 0 1.48 1.06l8.62-5 8.63 5a1 1 0 0 0 1.48-1.06l-1.97-9.85 7.3-6.57a1 1 0 0 0-.55-1.73l-9.86-1.28-4.12-8.88a1 1 0 0 0-1.82 0z"></path></svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" aria-hidden="true" role="presentation" focusable="false" style="display: block; height: 0.5625rem; width: 0.5625rem; fill: var(--palette-grey1000);"><path fill-rule="evenodd" d="m15.1 1.58-4.13 8.88-9.86 1.27a1 1 0 0 0-.54 1.74l7.3 6.57-1.97 9.85a1 1 0 0 0 1.48 1.06l8.62-5 8.63 5a1 1 0 0 0 1.48-1.06l-1.97-9.85 7.3-6.57a1 1 0 0 0-.55-1.73l-9.86-1.28-4.12-8.88a1 1 0 0 0-1.82 0z"></path></svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" aria-hidden="true" role="presentation" focusable="false" style="display: block; height: 0.5625rem; width: 0.5625rem; fill: var(--palette-grey1000);"><path fill-rule="evenodd" d="m15.1 1.58-4.13 8.88-9.86 1.27a1 1 0 0 0-.54 1.74l7.3 6.57-1.97 9.85a1 1 0 0 0 1.48 1.06l8.62-5 8.63 5a1 1 0 0 0 1.48-1.06l-1.97-9.85 7.3-6.57a1 1 0 0 0-.55-1.73l-9.86-1.28-4.12-8.88a1 1 0 0 0-1.82 0z"></path></svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" aria-hidden="true" role="presentation" focusable="false" style="display: block; height: 0.5625rem; width: 0.5625rem; fill: var(--palette-grey1000);"><path fill-rule="evenodd" d="m15.1 1.58-4.13 8.88-9.86 1.27a1 1 0 0 0-.54 1.74l7.3 6.57-1.97 9.85a1 1 0 0 0 1.48 1.06l8.62-5 8.63 5a1 1 0 0 0 1.48-1.06l-1.97-9.85 7.3-6.57a1 1 0 0 0-.55-1.73l-9.86-1.28-4.12-8.88a1 1 0 0 0-1.82 0z"></path></svg></div><div class="d18zzpuj atm_7l_gyfspu atm_cs_1dh25pa atm_l8_1s5ai0k dir dir-ltr" aria-hidden="true"><span class="a8jt5op atm_3f_idpfg4 atm_7h_hxbz6r atm_7i_ysn8ba atm_e2_t94yts atm_ks_zryt35 atm_l8_idpfg4 atm_mk_stnw88 atm_vv_1q9ccgz atm_vy_t94yts dir dir-ltr">, </span><span aria-hidden="true"> · </span></div><div class="r18si1uy atm_7l_gyfspu atm_cs_1dh25pa atm_c8_1h3mmnw__oggzyc atm_g3_1vnrj90__oggzyc atm_fr_b3emyl__oggzyc dir dir-ltr">September 2025</div></div></div><div><div class="r1czmkpv atm_c8_1j2uy4x atm_g3_ly1brh atm_fr_lu0kve atm_vv_1jtmq4 atm_kz_1hnarqo atm_26_lfmit2_13uojos atm_5j_1y44olf_13uojos atm_l8_1s2714j_13uojos atm_c8_721710__oggzyc atm_g3_10ylmn4__oggzyc atm_fr_1ftnk8k__oggzyc dir dir-ltr"><div style="line-height: 1.5rem;"><span><span class="ljci3ej atm_kd_dzrex9_24z95b dir dir-ltr">I stayed here for almost two weeks and had a wonderful experience. The place was exactly as described—clean, comfortable, and well-equipped with everything I needed for a longer stay. The host was incredibly welcoming and responsive, making check-in and communication very easy.<br>The location was perfect, close to  shops, restaurants, public transport. I especially appreciate the  cleanliness of the property.<br>Overall, it felt like a home away from home, and I’d happily stay here again. Highly recommend to anyone looking for a great place in the area!</span></span></div></div></div></div><div class="dqrqf4i atm_le_1tcgj5g dir dir-ltr"><div class="d1b87ksg atm_40_dr35sg sr32ocm atm_vy_10naq1e atm_gi_hf6r1y dir dir-ltr" style="--divider-spacing-top: 0; --divider-spacing-bottom: 0; --divider-width: 100%;"></div></div></div>"></textarea>
+    </div>
+    <div class="unit">
+      <h3>Apartment 2</h3><span class="meta">2BED 2BATH</span> · <span class="slug">jds-2</span><br>
+      <a href="https://airbnb.com/h/jds-2" target="_blank" rel="noopener">airbnb.com/h/jds-2</a>
+      <textarea placeholder="<div><div class="rbqrdp7 atm_gq_1vi7ecw dir dir-ltr" data-review-id="1631190844673987722"><div class="rq1qto8 atm_9s_1txwivl atm_ar_1bp4okc atm_cx_1fwxnve atm_gq_1y44olf dir dir-ltr"><section><div class="chnzxuf atm_9s_1txwivl atm_ar_1sbvcyy atm_fc_1e5hqsa atm_h_1h6ojuz atm_cx_dlk8xv atm_fc_usich2_10saat9 dir dir-ltr"><div class="t9gtck5 atm_c8_1klthj1 atm_g3_1cdyzym atm_cs_1mexzig atm_9s_1txwivl atm_ar_1bp4okc atm_cx_yh40bf dir dir-ltr" id="review_1631190844673987722_title"><h2 tabindex="-1" role="heading" aria-level="2" class="hpipapi atm_7l_1kw7nm4 atm_c8_1x4eueo atm_cs_1kw7nm4 atm_g3_1kw7nm4 atm_gi_idpfg4 atm_l8_idpfg4 atm_kd_idpfg4_pfnrn2 dir dir-ltr" elementtiming="LCP-target">Bradan</h2><div class="s15w4qkt atm_c8_1w0928g atm_g3_1dd5bz5 s16ox6hl atm_7l_gyfspu atm_cs_1dh25pa dir dir-ltr">3 years on Airbnb</div></div><div class="c17nk5xs atm_9s_1ulexfb atm_mk_h2mmj6 dir dir-ltr" style="height: 48px; width: 48px;"><a target="_blank" aria-label="Bradan" href="/users/profile/1502408368179160286" class="_1991pnj5 l1ovpqvx atm_npmupv_14b5rvc_10saat9 atm_4s4swg_18xq13z_10saat9 atm_u9em2p_1r3889l_10saat9 atm_1ezpcqw_1u41vd9_10saat9 atm_fyjbsv_c4n71i_10saat9 atm_1rna0z7_1uk391_10saat9 dir dir-ltr"><div class="i1j4t3kq atm_26_jv14fq atm_ks_15vqwwr atm_mk_h2mmj6 dir dir-ltr" style="height: 48px; width: 48px; border-radius: 50%;"><div class="i1y91qbp atm_mk_h2mmj6 atm_1w_1xbheko atm_e2_jngzkn atm_vy_4hg7yc atm_5j_nw3v2p atm_vh_yfq0k3 dir dir-ltr" role="img" aria-busy="false" aria-label="Bradan" style="--AirImage-height: 100%; --AirImage-width: 100%; --AirImage-background-image: none;"><picture class="p1lr305w atm_vy_1osqo2v atm_e2_1osqo2v dir dir-ltr"><source srcset="https://a0.muscache.com/im/pictures/user/User/original/6f7cfe60-cf47-417f-9013-af31658e3a27.jpeg?im_w=120 1x, https://a0.muscache.com/im/pictures/user/User/original/6f7cfe60-cf47-417f-9013-af31658e3a27.jpeg?im_w=120 2x" media="(min-width: 0px)"><img class="i11046vh atm_e2_1osqo2v atm_vy_1osqo2v atm_jp_sm7xtg atm_jr_xm9jbw atm_5j_nw3v2p atm_vh_yfq0k3 dir dir-ltr" aria-hidden="true" alt="Bradan" elementtiming="LCP-target" src="https://a0.muscache.com/im/pictures/user/User/original/6f7cfe60-cf47-417f-9013-af31658e3a27.jpeg?im_w=720" data-original-uri="https://a0.muscache.com/im/pictures/user/User/original/6f7cfe60-cf47-417f-9013-af31658e3a27.jpeg" width="100%" height="100%"></picture></div></div></a></div></div></section><div class="st35etq atm_c8_1w0928g atm_g3_1dd5bz5 atm_cs_1mexzig atm_9s_1txwivl atm_h_1h6ojuz dir dir-ltr"><div class="c5dn5hn atm_9s_1txwivl atm_cx_t94yts dir dir-ltr"><span class="a8jt5op atm_3f_idpfg4 atm_7h_hxbz6r atm_7i_ysn8ba atm_e2_t94yts atm_ks_zryt35 atm_l8_idpfg4 atm_mk_stnw88 atm_vv_1q9ccgz atm_vy_t94yts dir dir-ltr">Rating, 5 stars</span><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" aria-hidden="true" role="presentation" focusable="false" style="display: block; height: 0.5625rem; width: 0.5625rem; fill: var(--palette-grey1000);"><path fill-rule="evenodd" d="m15.1 1.58-4.13 8.88-9.86 1.27a1 1 0 0 0-.54 1.74l7.3 6.57-1.97 9.85a1 1 0 0 0 1.48 1.06l8.62-5 8.63 5a1 1 0 0 0 1.48-1.06l-1.97-9.85 7.3-6.57a1 1 0 0 0-.55-1.73l-9.86-1.28-4.12-8.88a1 1 0 0 0-1.82 0z"></path></svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" aria-hidden="true" role="presentation" focusable="false" style="display: block; height: 0.5625rem; width: 0.5625rem; fill: var(--palette-grey1000);"><path fill-rule="evenodd" d="m15.1 1.58-4.13 8.88-9.86 1.27a1 1 0 0 0-.54 1.74l7.3 6.57-1.97 9.85a1 1 0 0 0 1.48 1.06l8.62-5 8.63 5a1 1 0 0 0 1.48-1.06l-1.97-9.85 7.3-6.57a1 1 0 0 0-.55-1.73l-9.86-1.28-4.12-8.88a1 1 0 0 0-1.82 0z"></path></svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" aria-hidden="true" role="presentation" focusable="false" style="display: block; height: 0.5625rem; width: 0.5625rem; fill: var(--palette-grey1000);"><path fill-rule="evenodd" d="m15.1 1.58-4.13 8.88-9.86 1.27a1 1 0 0 0-.54 1.74l7.3 6.57-1.97 9.85a1 1 0 0 0 1.48 1.06l8.62-5 8.63 5a1 1 0 0 0 1.48-1.06l-1.97-9.85 7.3-6.57a1 1 0 0 0-.55-1.73l-9.86-1.28-4.12-8.88a1 1 0 0 0-1.82 0z"></path></svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" aria-hidden="true" role="presentation" focusable="false" style="display: block; height: 0.5625rem; width: 0.5625rem; fill: var(--palette-grey1000);"><path fill-rule="evenodd" d="m15.1 1.58-4.13 8.88-9.86 1.27a1 1 0 0 0-.54 1.74l7.3 6.57-1.97 9.85a1 1 0 0 0 1.48 1.06l8.62-5 8.63 5a1 1 0 0 0 1.48-1.06l-1.97-9.85 7.3-6.57a1 1 0 0 0-.55-1.73l-9.86-1.28-4.12-8.88a1 1 0 0 0-1.82 0z"></path></svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" aria-hidden="true" role="presentation" focusable="false" style="display: block; height: 0.5625rem; width: 0.5625rem; fill: var(--palette-grey1000);"><path fill-rule="evenodd" d="m15.1 1.58-4.13 8.88-9.86 1.27a1 1 0 0 0-.54 1.74l7.3 6.57-1.97 9.85a1 1 0 0 0 1.48 1.06l8.62-5 8.63 5a1 1 0 0 0 1.48-1.06l-1.97-9.85 7.3-6.57a1 1 0 0 0-.55-1.73l-9.86-1.28-4.12-8.88a1 1 0 0 0-1.82 0z"></path></svg></div><div class="d18zzpuj atm_7l_gyfspu atm_cs_1dh25pa atm_l8_1s5ai0k dir dir-ltr" aria-hidden="true"><span class="a8jt5op atm_3f_idpfg4 atm_7h_hxbz6r atm_7i_ysn8ba atm_e2_t94yts atm_ks_zryt35 atm_l8_idpfg4 atm_mk_stnw88 atm_vv_1q9ccgz atm_vy_t94yts dir dir-ltr">, </span><span aria-hidden="true"> · </span></div><div class="r18si1uy atm_7l_gyfspu atm_cs_1dh25pa atm_c8_1h3mmnw__oggzyc atm_g3_1vnrj90__oggzyc atm_fr_b3emyl__oggzyc dir dir-ltr">February 2026</div></div></div><div><div class="r1czmkpv atm_c8_1j2uy4x atm_g3_ly1brh atm_fr_lu0kve atm_vv_1jtmq4 atm_kz_1hnarqo atm_26_lfmit2_13uojos atm_5j_1y44olf_13uojos atm_l8_1s2714j_13uojos atm_c8_721710__oggzyc atm_g3_10ylmn4__oggzyc atm_fr_1ftnk8k__oggzyc dir dir-ltr"><div style="line-height: 1.5rem;"><span><span class="ljci3ej atm_kd_dzrex9_24z95b dir dir-ltr">Really easy to find, good location.</span></span></div></div></div><div class="cjpieoq atm_h3_exct8b atm_gz_exct8b dir dir-ltr" data-testid="pdp-reviews-response"><div class="rco2uhc atm_gq_ftgil2 dir dir-ltr"><section><div class="chnzxuf atm_9s_1txwivl atm_ar_1sbvcyy atm_fc_1e5hqsa atm_h_1h6ojuz atm_cx_dlk8xv atm_fc_usich2_10saat9 dir dir-ltr"><div class="t11wgnhd atm_c8_18p4cis atm_g3_19r9dmc atm_fr_monc8 atm_cs_1mexzig atm_9s_1txwivl atm_ar_1bp4okc atm_cx_yh40bf dir dir-ltr"><h2 tabindex="-1" role="heading" aria-level="2" class="hpipapi atm_7l_1kw7nm4 atm_c8_1x4eueo atm_cs_1kw7nm4 atm_g3_1kw7nm4 atm_gi_idpfg4 atm_l8_idpfg4 atm_kd_idpfg4_pfnrn2 dir dir-ltr" elementtiming="LCP-target">Response from MCR Hospitality</h2><div class="s15w4qkt atm_c8_1w0928g atm_g3_1dd5bz5 s16ox6hl atm_7l_gyfspu atm_cs_1dh25pa dir dir-ltr">March 2026</div></div><div class="c17nk5xs atm_9s_1ulexfb atm_mk_h2mmj6 dir dir-ltr" style="height: 32px; width: 32px;"><a target="_blank" aria-label="MCR Hospitality" href="/users/profile/1465461740337859692" class="_1991pnj5 l1ovpqvx atm_npmupv_14b5rvc_10saat9 atm_4s4swg_18xq13z_10saat9 atm_u9em2p_1r3889l_10saat9 atm_1ezpcqw_1u41vd9_10saat9 atm_fyjbsv_c4n71i_10saat9 atm_1rna0z7_1uk391_10saat9 dir dir-ltr"><div class="i1j4t3kq atm_26_jv14fq atm_ks_15vqwwr atm_mk_h2mmj6 dir dir-ltr" style="height: 32px; width: 32px; border-radius: 50%;"><div class="i1y91qbp atm_mk_h2mmj6 atm_1w_1xbheko atm_e2_jngzkn atm_vy_4hg7yc atm_5j_nw3v2p atm_vh_yfq0k3 dir dir-ltr" role="img" aria-busy="false" aria-label="MCR Hospitality" style="--AirImage-height: 100%; --AirImage-width: 100%; --AirImage-background-image: none;"></div></div></a></div></div></section></div><div><div class="rkqotad atm_c8_1j2uy4x atm_g3_ly1brh atm_fr_lu0kve atm_kz_1hnarqo atm_c8_721710__oggzyc atm_g3_10ylmn4__oggzyc atm_fr_1ftnk8k__oggzyc dir dir-ltr"><div style="line-height: 1.5rem;"><span><span class="ljci3ej atm_kd_dzrex9_24z95b dir dir-ltr">Thank you for the lovely review. We’d be delighted to host you again whenever you’re back in Manchester.<br>MCR Hospitality Team</span></span></div></div></div></div></div><div class="dqrqf4i atm_le_1tcgj5g dir dir-ltr"><div class="d1b87ksg atm_40_dr35sg sr32ocm atm_vy_10naq1e atm_gi_hf6r1y dir dir-ltr" style="--divider-spacing-top: 0; --divider-spacing-bottom: 0; --divider-width: 100%;"></div></div></div>"></textarea>
+    </div>
+    <div class="unit">
+      <h3>Apartment 3</h3><span class="meta">2BED 2BATH</span> · <span class="slug">jds-3</span><br>
+      <a href="https://airbnb.com/h/jds-3" target="_blank" rel="noopener">airbnb.com/h/jds-3</a>
+      <textarea placeholder="<div><div class="rbqrdp7 atm_gq_1vi7ecw dir dir-ltr" data-review-id="1604396707967358081"><div class="rq1qto8 atm_9s_1txwivl atm_ar_1bp4okc atm_cx_1fwxnve atm_gq_1y44olf dir dir-ltr"><section><div class="chnzxuf atm_9s_1txwivl atm_ar_1sbvcyy atm_fc_1e5hqsa atm_h_1h6ojuz atm_cx_dlk8xv atm_fc_usich2_10saat9 dir dir-ltr"><div class="t9gtck5 atm_c8_1klthj1 atm_g3_1cdyzym atm_cs_1mexzig atm_9s_1txwivl atm_ar_1bp4okc atm_cx_yh40bf dir dir-ltr" id="review_1604396707967358081_title"><h2 tabindex="-1" role="heading" aria-level="2" class="hpipapi atm_7l_1kw7nm4 atm_c8_1x4eueo atm_cs_1kw7nm4 atm_g3_1kw7nm4 atm_gi_idpfg4 atm_l8_idpfg4 atm_kd_idpfg4_pfnrn2 dir dir-ltr" elementtiming="LCP-target">Michaela</h2><div class="s15w4qkt atm_c8_1w0928g atm_g3_1dd5bz5 s16ox6hl atm_7l_gyfspu atm_cs_1dh25pa dir dir-ltr">8 months on Airbnb</div></div><div class="c17nk5xs atm_9s_1ulexfb atm_mk_h2mmj6 dir dir-ltr" style="height: 48px; width: 48px;"><a target="_blank" aria-label="Michaela" href="/users/profile/1539162314328463212" class="_1991pnj5 l1ovpqvx atm_npmupv_14b5rvc_10saat9 atm_4s4swg_18xq13z_10saat9 atm_u9em2p_1r3889l_10saat9 atm_1ezpcqw_1u41vd9_10saat9 atm_fyjbsv_c4n71i_10saat9 atm_1rna0z7_1uk391_10saat9 dir dir-ltr"><div class="i1j4t3kq atm_26_jv14fq atm_ks_15vqwwr atm_mk_h2mmj6 dir dir-ltr" style="height: 48px; width: 48px; border-radius: 50%;"><div class="i1y91qbp atm_mk_h2mmj6 atm_1w_1xbheko atm_e2_jngzkn atm_vy_4hg7yc atm_5j_nw3v2p atm_vh_yfq0k3 dir dir-ltr" role="img" aria-busy="false" aria-label="Michaela" style="--AirImage-height: 100%; --AirImage-width: 100%; --AirImage-background-image: none;"><picture class="p1lr305w atm_vy_1osqo2v atm_e2_1osqo2v dir dir-ltr"><source srcset="https://a0.muscache.com/im/pictures/user/User/original/bbc659f8-12ff-4d47-85c7-c152a7574c4a.jpeg?im_w=120 1x, https://a0.muscache.com/im/pictures/user/User/original/bbc659f8-12ff-4d47-85c7-c152a7574c4a.jpeg?im_w=120 2x" media="(min-width: 0px)"><img class="i11046vh atm_e2_1osqo2v atm_vy_1osqo2v atm_jp_sm7xtg atm_jr_xm9jbw atm_5j_nw3v2p atm_vh_yfq0k3 dir dir-ltr" aria-hidden="true" alt="Michaela" elementtiming="LCP-target" src="https://a0.muscache.com/im/pictures/user/User/original/bbc659f8-12ff-4d47-85c7-c152a7574c4a.jpeg?im_w=720" data-original-uri="https://a0.muscache.com/im/pictures/user/User/original/bbc659f8-12ff-4d47-85c7-c152a7574c4a.jpeg" width="100%" height="100%"></picture></div></div></a></div></div></section><div class="st35etq atm_c8_1w0928g atm_g3_1dd5bz5 atm_cs_1mexzig atm_9s_1txwivl atm_h_1h6ojuz dir dir-ltr"><div class="c5dn5hn atm_9s_1txwivl atm_cx_t94yts dir dir-ltr"><span class="a8jt5op atm_3f_idpfg4 atm_7h_hxbz6r atm_7i_ysn8ba atm_e2_t94yts atm_ks_zryt35 atm_l8_idpfg4 atm_mk_stnw88 atm_vv_1q9ccgz atm_vy_t94yts dir dir-ltr">Rating, 5 stars</span><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" aria-hidden="true" role="presentation" focusable="false" style="display: block; height: 0.5625rem; width: 0.5625rem; fill: var(--palette-grey1000);"><path fill-rule="evenodd" d="m15.1 1.58-4.13 8.88-9.86 1.27a1 1 0 0 0-.54 1.74l7.3 6.57-1.97 9.85a1 1 0 0 0 1.48 1.06l8.62-5 8.63 5a1 1 0 0 0 1.48-1.06l-1.97-9.85 7.3-6.57a1 1 0 0 0-.55-1.73l-9.86-1.28-4.12-8.88a1 1 0 0 0-1.82 0z"></path></svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" aria-hidden="true" role="presentation" focusable="false" style="display: block; height: 0.5625rem; width: 0.5625rem; fill: var(--palette-grey1000);"><path fill-rule="evenodd" d="m15.1 1.58-4.13 8.88-9.86 1.27a1 1 0 0 0-.54 1.74l7.3 6.57-1.97 9.85a1 1 0 0 0 1.48 1.06l8.62-5 8.63 5a1 1 0 0 0 1.48-1.06l-1.97-9.85 7.3-6.57a1 1 0 0 0-.55-1.73l-9.86-1.28-4.12-8.88a1 1 0 0 0-1.82 0z"></path></svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" aria-hidden="true" role="presentation" focusable="false" style="display: block; height: 0.5625rem; width: 0.5625rem; fill: var(--palette-grey1000);"><path fill-rule="evenodd" d="m15.1 1.58-4.13 8.88-9.86 1.27a1 1 0 0 0-.54 1.74l7.3 6.57-1.97 9.85a1 1 0 0 0 1.48 1.06l8.62-5 8.63 5a1 1 0 0 0 1.48-1.06l-1.97-9.85 7.3-6.57a1 1 0 0 0-.55-1.73l-9.86-1.28-4.12-8.88a1 1 0 0 0-1.82 0z"></path></svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" aria-hidden="true" role="presentation" focusable="false" style="display: block; height: 0.5625rem; width: 0.5625rem; fill: var(--palette-grey1000);"><path fill-rule="evenodd" d="m15.1 1.58-4.13 8.88-9.86 1.27a1 1 0 0 0-.54 1.74l7.3 6.57-1.97 9.85a1 1 0 0 0 1.48 1.06l8.62-5 8.63 5a1 1 0 0 0 1.48-1.06l-1.97-9.85 7.3-6.57a1 1 0 0 0-.55-1.73l-9.86-1.28-4.12-8.88a1 1 0 0 0-1.82 0z"></path></svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" aria-hidden="true" role="presentation" focusable="false" style="display: block; height: 0.5625rem; width: 0.5625rem; fill: var(--palette-grey1000);"><path fill-rule="evenodd" d="m15.1 1.58-4.13 8.88-9.86 1.27a1 1 0 0 0-.54 1.74l7.3 6.57-1.97 9.85a1 1 0 0 0 1.48 1.06l8.62-5 8.63 5a1 1 0 0 0 1.48-1.06l-1.97-9.85 7.3-6.57a1 1 0 0 0-.55-1.73l-9.86-1.28-4.12-8.88a1 1 0 0 0-1.82 0z"></path></svg></div><div class="d18zzpuj atm_7l_gyfspu atm_cs_1dh25pa atm_l8_1s5ai0k dir dir-ltr" aria-hidden="true"><span class="a8jt5op atm_3f_idpfg4 atm_7h_hxbz6r atm_7i_ysn8ba atm_e2_t94yts atm_ks_zryt35 atm_l8_idpfg4 atm_mk_stnw88 atm_vv_1q9ccgz atm_vy_t94yts dir dir-ltr">, </span><span aria-hidden="true"> · </span></div><div class="r18si1uy atm_7l_gyfspu atm_cs_1dh25pa atm_c8_1h3mmnw__oggzyc atm_g3_1vnrj90__oggzyc atm_fr_b3emyl__oggzyc dir dir-ltr">January 2026</div></div></div><div><div class="r1czmkpv atm_c8_1j2uy4x atm_g3_ly1brh atm_fr_lu0kve atm_vv_1jtmq4 atm_kz_1hnarqo atm_26_lfmit2_13uojos atm_5j_1y44olf_13uojos atm_l8_1s2714j_13uojos atm_c8_721710__oggzyc atm_g3_10ylmn4__oggzyc atm_fr_1ftnk8k__oggzyc dir dir-ltr"><div style="line-height: 1.5rem;"><span><span class="ljci3ej atm_kd_dzrex9_24z95b dir dir-ltr">Really great location in centre of town. Lovely apartment, spacious and light. All worked, everything clean. Great responsive host.</span></span></div></div></div></div><div class="dqrqf4i atm_le_1tcgj5g dir dir-ltr"><div class="d1b87ksg atm_40_dr35sg sr32ocm atm_vy_10naq1e atm_gi_hf6r1y dir dir-ltr" style="--divider-spacing-top: 0; --divider-spacing-bottom: 0; --divider-width: 100%;"></div></div></div>"></textarea>
+    </div>
+    <div class="unit">
+      <h3>Apartment 4</h3><span class="meta">2BED 1BATH</span> · <span class="slug">jds-4</span><br>
+      <a href="https://airbnb.com/h/jds-4" target="_blank" rel="noopener">airbnb.com/h/jds-4</a>
+      <textarea placeholder="<div><div class="rbqrdp7 atm_gq_1vi7ecw dir dir-ltr" data-review-id="1591287922120739386"><div class="rq1qto8 atm_9s_1txwivl atm_ar_1bp4okc atm_cx_1fwxnve atm_gq_1y44olf dir dir-ltr"><section><div class="chnzxuf atm_9s_1txwivl atm_ar_1sbvcyy atm_fc_1e5hqsa atm_h_1h6ojuz atm_cx_dlk8xv atm_fc_usich2_10saat9 dir dir-ltr"><div class="t9gtck5 atm_c8_1klthj1 atm_g3_1cdyzym atm_cs_1mexzig atm_9s_1txwivl atm_ar_1bp4okc atm_cx_yh40bf dir dir-ltr" id="review_1591287922120739386_title"><h2 tabindex="-1" role="heading" aria-level="2" class="hpipapi atm_7l_1kw7nm4 atm_c8_1x4eueo atm_cs_1kw7nm4 atm_g3_1kw7nm4 atm_gi_idpfg4 atm_l8_idpfg4 atm_kd_idpfg4_pfnrn2 dir dir-ltr" elementtiming="LCP-target">Alberto</h2><div class="s15w4qkt atm_c8_1w0928g atm_g3_1dd5bz5 s16ox6hl atm_7l_gyfspu atm_cs_1dh25pa dir dir-ltr">Mexico City, Mexico</div></div><div class="c17nk5xs atm_9s_1ulexfb atm_mk_h2mmj6 dir dir-ltr" style="height: 48px; width: 48px;"><a target="_blank" aria-label="Alberto" href="/users/profile/1479957200820186984" class="_1991pnj5 l1ovpqvx atm_npmupv_14b5rvc_10saat9 atm_4s4swg_18xq13z_10saat9 atm_u9em2p_1r3889l_10saat9 atm_1ezpcqw_1u41vd9_10saat9 atm_fyjbsv_c4n71i_10saat9 atm_1rna0z7_1uk391_10saat9 dir dir-ltr"><div class="i1j4t3kq atm_26_jv14fq atm_ks_15vqwwr atm_mk_h2mmj6 dir dir-ltr" style="height: 48px; width: 48px; border-radius: 50%;"><div class="i1y91qbp atm_mk_h2mmj6 atm_1w_1xbheko atm_e2_jngzkn atm_vy_4hg7yc atm_5j_nw3v2p atm_vh_yfq0k3 dir dir-ltr" role="img" aria-busy="false" aria-label="Alberto" style="--AirImage-height: 100%; --AirImage-width: 100%; --AirImage-background-image: none;"><picture class="p1lr305w atm_vy_1osqo2v atm_e2_1osqo2v dir dir-ltr"><source srcset="https://a0.muscache.com/im/pictures/user/User/original/3132104d-fbab-49e7-88f6-777a8e1eb24e.jpeg?im_w=120 1x, https://a0.muscache.com/im/pictures/user/User/original/3132104d-fbab-49e7-88f6-777a8e1eb24e.jpeg?im_w=120 2x" media="(min-width: 0px)"><img class="i11046vh atm_e2_1osqo2v atm_vy_1osqo2v atm_jp_sm7xtg atm_jr_xm9jbw atm_5j_nw3v2p atm_vh_yfq0k3 dir dir-ltr" aria-hidden="true" alt="Alberto" elementtiming="LCP-target" src="https://a0.muscache.com/im/pictures/user/User/original/3132104d-fbab-49e7-88f6-777a8e1eb24e.jpeg?im_w=720" data-original-uri="https://a0.muscache.com/im/pictures/user/User/original/3132104d-fbab-49e7-88f6-777a8e1eb24e.jpeg" width="100%" height="100%"></picture></div></div></a></div></div></section><div class="st35etq atm_c8_1w0928g atm_g3_1dd5bz5 atm_cs_1mexzig atm_9s_1txwivl atm_h_1h6ojuz dir dir-ltr"><div class="c5dn5hn atm_9s_1txwivl atm_cx_t94yts dir dir-ltr"><span class="a8jt5op atm_3f_idpfg4 atm_7h_hxbz6r atm_7i_ysn8ba atm_e2_t94yts atm_ks_zryt35 atm_l8_idpfg4 atm_mk_stnw88 atm_vv_1q9ccgz atm_vy_t94yts dir dir-ltr">Rating, 4 stars</span><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" aria-hidden="true" role="presentation" focusable="false" style="display: block; height: 0.5625rem; width: 0.5625rem; fill: var(--palette-grey1000);"><path fill-rule="evenodd" d="m15.1 1.58-4.13 8.88-9.86 1.27a1 1 0 0 0-.54 1.74l7.3 6.57-1.97 9.85a1 1 0 0 0 1.48 1.06l8.62-5 8.63 5a1 1 0 0 0 1.48-1.06l-1.97-9.85 7.3-6.57a1 1 0 0 0-.55-1.73l-9.86-1.28-4.12-8.88a1 1 0 0 0-1.82 0z"></path></svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" aria-hidden="true" role="presentation" focusable="false" style="display: block; height: 0.5625rem; width: 0.5625rem; fill: var(--palette-grey1000);"><path fill-rule="evenodd" d="m15.1 1.58-4.13 8.88-9.86 1.27a1 1 0 0 0-.54 1.74l7.3 6.57-1.97 9.85a1 1 0 0 0 1.48 1.06l8.62-5 8.63 5a1 1 0 0 0 1.48-1.06l-1.97-9.85 7.3-6.57a1 1 0 0 0-.55-1.73l-9.86-1.28-4.12-8.88a1 1 0 0 0-1.82 0z"></path></svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" aria-hidden="true" role="presentation" focusable="false" style="display: block; height: 0.5625rem; width: 0.5625rem; fill: var(--palette-grey1000);"><path fill-rule="evenodd" d="m15.1 1.58-4.13 8.88-9.86 1.27a1 1 0 0 0-.54 1.74l7.3 6.57-1.97 9.85a1 1 0 0 0 1.48 1.06l8.62-5 8.63 5a1 1 0 0 0 1.48-1.06l-1.97-9.85 7.3-6.57a1 1 0 0 0-.55-1.73l-9.86-1.28-4.12-8.88a1 1 0 0 0-1.82 0z"></path></svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" aria-hidden="true" role="presentation" focusable="false" style="display: block; height: 0.5625rem; width: 0.5625rem; fill: var(--palette-grey1000);"><path fill-rule="evenodd" d="m15.1 1.58-4.13 8.88-9.86 1.27a1 1 0 0 0-.54 1.74l7.3 6.57-1.97 9.85a1 1 0 0 0 1.48 1.06l8.62-5 8.63 5a1 1 0 0 0 1.48-1.06l-1.97-9.85 7.3-6.57a1 1 0 0 0-.55-1.73l-9.86-1.28-4.12-8.88a1 1 0 0 0-1.82 0z"></path></svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" aria-hidden="true" role="presentation" focusable="false" style="display: block; height: 0.5625rem; width: 0.5625rem; fill: var(--palette-grey400);"><path fill-rule="evenodd" d="m15.1 1.58-4.13 8.88-9.86 1.27a1 1 0 0 0-.54 1.74l7.3 6.57-1.97 9.85a1 1 0 0 0 1.48 1.06l8.62-5 8.63 5a1 1 0 0 0 1.48-1.06l-1.97-9.85 7.3-6.57a1 1 0 0 0-.55-1.73l-9.86-1.28-4.12-8.88a1 1 0 0 0-1.82 0z"></path></svg></div><div class="d18zzpuj atm_7l_gyfspu atm_cs_1dh25pa atm_l8_1s5ai0k dir dir-ltr" aria-hidden="true"><span class="a8jt5op atm_3f_idpfg4 atm_7h_hxbz6r atm_7i_ysn8ba atm_e2_t94yts atm_ks_zryt35 atm_l8_idpfg4 atm_mk_stnw88 atm_vv_1q9ccgz atm_vy_t94yts dir dir-ltr">, </span><span aria-hidden="true"> · </span></div><div class="r18si1uy atm_7l_gyfspu atm_cs_1dh25pa atm_c8_1h3mmnw__oggzyc atm_g3_1vnrj90__oggzyc atm_fr_b3emyl__oggzyc dir dir-ltr">January 2026</div></div></div><div><div class="r1czmkpv atm_c8_1j2uy4x atm_g3_ly1brh atm_fr_lu0kve atm_vv_1jtmq4 atm_kz_1hnarqo atm_26_lfmit2_13uojos atm_5j_1y44olf_13uojos atm_l8_1s2714j_13uojos atm_c8_721710__oggzyc atm_g3_10ylmn4__oggzyc atm_fr_1ftnk8k__oggzyc dir dir-ltr"><div style="line-height: 1.5rem;"><span><span class="ljci3ej atm_kd_dzrex9_24z95b dir dir-ltr">We had a great stay overall. The place was comfortable, clean, and well located. We did experience a few issues with the electricity during our stay, but the host was very helpful, responsive, and quick to assist us, which we really appreciated. Communication was smooth, and we felt well taken care of. We would recommend this place and would consider staying again.</span></span></div></div></div></div><div class="dqrqf4i atm_le_1tcgj5g dir dir-ltr"><div class="d1b87ksg atm_40_dr35sg sr32ocm atm_vy_10naq1e atm_gi_hf6r1y dir dir-ltr" style="--divider-spacing-top: 0; --divider-spacing-bottom: 0; --divider-width: 100%;"></div></div></div>"></textarea>
+    </div>
+    <div class="unit">
+      <h3>Apartments 1 &amp; 2</h3><span class="meta">3BED 3BATH</span> · <span class="slug">jds-1-2</span><br>
+      <a href="https://airbnb.co.uk/h/jds-1-2" target="_blank" rel="noopener">airbnb.co.uk/h/jds-1-2</a>
+      <textarea placeholder="<div><div class="rbqrdp7 atm_gq_1vi7ecw dir dir-ltr" data-review-id="791143172616686924"><div class="rq1qto8 atm_9s_1txwivl atm_ar_1bp4okc atm_cx_1fwxnve atm_gq_1y44olf dir dir-ltr"><section><div class="chnzxuf atm_9s_1txwivl atm_ar_1sbvcyy atm_fc_1e5hqsa atm_h_1h6ojuz atm_cx_dlk8xv atm_fc_usich2_10saat9 dir dir-ltr"><div class="t9gtck5 atm_c8_1klthj1 atm_g3_1cdyzym atm_cs_1mexzig atm_9s_1txwivl atm_ar_1bp4okc atm_cx_yh40bf dir dir-ltr" id="review_791143172616686924_title"><h2 tabindex="-1" role="heading" aria-level="2" class="hpipapi atm_7l_1kw7nm4 atm_c8_1x4eueo atm_cs_1kw7nm4 atm_g3_1kw7nm4 atm_gi_idpfg4 atm_l8_idpfg4 atm_kd_idpfg4_pfnrn2 dir dir-ltr" elementtiming="LCP-target">Kerrie</h2><div class="s15w4qkt atm_c8_1w0928g atm_g3_1dd5bz5 s16ox6hl atm_7l_gyfspu atm_cs_1dh25pa dir dir-ltr">13 years on Airbnb</div></div><div class="c17nk5xs atm_9s_1ulexfb atm_mk_h2mmj6 dir dir-ltr" style="height: 48px; width: 48px;"><a target="_blank" aria-label="Kerrie" href="/users/profile/1492133050005619438" class="_1991pnj5 l1ovpqvx atm_npmupv_14b5rvc_10saat9 atm_4s4swg_18xq13z_10saat9 atm_u9em2p_1r3889l_10saat9 atm_1ezpcqw_1u41vd9_10saat9 atm_fyjbsv_c4n71i_10saat9 atm_1rna0z7_1uk391_10saat9 dir dir-ltr"><div class="i1j4t3kq atm_26_jv14fq atm_ks_15vqwwr atm_mk_h2mmj6 dir dir-ltr" style="height: 48px; width: 48px; border-radius: 50%;"><div class="i1y91qbp atm_mk_h2mmj6 atm_1w_1xbheko atm_e2_jngzkn atm_vy_4hg7yc atm_5j_nw3v2p atm_vh_yfq0k3 dir dir-ltr" role="img" aria-busy="false" aria-label="Kerrie" style="--AirImage-height: 100%; --AirImage-width: 100%; --AirImage-background-image: none;"><picture class="p1lr305w atm_vy_1osqo2v atm_e2_1osqo2v dir dir-ltr"><source srcset="https://a0.muscache.com/im/users/6077272/profile_pic/1366830800/original.jpg?im_w=120 1x, https://a0.muscache.com/im/users/6077272/profile_pic/1366830800/original.jpg?im_w=120 2x" media="(min-width: 0px)"><img class="i11046vh atm_e2_1osqo2v atm_vy_1osqo2v atm_jp_sm7xtg atm_jr_xm9jbw atm_5j_nw3v2p atm_vh_yfq0k3 dir dir-ltr" aria-hidden="true" alt="Kerrie" elementtiming="LCP-target" src="https://a0.muscache.com/im/users/6077272/profile_pic/1366830800/original.jpg?im_w=720" data-original-uri="https://a0.muscache.com/im/users/6077272/profile_pic/1366830800/original.jpg" width="100%" height="100%"></picture></div></div></a></div></div></section><div class="st35etq atm_c8_1w0928g atm_g3_1dd5bz5 atm_cs_1mexzig atm_9s_1txwivl atm_h_1h6ojuz dir dir-ltr"><div class="c5dn5hn atm_9s_1txwivl atm_cx_t94yts dir dir-ltr"><span class="a8jt5op atm_3f_idpfg4 atm_7h_hxbz6r atm_7i_ysn8ba atm_e2_t94yts atm_ks_zryt35 atm_l8_idpfg4 atm_mk_stnw88 atm_vv_1q9ccgz atm_vy_t94yts dir dir-ltr">Rating, 5 stars</span><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" aria-hidden="true" role="presentation" focusable="false" style="display: block; height: 0.5625rem; width: 0.5625rem; fill: var(--palette-grey1000);"><path fill-rule="evenodd" d="m15.1 1.58-4.13 8.88-9.86 1.27a1 1 0 0 0-.54 1.74l7.3 6.57-1.97 9.85a1 1 0 0 0 1.48 1.06l8.62-5 8.63 5a1 1 0 0 0 1.48-1.06l-1.97-9.85 7.3-6.57a1 1 0 0 0-.55-1.73l-9.86-1.28-4.12-8.88a1 1 0 0 0-1.82 0z"></path></svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" aria-hidden="true" role="presentation" focusable="false" style="display: block; height: 0.5625rem; width: 0.5625rem; fill: var(--palette-grey1000);"><path fill-rule="evenodd" d="m15.1 1.58-4.13 8.88-9.86 1.27a1 1 0 0 0-.54 1.74l7.3 6.57-1.97 9.85a1 1 0 0 0 1.48 1.06l8.62-5 8.63 5a1 1 0 0 0 1.48-1.06l-1.97-9.85 7.3-6.57a1 1 0 0 0-.55-1.73l-9.86-1.28-4.12-8.88a1 1 0 0 0-1.82 0z"></path></svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" aria-hidden="true" role="presentation" focusable="false" style="display: block; height: 0.5625rem; width: 0.5625rem; fill: var(--palette-grey1000);"><path fill-rule="evenodd" d="m15.1 1.58-4.13 8.88-9.86 1.27a1 1 0 0 0-.54 1.74l7.3 6.57-1.97 9.85a1 1 0 0 0 1.48 1.06l8.62-5 8.63 5a1 1 0 0 0 1.48-1.06l-1.97-9.85 7.3-6.57a1 1 0 0 0-.55-1.73l-9.86-1.28-4.12-8.88a1 1 0 0 0-1.82 0z"></path></svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" aria-hidden="true" role="presentation" focusable="false" style="display: block; height: 0.5625rem; width: 0.5625rem; fill: var(--palette-grey1000);"><path fill-rule="evenodd" d="m15.1 1.58-4.13 8.88-9.86 1.27a1 1 0 0 0-.54 1.74l7.3 6.57-1.97 9.85a1 1 0 0 0 1.48 1.06l8.62-5 8.63 5a1 1 0 0 0 1.48-1.06l-1.97-9.85 7.3-6.57a1 1 0 0 0-.55-1.73l-9.86-1.28-4.12-8.88a1 1 0 0 0-1.82 0z"></path></svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" aria-hidden="true" role="presentation" focusable="false" style="display: block; height: 0.5625rem; width: 0.5625rem; fill: var(--palette-grey1000);"><path fill-rule="evenodd" d="m15.1 1.58-4.13 8.88-9.86 1.27a1 1 0 0 0-.54 1.74l7.3 6.57-1.97 9.85a1 1 0 0 0 1.48 1.06l8.62-5 8.63 5a1 1 0 0 0 1.48-1.06l-1.97-9.85 7.3-6.57a1 1 0 0 0-.55-1.73l-9.86-1.28-4.12-8.88a1 1 0 0 0-1.82 0z"></path></svg></div><div class="d18zzpuj atm_7l_gyfspu atm_cs_1dh25pa atm_l8_1s5ai0k dir dir-ltr" aria-hidden="true"><span class="a8jt5op atm_3f_idpfg4 atm_7h_hxbz6r atm_7i_ysn8ba atm_e2_t94yts atm_ks_zryt35 atm_l8_idpfg4 atm_mk_stnw88 atm_vv_1q9ccgz atm_vy_t94yts dir dir-ltr">, </span><span aria-hidden="true"> · </span></div><div class="r18si1uy atm_7l_gyfspu atm_cs_1dh25pa atm_c8_1h3mmnw__oggzyc atm_g3_1vnrj90__oggzyc atm_fr_b3emyl__oggzyc dir dir-ltr">December 2022</div></div></div><div><div class="r1czmkpv atm_c8_1j2uy4x atm_g3_ly1brh atm_fr_lu0kve atm_vv_1jtmq4 atm_kz_1hnarqo atm_26_lfmit2_13uojos atm_5j_1y44olf_13uojos atm_l8_1s2714j_13uojos atm_c8_721710__oggzyc atm_g3_10ylmn4__oggzyc atm_fr_1ftnk8k__oggzyc dir dir-ltr"><div style="line-height: 1.5rem;"><span><span class="ljci3ej atm_kd_dzrex9_24z95b dir dir-ltr">Great stay at three flats within the same townhouse. Michelle was an extremely responsive host, even over the Christmas holidays! Great for large families who all need their separate space.</span></span></div></div></div></div><div class="dqrqf4i atm_le_1tcgj5g dir dir-ltr"><div class="d1b87ksg atm_40_dr35sg sr32ocm atm_vy_10naq1e atm_gi_hf6r1y dir dir-ltr" style="--divider-spacing-top: 0; --divider-spacing-bottom: 0; --divider-width: 100%;"></div></div></div>"></textarea>
+    </div>
+    <div class="unit">
+      <h3>Apartments 3 &amp; 4</h3><span class="meta">4BED 3BATH</span> · <span class="slug">jds-3-4</span><br>
+      <a href="https://airbnb.co.uk/h/jds-3-4" target="_blank" rel="noopener">airbnb.co.uk/h/jds-3-4</a>
+      <textarea placeholder="<div><div class="rbqrdp7 atm_gq_1vi7ecw dir dir-ltr" data-review-id="1520321886449254536"><div class="rq1qto8 atm_9s_1txwivl atm_ar_1bp4okc atm_cx_1fwxnve atm_gq_1y44olf dir dir-ltr"><section><div class="chnzxuf atm_9s_1txwivl atm_ar_1sbvcyy atm_fc_1e5hqsa atm_h_1h6ojuz atm_cx_dlk8xv atm_fc_usich2_10saat9 dir dir-ltr"><div class="t9gtck5 atm_c8_1klthj1 atm_g3_1cdyzym atm_cs_1mexzig atm_9s_1txwivl atm_ar_1bp4okc atm_cx_yh40bf dir dir-ltr" id="review_1520321886449254536_title"><h2 tabindex="-1" role="heading" aria-level="2" class="hpipapi atm_7l_1kw7nm4 atm_c8_1x4eueo atm_cs_1kw7nm4 atm_g3_1kw7nm4 atm_gi_idpfg4 atm_l8_idpfg4 atm_kd_idpfg4_pfnrn2 dir dir-ltr" elementtiming="LCP-target">Harriet</h2><div class="s15w4qkt atm_c8_1w0928g atm_g3_1dd5bz5 s16ox6hl atm_7l_gyfspu atm_cs_1dh25pa dir dir-ltr">10 years on Airbnb</div></div><div class="c17nk5xs atm_9s_1ulexfb atm_mk_h2mmj6 dir dir-ltr" style="height: 48px; width: 48px;"><a target="_blank" aria-label="Harriet" href="/users/profile/1493375750321937793" class="_1991pnj5 l1ovpqvx atm_npmupv_14b5rvc_10saat9 atm_4s4swg_18xq13z_10saat9 atm_u9em2p_1r3889l_10saat9 atm_1ezpcqw_1u41vd9_10saat9 atm_fyjbsv_c4n71i_10saat9 atm_1rna0z7_1uk391_10saat9 dir dir-ltr"><div class="i1j4t3kq atm_26_jv14fq atm_ks_15vqwwr atm_mk_h2mmj6 dir dir-ltr" style="height: 48px; width: 48px; border-radius: 50%;"><div class="i1y91qbp atm_mk_h2mmj6 atm_1w_1xbheko atm_e2_jngzkn atm_vy_4hg7yc atm_5j_nw3v2p atm_vh_yfq0k3 dir dir-ltr" role="img" aria-busy="false" aria-label="Harriet" style="--AirImage-height: 100%; --AirImage-width: 100%; --AirImage-background-image: none;"><picture class="p1lr305w atm_vy_1osqo2v atm_e2_1osqo2v dir dir-ltr"><source srcset="https://a0.muscache.com/im/pictures/user/684d8782-84b1-4102-a417-6f2379fde83e.jpg?im_w=120 1x, https://a0.muscache.com/im/pictures/user/684d8782-84b1-4102-a417-6f2379fde83e.jpg?im_w=120 2x" media="(min-width: 0px)"><img class="i11046vh atm_e2_1osqo2v atm_vy_1osqo2v atm_jp_sm7xtg atm_jr_xm9jbw atm_5j_nw3v2p atm_vh_yfq0k3 dir dir-ltr" aria-hidden="true" alt="Harriet" elementtiming="LCP-target" src="https://a0.muscache.com/im/pictures/user/684d8782-84b1-4102-a417-6f2379fde83e.jpg?im_w=720" data-original-uri="https://a0.muscache.com/im/pictures/user/684d8782-84b1-4102-a417-6f2379fde83e.jpg" width="100%" height="100%"></picture></div></div></a></div></div></section><div class="st35etq atm_c8_1w0928g atm_g3_1dd5bz5 atm_cs_1mexzig atm_9s_1txwivl atm_h_1h6ojuz dir dir-ltr"><div class="c5dn5hn atm_9s_1txwivl atm_cx_t94yts dir dir-ltr"><span class="a8jt5op atm_3f_idpfg4 atm_7h_hxbz6r atm_7i_ysn8ba atm_e2_t94yts atm_ks_zryt35 atm_l8_idpfg4 atm_mk_stnw88 atm_vv_1q9ccgz atm_vy_t94yts dir dir-ltr">Rating, 5 stars</span><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" aria-hidden="true" role="presentation" focusable="false" style="display: block; height: 0.5625rem; width: 0.5625rem; fill: var(--palette-grey1000);"><path fill-rule="evenodd" d="m15.1 1.58-4.13 8.88-9.86 1.27a1 1 0 0 0-.54 1.74l7.3 6.57-1.97 9.85a1 1 0 0 0 1.48 1.06l8.62-5 8.63 5a1 1 0 0 0 1.48-1.06l-1.97-9.85 7.3-6.57a1 1 0 0 0-.55-1.73l-9.86-1.28-4.12-8.88a1 1 0 0 0-1.82 0z"></path></svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" aria-hidden="true" role="presentation" focusable="false" style="display: block; height: 0.5625rem; width: 0.5625rem; fill: var(--palette-grey1000);"><path fill-rule="evenodd" d="m15.1 1.58-4.13 8.88-9.86 1.27a1 1 0 0 0-.54 1.74l7.3 6.57-1.97 9.85a1 1 0 0 0 1.48 1.06l8.62-5 8.63 5a1 1 0 0 0 1.48-1.06l-1.97-9.85 7.3-6.57a1 1 0 0 0-.55-1.73l-9.86-1.28-4.12-8.88a1 1 0 0 0-1.82 0z"></path></svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" aria-hidden="true" role="presentation" focusable="false" style="display: block; height: 0.5625rem; width: 0.5625rem; fill: var(--palette-grey1000);"><path fill-rule="evenodd" d="m15.1 1.58-4.13 8.88-9.86 1.27a1 1 0 0 0-.54 1.74l7.3 6.57-1.97 9.85a1 1 0 0 0 1.48 1.06l8.62-5 8.63 5a1 1 0 0 0 1.48-1.06l-1.97-9.85 7.3-6.57a1 1 0 0 0-.55-1.73l-9.86-1.28-4.12-8.88a1 1 0 0 0-1.82 0z"></path></svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" aria-hidden="true" role="presentation" focusable="false" style="display: block; height: 0.5625rem; width: 0.5625rem; fill: var(--palette-grey1000);"><path fill-rule="evenodd" d="m15.1 1.58-4.13 8.88-9.86 1.27a1 1 0 0 0-.54 1.74l7.3 6.57-1.97 9.85a1 1 0 0 0 1.48 1.06l8.62-5 8.63 5a1 1 0 0 0 1.48-1.06l-1.97-9.85 7.3-6.57a1 1 0 0 0-.55-1.73l-9.86-1.28-4.12-8.88a1 1 0 0 0-1.82 0z"></path></svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" aria-hidden="true" role="presentation" focusable="false" style="display: block; height: 0.5625rem; width: 0.5625rem; fill: var(--palette-grey1000);"><path fill-rule="evenodd" d="m15.1 1.58-4.13 8.88-9.86 1.27a1 1 0 0 0-.54 1.74l7.3 6.57-1.97 9.85a1 1 0 0 0 1.48 1.06l8.62-5 8.63 5a1 1 0 0 0 1.48-1.06l-1.97-9.85 7.3-6.57a1 1 0 0 0-.55-1.73l-9.86-1.28-4.12-8.88a1 1 0 0 0-1.82 0z"></path></svg></div><div class="d18zzpuj atm_7l_gyfspu atm_cs_1dh25pa atm_l8_1s5ai0k dir dir-ltr" aria-hidden="true"><span class="a8jt5op atm_3f_idpfg4 atm_7h_hxbz6r atm_7i_ysn8ba atm_e2_t94yts atm_ks_zryt35 atm_l8_idpfg4 atm_mk_stnw88 atm_vv_1q9ccgz atm_vy_t94yts dir dir-ltr">, </span><span aria-hidden="true"> · </span></div><div class="r18si1uy atm_7l_gyfspu atm_cs_1dh25pa atm_c8_1h3mmnw__oggzyc atm_g3_1vnrj90__oggzyc atm_fr_b3emyl__oggzyc dir dir-ltr">September 2025</div></div></div><div><div class="r1czmkpv atm_c8_1j2uy4x atm_g3_ly1brh atm_fr_lu0kve atm_vv_1jtmq4 atm_kz_1hnarqo atm_26_lfmit2_13uojos atm_5j_1y44olf_13uojos atm_l8_1s2714j_13uojos atm_c8_721710__oggzyc atm_g3_10ylmn4__oggzyc atm_fr_1ftnk8k__oggzyc dir dir-ltr"><div style="line-height: 1.5rem;"><span><span class="ljci3ej atm_kd_dzrex9_24z95b dir dir-ltr">Wonderful place with all the things you would need for a city break!</span></span></div></div></div></div><div class="dqrqf4i atm_le_1tcgj5g dir dir-ltr"><div class="d1b87ksg atm_40_dr35sg sr32ocm atm_vy_10naq1e atm_gi_hf6r1y dir dir-ltr" style="--divider-spacing-top: 0; --divider-spacing-bottom: 0; --divider-width: 100%;"></div></div></div>"></textarea>
+    </div>
+  </div>
+
+  <div class="building">
+    <h2>9 Chapel Walks (Chambers)</h2>
+    <div class="pc">M2 1HN</div>
+    <div class="unit">
+      <h3>Apartment 9.1</h3><span class="meta">2BED 2BATH</span> · <span class="slug">chambers-9-1</span><br>
+      <a href="https://airbnb.com/h/chambers-9-1" target="_blank" rel="noopener">airbnb.com/h/chambers-9-1</a>
+      <textarea placeholder="Paste Airbnb review HTML for chambers-9-1…"></textarea>
+    </div>
+    <div class="unit">
+      <h3>Apartment 9.2</h3><span class="meta">3BED 2BATH</span> · <span class="slug">chambers-9-2</span><br>
+      <a href="https://airbnb.co.uk/h/chambers-9-2" target="_blank" rel="noopener">airbnb.co.uk/h/chambers-9-2</a>
+      <textarea placeholder="Paste Airbnb review HTML for chambers-9-2…"></textarea>
+    </div>
+    <div class="unit">
+      <h3>Apartment 9.7</h3><span class="meta">2BED 1BATH</span> · <span class="slug">chambers-9-7</span><br>
+      <a href="https://airbnb.co.uk/h/chambers-9-7" target="_blank" rel="noopener">airbnb.co.uk/h/chambers-9-7</a>
+      <textarea placeholder="Paste Airbnb review HTML for chambers-9-7…"></textarea>
+    </div>
+    <div class="unit">
+      <h3>Apartment 9.8</h3><span class="meta">2BED 1BATH</span> · <span class="slug">chambers-9-8</span><br>
+      <a href="https://airbnb.co.uk/h/chambers-9-8" target="_blank" rel="noopener">airbnb.co.uk/h/chambers-9-8</a>
+      <textarea placeholder="Paste Airbnb review HTML for chambers-9-8…"></textarea>
+    </div>
+    <div class="unit">
+      <h3>Apartment 9.9</h3><span class="meta">2BED 2BATH</span> · <span class="slug">chambers-9-9</span><br>
+      <a href="https://airbnb.com/h/chambers-9-9" target="_blank" rel="noopener">airbnb.com/h/chambers-9-9</a>
+      <textarea placeholder="Paste Airbnb review HTML for chambers-9-9…"></textarea>
+    </div>
+    <div class="unit">
+      <h3>Apartments 7 &amp; 9</h3><span class="meta">4BED 3BATH</span> · <span class="slug">chambers-7-9</span><br>
+      <a href="https://airbnb.com/h/chambers-7-9" target="_blank" rel="noopener">airbnb.com/h/chambers-7-9</a>
+      <textarea placeholder="Paste Airbnb review HTML for chambers-7-9…"></textarea>
+    </div>
+    <div class="unit">
+      <h3>Apartments 9.1 &amp; 9.2</h3><span class="meta">5BED 4BATH</span> · <span class="slug">chambers-9-1-9-2</span><br>
+      <span class="nolink">No link yet</span>
+      <textarea placeholder="Paste Airbnb review HTML for chambers-9-1-9-2…"></textarea>
+    </div>
+  </div>
+
+  <div class="building">
+    <h2>11 Chapel Walks (Chambers)</h2>
+    <div class="pc">M2 1HN</div>
+    <div class="unit">
+      <h3>Apartment 11.1</h3><span class="meta">1BED 1BATH</span> · <span class="slug">chambers-11-1</span><br>
+      <a href="https://airbnb.com/h/chambers-11-1" target="_blank" rel="noopener">airbnb.com/h/chambers-11-1</a>
+      <textarea placeholder="Paste Airbnb review HTML for chambers-11-1…"></textarea>
+    </div>
+    <div class="unit">
+      <h3>Apartment 11.2</h3><span class="meta">2BED 2BATH</span> · <span class="slug">chambers-11-2</span><br>
+      <a href="https://airbnb.com/h/chambers-11-2" target="_blank" rel="noopener">airbnb.com/h/chambers-11-2</a>
+      <textarea placeholder="Paste Airbnb review HTML for chambers-11-2…"></textarea>
+    </div>
+    <div class="unit">
+      <h3>Apartment 11.3</h3><span class="meta">1BED 1BATH</span> · <span class="slug">chambers-11-3</span><br>
+      <a href="https://airbnb.co.uk/h/chambers-11-3" target="_blank" rel="noopener">airbnb.co.uk/h/chambers-11-3</a>
+      <textarea placeholder="Paste Airbnb review HTML for chambers-11-3…"></textarea>
+    </div>
+    <div class="unit">
+      <h3>Apartment 11.4</h3><span class="meta">2BED 2BATH</span> · <span class="slug">chambers-11-4</span><br>
+      <a href="https://airbnb.co.uk/h/chambers-11-4" target="_blank" rel="noopener">airbnb.co.uk/h/chambers-11-4</a>
+      <textarea placeholder="Paste Airbnb review HTML for chambers-11-4…"></textarea>
+    </div>
+    <div class="unit">
+      <h3>Apartment 11.5</h3><span class="meta">3BED 2BATH</span> · <span class="slug">chambers-11-5</span><br>
+      <a href="https://airbnb.co.uk/h/chambers-11-5" target="_blank" rel="noopener">airbnb.co.uk/h/chambers-11-5</a>
+      <textarea placeholder="Paste Airbnb review HTML for chambers-11-5…"></textarea>
+    </div>
+    <div class="unit">
+      <h3>Apartments 11.1 &amp; 11.2</h3><span class="meta">3BED 2BATH</span> · <span class="slug">chambers-11-1-11-2</span><br>
+      <span class="nolink">No link yet</span>
+      <textarea placeholder="Paste Airbnb review HTML for chambers-11-1-11-2…"></textarea>
+    </div>
+  </div>
+
+  <div class="building">
+    <h2>18 Wood Street</h2>
+    <div class="pc">M3 3EF</div>
+    <div class="unit">
+      <h3>2 Bedrooms</h3><span class="meta">2BED</span> · <span class="slug">wood-st-2</span><br>
+      <a href="https://airbnb.com/h/wood-st-2" target="_blank" rel="noopener">airbnb.com/h/wood-st-2</a>
+      <textarea placeholder="Paste Airbnb review HTML for wood-st-2…"></textarea>
+    </div>
+    <div class="unit">
+      <h3>3 Bedrooms</h3><span class="meta">3BED</span> · <span class="slug">wood-st-3</span><br>
+      <a href="https://airbnb.com/h/wood-st-3" target="_blank" rel="noopener">airbnb.com/h/wood-st-3</a>
+      <textarea placeholder="Paste Airbnb review HTML for wood-st-3…"></textarea>
+    </div>
+  </div>
+
+  <div class="building">
+    <h2>Wood Street Collective</h2>
+    <div class="pc">M3 3EF</div>
+    <div class="unit">
+      <h3>Room 1</h3><span class="slug">20-1-wsc</span><br>
+      <a href="https://airbnb.com/h/20-1-wsc" target="_blank" rel="noopener">airbnb.com/h/20-1-wsc</a>
+      <textarea placeholder="Paste Airbnb review HTML for 20-1-wsc…"></textarea>
+    </div>
+    <div class="unit">
+      <h3>Room 2</h3><span class="slug">20-2-wsc</span><br>
+      <a href="https://airbnb.com/h/20-2-wsc" target="_blank" rel="noopener">airbnb.com/h/20-2-wsc</a>
+      <textarea placeholder="Paste Airbnb review HTML for 20-2-wsc…"></textarea>
+    </div>
+    <div class="unit">
+      <h3>Room 3</h3><span class="slug">20-3-wsc</span><br>
+      <a href="https://airbnb.com/h/20-3-wsc" target="_blank" rel="noopener">airbnb.com/h/20-3-wsc</a>
+      <textarea placeholder="Paste Airbnb review HTML for 20-3-wsc…"></textarea>
+    </div>
+    <div class="unit">
+      <h3>Room 4</h3><span class="slug">22-4-wsc</span><br>
+      <a href="https://airbnb.com/h/22-4-wsc" target="_blank" rel="noopener">airbnb.com/h/22-4-wsc</a>
+      <textarea placeholder="Paste Airbnb review HTML for 22-4-wsc…"></textarea>
+    </div>
+    <div class="unit">
+      <h3>Room 5</h3><span class="slug">22-5-wsc</span><br>
+      <a href="https://airbnb.com/h/22-5-wsc" target="_blank" rel="noopener">airbnb.com/h/22-5-wsc</a>
+      <textarea placeholder="Paste Airbnb review HTML for 22-5-wsc…"></textarea>
+    </div>
+    <div class="unit">
+      <h3>Room 6</h3><span class="slug">22-6-wsc</span><br>
+      <a href="https://airbnb.com/h/22-6-wsc" target="_blank" rel="noopener">airbnb.com/h/22-6-wsc</a>
+      <textarea placeholder="Paste Airbnb review HTML for 22-6-wsc…"></textarea>
+    </div>
+    <div class="unit">
+      <h3>Full House</h3><span class="slug">wsc-full-house</span><br>
+      <span class="nolink">No link yet</span>
+      <textarea placeholder="Paste Airbnb review HTML for wsc-full-house…"></textarea>
+    </div>
+  </div>
+
+  <div class="building">
+    <h2>8 Loom Street</h2>
+    <div class="pc">M4 6AN</div>
+    <div class="unit">
+      <h3>Apartment 8</h3><span class="slug">mill-conversion-8</span><br>
+      <a href="https://airbnb.com/h/mill-conversion-8" target="_blank" rel="noopener">airbnb.com/h/mill-conversion-8</a>
+      <textarea placeholder="Paste Airbnb review HTML for mill-conversion-8…"></textarea>
+    </div>
+    <div class="unit">
+      <h3>Apartment 3</h3><span class="slug">mill-conversion-3</span><br>
+      <a href="https://airbnb.co.uk/h/mill-conversion-3" target="_blank" rel="noopener">airbnb.co.uk/h/mill-conversion-3</a>
+      <textarea placeholder="Paste Airbnb review HTML for mill-conversion-3…"></textarea>
+    </div>
+  </div>
+
+  <div class="building">
+    <h2>113 Newton Street</h2>
+    <div class="pc">M1 1AE</div>
+    <div class="unit">
+      <h3>Apartment 21</h3><span class="slug">21-loft-conversion</span><br>
+      <a href="https://airbnb.com/h/21-loft-conversion" target="_blank" rel="noopener">airbnb.com/h/21-loft-conversion</a>
+      <textarea placeholder="Paste Airbnb review HTML for 21-loft-conversion…"></textarea>
+    </div>
+  </div>
+
+  <div class="building">
+    <h2>Lockgate Mews</h2>
+    <div class="pc">M4 6GE</div>
+    <div class="unit">
+      <h3>Apartment 504</h3><span class="slug">lockgate-504</span><br>
+      <span class="nolink">No link yet</span>
+      <textarea placeholder="Paste Airbnb review HTML for lockgate-504…"></textarea>
+    </div>
+  </div>
+
+  <div class="building">
+    <h2>Seza's</h2>
+    <div class="pc">M4 5BR</div>
+    <div class="unit">
+      <h3>Apartment 15</h3><span class="slug">sezas-conversion</span><br>
+      <a href="https://airbnb.com/h/sezas-conversion" target="_blank" rel="noopener">airbnb.com/h/sezas-conversion</a>
+      <textarea placeholder="Paste Airbnb review HTML for sezas-conversion…"></textarea>
+    </div>
+  </div>
+
+  <div class="building">
+    <h2>Crusader</h2>
+    <div class="pc">M1 2WQ</div>
+    <div class="unit">
+      <h3>Apartment 6</h3><span class="slug">crusader</span><br>
+      <a href="https://airbnb.co.uk/h/crusader" target="_blank" rel="noopener">airbnb.co.uk/h/crusader</a>
+      <textarea placeholder="Paste Airbnb review HTML for crusader…"></textarea>
+    </div>
+  </div>
+
+  <div class="building">
+    <h2>MM2</h2>
+    <div class="pc">M4 5BS</div>
+    <div class="unit">
+      <h3>Apartment 14</h3><span class="slug">ancoats-14</span><br>
+      <a href="https://airbnb.com/h/ancoats-14" target="_blank" rel="noopener">airbnb.com/h/ancoats-14</a>
+      <textarea placeholder="Paste Airbnb review HTML for ancoats-14…"></textarea>
+    </div>
+    <div class="unit">
+      <h3>Apartment 15</h3><span class="slug">ancoats-15</span><br>
+      <a href="https://airbnb.com/h/ancoats-15" target="_blank" rel="noopener">airbnb.com/h/ancoats-15</a>
+      <textarea placeholder="Paste Airbnb review HTML for ancoats-15…"></textarea>
+    </div>
+  </div>
+
+  <div class="building">
+    <h2>Spinning Mills</h2>
+    <div class="pc">M40 7LY</div>
+    <div class="unit">
+      <h3>Apartment 212</h3><span class="slug">redbrick-mill-2</span><br>
+      <a href="https://airbnb.com/h/redbrick-mill-2" target="_blank" rel="noopener">airbnb.com/h/redbrick-mill-2</a>
+      <textarea placeholder="Paste Airbnb review HTML for redbrick-mill-2…"></textarea>
+    </div>
+    <div class="unit">
+      <h3>Apartment 406</h3><span class="slug">redbrick-mill-4</span><br>
+      <a href="https://airbnb.com/h/redbrick-mill-4" target="_blank" rel="noopener">airbnb.com/h/redbrick-mill-4</a>
+      <textarea placeholder="Paste Airbnb review HTML for redbrick-mill-4…"></textarea>
+    </div>
+  </div>
+
+  <div class="building">
+    <h2>PopWorks</h2>
+    <div class="pc">M4 6BQ</div>
+    <div class="unit">
+      <h3>Apartment 5</h3><span class="slug">ancoats-pop-5</span><br>
+      <a href="https://airbnb.com/h/ancoats-pop-5" target="_blank" rel="noopener">airbnb.com/h/ancoats-pop-5</a>
+      <textarea placeholder="Paste Airbnb review HTML for ancoats-pop-5…"></textarea>
+    </div>
+  </div>
+
+  <div class="building">
+    <h2>Insignia (Old Trafford)</h2>
+    <div class="pc">M16 0PG</div>
+    <div class="unit">
+      <h3>Apartment 105</h3><span class="slug">oldtraford</span><br>
+      <a href="https://airbnb.com/h/oldtraford" target="_blank" rel="noopener">airbnb.com/h/oldtraford</a>
+      <textarea placeholder="Paste Airbnb review HTML for oldtraford…"></textarea>
+    </div>
+  </div>
+</body>
+</html>

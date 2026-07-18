@@ -1,6 +1,7 @@
-import { useState, useEffect, useCallback, useRef, type FormEvent, type ReactNode } from 'react';
+import { useState, useEffect, useCallback, useRef, type FormEvent, type ReactNode, type ChangeEvent } from 'react';
 import { getListingMedia, cleanListingTitle } from '../data/listingMedia';
 import { mapLocationDefaults } from '../data/locations';
+import { parseAirbnbReviews } from '../lib/parseAirbnbReviews';
 
 // Quiet Luxury signature accent
 const GOLD = '#C5A059';
@@ -794,7 +795,7 @@ function PropertyGalleryEditor({ slug, api }: { slug: string; api: ReturnType<ty
   );
 }
 
-type ReviewRow = { id: string; propertySlug: string; name: string | null; date: string | null; text: string | null; rating: number; published: boolean; displayOrder: number };
+type ReviewRow = { id: string; propertySlug: string; name: string | null; date: string | null; text: string | null; rating: number; published: boolean; displayOrder: number; avatarUrl: string | null; sourceReviewId: string | null };
 
 function ReviewsEditor({ slug, api }: { slug: string; api: ReturnType<typeof useApi> }) {
   const [reviews, setReviews] = useState<ReviewRow[]>([]);
@@ -830,6 +831,7 @@ function ReviewsEditor({ slug, api }: { slug: string; api: ReturnType<typeof use
         <label className={label}>Reviews</label>
         <span className="font-body text-[10px] text-on-surface-variant/50">{loading ? 'carregando…' : `${reviews.length} reviews`}</span>
       </div>
+      <ImportBox slug={slug} api={api} onDone={load} />
       <div className="space-y-4">
         {reviews.map((r) => (
           <div key={r.id} className="border border-outline-variant/30 p-4 grid gap-3" style={{ opacity: r.published ? 1 : 0.5 }}>
@@ -839,6 +841,13 @@ function ReviewsEditor({ slug, api }: { slug: string; api: ReturnType<typeof use
               <input type="number" value={r.rating} min={1} max={5} step={0.1} onChange={(e) => update(r.id, { rating: Number(e.target.value) })} className={`${field} w-16`} title="Nota" />
             </div>
             <textarea value={r.text || ''} placeholder="Texto do review…" rows={2} onChange={(e) => update(r.id, { text: e.target.value })} className={`${field} resize-none`} />
+            <div className="flex items-center gap-3">
+              {r.avatarUrl
+                ? <img src={r.avatarUrl} alt={r.name || ''} className="w-9 h-9 rounded-full object-cover shrink-0" />
+                : <div className="w-9 h-9 rounded-full bg-outline-variant/20 shrink-0" />}
+              <input value={r.avatarUrl || ''} placeholder="URL da foto (avatar do Airbnb)" onChange={(e) => update(r.id, { avatarUrl: e.target.value })} className={`${field} flex-1`} />
+              <input value={r.sourceReviewId || ''} placeholder="Airbnb review-id" onChange={(e) => update(r.id, { sourceReviewId: e.target.value })} className={`${field} w-40`} title="data-review-id do Airbnb (evita duplicata)" />
+            </div>
             <div className="flex items-center gap-4">
               <button type="button" onClick={() => update(r.id, { published: !r.published })}
                 className="font-body text-[10px] uppercase tracking-[0.12em] text-on-surface-variant/70">
@@ -849,6 +858,62 @@ function ReviewsEditor({ slug, api }: { slug: string; api: ReturnType<typeof use
           </div>
         ))}
         <button onClick={add} className="font-body text-[10px] uppercase tracking-[0.15em] text-[#C5A059]">+ Adicionar review</button>
+      </div>
+    </div>
+  );
+}
+
+// Paste/upload copied Airbnb review HTML → parse client-side → batch import.
+function ImportBox({ slug, api, onDone }: { slug: string; api: ReturnType<typeof useApi>; onDone: () => void }) {
+  const [open, setOpen] = useState(false);
+  const [html, setHtml] = useState('');
+  const [busy, setBusy] = useState(false);
+  const [msg, setMsg] = useState('');
+
+  function onFile(e: ChangeEvent<HTMLInputElement>) {
+    const f = e.target.files?.[0];
+    if (!f) return;
+    f.text().then(setHtml);
+  }
+
+  async function doImport() {
+    setMsg('');
+    const parsed = parseAirbnbReviews(html);
+    if (parsed.length === 0) { setMsg('Nenhum review encontrado no HTML colado.'); return; }
+    setBusy(true);
+    try {
+      const res = await api('/admin/reviews/import', { method: 'POST', body: JSON.stringify({ propertySlug: slug, reviews: parsed }) });
+      setMsg(`${res.added} adicionado(s), ${res.skipped} duplicado(s) ignorado(s).`);
+      setHtml('');
+      onDone();
+    } catch {
+      setMsg('Falha ao importar.');
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  if (!open) {
+    return (
+      <button onClick={() => setOpen(true)} className="mb-4 font-body text-[10px] uppercase tracking-[0.15em] text-[#C5A059]">
+        ↑ Importar reviews do Airbnb (HTML)
+      </button>
+    );
+  }
+
+  return (
+    <div className="mb-4 border border-outline-variant/30 p-4 grid gap-3">
+      <p className="font-body text-[11px] text-on-surface-variant/70">
+        Cole o HTML copiado do Airbnb (Inspect → Copy outerHTML) ou envie um arquivo .html. O sistema extrai nome, foto, nota, texto e o review-id automaticamente.
+      </p>
+      <textarea value={html} placeholder="Cole aqui o HTML das reviews…" rows={5} onChange={(e) => setHtml(e.target.value)} className={`${field} resize-none font-mono text-[11px]`} />
+      <div className="flex items-center gap-3 flex-wrap">
+        <input type="file" accept=".html,text/html" onChange={onFile} className="font-body text-[11px] text-on-surface-variant" />
+        <button onClick={doImport} disabled={busy || !html.trim()} className="font-body text-[10px] uppercase tracking-[0.15em] text-[#C5A059] disabled:opacity-40">
+          {busy ? 'Importando…' : 'Importar'}
+        </button>
+        <button onClick={() => { setOpen(false); setHtml(''); setMsg(''); }} className="font-body text-[10px] uppercase tracking-[0.12em] text-on-surface-variant/50">Fechar</button>
+        {msg && <span className="font-body text-[11px] text-on-surface-variant ml-auto">{msg}</span>}
       </div>
     </div>
   );

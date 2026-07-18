@@ -3,6 +3,7 @@ export type Review = {
   date: string;
   text: string;
   property?: string;
+  avatarUrl?: string;
 };
 
 export const reviewsByProperty: Record<string, Review[]> = {
