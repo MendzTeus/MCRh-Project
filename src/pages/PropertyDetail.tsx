@@ -69,11 +69,11 @@ export default function PropertyDetail() {
   // Airbnb reviews belong to the individual listing, not the whole building.
   const reviewSlug = inventoryUnit?.unitSlug || unit?.slug || id || '';
   const dbReviews = useReviews(reviewSlug);
-  // Prefer DB reviews once loaded and non-empty; otherwise keep the static set
-  // so the section is never blank while loading or if none exist yet.
-  const reviews = dbReviews.loaded && dbReviews.reviews.length > 0
+  // Inventory-backed apartments must never inherit another apartment's static
+  // reviews. Legacy pages can still use the old static fallback.
+  const reviews = dbReviews.loaded
     ? dbReviews.reviews
-    : getReviewsForProperty(property?.slug || 'chambers');
+    : inventoryUnit ? [] : getReviewsForProperty(property?.slug || 'chambers');
   const reviewsRef = useRef<HTMLDivElement>(null);
   const guestsDropdownRef = useRef<HTMLDivElement>(null);
   const contactRef = useRef<HTMLDivElement>(null);
