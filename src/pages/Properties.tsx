@@ -97,12 +97,18 @@ function PropertiesMap({
 
   useEffect(() => {
     if (!mapRef.current || !Object.keys(markersRef.current).length) return;
-    Object.values(markersRef.current).forEach((v: any) => v.marker.setIcon(v.makeIcon(false)));
+    // Reset every marker to its default look and stacking order.
+    Object.values(markersRef.current).forEach((v: any) => {
+      v.marker.setIcon(v.makeIcon(false));
+      v.marker.setZIndexOffset(0);
+    });
     if (!focusedPropertySlug) return;
     const entry = markersRef.current[focusedPropertySlug];
     if (!entry) return;
+    // Highlight, lift above overlapping labels, and zoom in on the location.
     entry.marker.setIcon(entry.makeIcon(true));
-    mapRef.current.panTo([entry.lat, entry.lng], { animate: true, duration: 0.4 });
+    entry.marker.setZIndexOffset(1000);
+    mapRef.current.flyTo([entry.lat, entry.lng], 16, { animate: true, duration: 0.6 });
   }, [focusedPropertySlug]);
 
   return (
