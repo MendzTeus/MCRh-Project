@@ -156,6 +156,7 @@ function UnitCard({ unit, api, onChanged, featured, onSaveFeatured, displayTitle
   const [icalVrbo, setIcalVrbo] = useState(unit.icalVrboUrl || '');
   const [dispTitle, setDispTitle] = useState(storedDisplayTitle);
   const [status, setStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
+  const [showReviews, setShowReviews] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -301,6 +302,17 @@ function UnitCard({ unit, api, onChanged, featured, onSaveFeatured, displayTitle
         <button onClick={() => fileRef.current?.click()} className="w-24 h-24 border border-dashed border-outline-variant/70 text-on-surface-variant/60 font-body text-[10px] uppercase tracking-widest hover:border-[#C5A059] hover:text-[#C5A059] transition-colors shrink-0">+ Foto</button>
         <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={(e) => { const f = e.target.files?.[0]; if (f) uploadPhoto(f); e.target.value = ''; }} />
       </div>
+
+      {/* Reviews for this specific apartment (keyed by unit slug) */}
+      <div className="mt-5 pt-4 border-t border-outline-variant/20">
+        <button type="button" onClick={() => setShowReviews((v) => !v)}
+          className="w-full flex items-center justify-between font-body text-[10px] uppercase tracking-[0.15em] text-on-surface-variant">
+          <span>Reviews deste apartamento</span>
+          <span style={{ color: GOLD }}>{showReviews ? '▲ fechar' : '▼ gerenciar'}</span>
+        </button>
+        {showReviews && <div className="mt-4"><ReviewsEditor slug={unit.unitSlug} api={api} /></div>}
+      </div>
+
       <div className="mt-3 h-4"><Status s={status} /></div>
     </div>
   );
@@ -644,6 +656,14 @@ const PROPERTY_SLUGS: { slug: string; label: string }[] = [
   { slug: 'john-dalton-st', label: 'John Dalton Street' },
   { slug: 'wood-street', label: 'Wood Street' },
   { slug: 'the-collective', label: 'The Collective' },
+  { slug: 'loom-street', label: 'Loom Street' },
+  { slug: 'newton-street', label: 'Newton Street' },
+  { slug: 'lockgate-mews', label: 'Lockgate Mews' },
+  { slug: 'sezas', label: "Seza's" },
+  { slug: 'crusader', label: 'Crusader' },
+  { slug: 'mm2', label: 'MM2' },
+  { slug: 'spinning-mills', label: 'Spinning Mills' },
+  { slug: 'popworks', label: 'PopWorks' },
   { slug: 'ancoats', label: 'Ancoats' },
   { slug: 'old-trafford', label: 'Old Trafford' },
 ];
@@ -731,7 +751,6 @@ function PropertiesTab({ site, api, onChanged }: { site: SiteData; api: ReturnTy
                 <LE k={`property.${slug}.nearby`} title="Distâncias / Nearby" blank={{ location: '', time: '' } as Record<string,string>}
                   cols={[{ key: 'location', label: 'Local', wide: true }, { key: 'time', label: 'Tempo' }]} />
                 <PropertyGalleryEditor slug={slug} api={api} />
-                <ReviewsEditor slug={slug} api={api} />
               </div>
             )}
           </div>
