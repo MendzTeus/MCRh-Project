@@ -66,14 +66,13 @@ export default function PropertyDetail() {
   const whatsappNumber = text(site.content, 'contact.whatsapp', '').replace(/\D/g, '');
   const contactEmail = text(site.content, 'contact.email', 'hello@mcrh.co.uk');
   const displayRating = listingMedia?.rating || '4.98';
-  // Airbnb reviews belong to the individual listing, not the whole building.
-  const reviewSlug = inventoryUnit?.unitSlug || unit?.slug || id || '';
+  // Reviews are stored and managed (in /admin) per page-level property slug,
+  // Reviews are keyed per unit slug, so each apartment shows its own review.
+  const reviewSlug = inventoryUnit?.unitSlug || unit?.slug || id || 'chambers';
   const dbReviews = useReviews(reviewSlug);
-  // Inventory-backed apartments must never inherit another apartment's static
-  // reviews. Legacy pages can still use the old static fallback.
   const reviews = dbReviews.loaded
     ? dbReviews.reviews
-    : inventoryUnit ? [] : getReviewsForProperty(property?.slug || 'chambers');
+    : getReviewsForProperty(property?.slug || reviewSlug);
   const reviewsRef = useRef<HTMLDivElement>(null);
   const guestsDropdownRef = useRef<HTMLDivElement>(null);
   const contactRef = useRef<HTMLDivElement>(null);
