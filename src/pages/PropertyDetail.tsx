@@ -139,6 +139,10 @@ export default function PropertyDetail() {
   // Admin description overrides the auto-generated fallback.
   const unitDescription = adminUnit?.description || inventoryBackedUnit?.description || unit?.description || '';
   const reviewsCount = scrapedSpecs?.reviewsCount ?? null;
+  // Keep the selected guest count within the unit's real capacity.
+  useEffect(() => {
+    setGuests((value) => Math.min(Math.max(1, value), specGuests));
+  }, [specGuests]);
   const plural = (n: number, word: string) => `${n} ${n === 1 ? word : `${word}s`}`;
   const specsLine = [
     plural(specGuests, 'guest'),
@@ -238,7 +242,7 @@ export default function PropertyDetail() {
                     <span className="min-w-6 text-center font-body text-body-md">{guests}</span>
                     <button
                       type="button"
-                    onClick={() => setGuests((value) => Math.min(property.maxGuests, value + 1))}
+                    onClick={() => setGuests((value) => Math.min(specGuests, value + 1))}
                       className="h-10 w-10 rounded-full border border-outline-variant/50 text-primary"
                     >
                       +
@@ -425,11 +429,11 @@ export default function PropertyDetail() {
             </div>
           </div>
 
-          <div ref={reviewsRef} className="flex overflow-x-auto gap-8 pb-8 snap-x snap-mandatory" style={{ scrollbarWidth: 'none' }}>
+          <div ref={reviewsRef} className="flex items-start overflow-x-auto gap-8 pb-8 snap-x snap-mandatory" style={{ scrollbarWidth: 'none' }}>
             {reviews.map((review, i) => {
               const initials = review.name.split(' ').map((n) => n[0]).join('').slice(0, 2);
               return (
-                <div key={i} className="w-[300px] md:w-[400px] shrink-0 bg-surface p-8 rounded-xl border border-outline-variant/20 snap-start">
+                <div key={i} className="w-[300px] md:w-[400px] shrink-0 flex flex-col min-h-[260px] bg-surface p-8 rounded-xl border border-outline-variant/20 snap-start">
                   <div className="flex items-center gap-4 mb-6">
                     {review.avatarUrl ? (
                       <img src={review.avatarUrl} alt={review.name} loading="lazy" className="w-12 h-12 rounded-full object-cover shrink-0" />
@@ -443,7 +447,9 @@ export default function PropertyDetail() {
                       <p className="font-body text-sm text-on-surface-variant">{review.date}</p>
                     </div>
                   </div>
-                  <p className="font-display text-xl text-on-surface italic opacity-90 leading-relaxed whitespace-normal break-words text-center">"{review.text}"</p>
+                  <div className="flex-1 flex items-center">
+                    <p className="font-display text-lg md:text-xl text-on-surface italic opacity-90 leading-relaxed whitespace-normal break-words text-center w-full line-clamp-[12]">"{review.text}"</p>
+                  </div>
                   {review.property && (
                     <p className="font-body text-label-caps text-on-surface-variant/60 tracking-widest uppercase mt-4">{review.property}</p>
                   )}

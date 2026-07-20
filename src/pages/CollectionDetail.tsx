@@ -263,15 +263,15 @@ export default function CollectionDetail() {
               <span className="font-body text-label-caps text-on-surface-variant tracking-widest uppercase ml-2">5.0</span>
             </div>
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+          <div className="grid grid-cols-1 md:grid-cols-3 items-start gap-8">
             {reviews.map((review, i) => (
-              <div key={i} className="border border-outline-variant/30 rounded-xl p-6 bg-surface-container-lowest flex flex-col gap-4">
+              <div key={i} className="border border-outline-variant/30 rounded-xl p-6 bg-surface-container-lowest flex flex-col gap-4 min-h-[200px]">
                 <div className="flex gap-1">
                   {[...Array(5)].map((_, si) => (
                     <Star key={si} className="w-3 h-3 fill-[#C8A45C] text-[#C8A45C]" />
                   ))}
                 </div>
-                <p className="font-body text-body-md text-on-surface-variant flex-1 leading-relaxed whitespace-normal break-words text-center">"{review.text}"</p>
+                <p className="font-body text-body-md text-on-surface-variant flex-1 leading-relaxed whitespace-normal break-words text-center line-clamp-[12]">"{review.text}"</p>
                 <div className="border-t border-outline-variant/20 pt-4 flex items-center gap-3">
                   {review.avatarUrl && (
                     <img src={review.avatarUrl} alt={review.name} loading="lazy" className="w-9 h-9 rounded-full object-cover shrink-0" />

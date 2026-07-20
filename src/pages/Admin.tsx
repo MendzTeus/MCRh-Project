@@ -1120,8 +1120,18 @@ function AvailabilityTab({ api }: { api: ReturnType<typeof useApi> }) {
   );
 }
 
+// Airbnb review collector: self-contained tool served from /public, embedded
+// here so its full parsing/CSV logic stays intact. Pre-populated with every
+// project apartment (keyed by the Supabase Unit slug).
+function CollectorTab() {
+  return (
+    <iframe src="/admin-review-collector.html" title="Coletor de avaliações Airbnb"
+      className="w-full block" style={{ height: 'calc(100vh - 4rem)', border: 0, background: '#fcf9f4' }} />
+  );
+}
+
 // ── Main ────────────────────────────────────────────────────────────
-type Tab = 'apartments' | 'images' | 'content' | 'properties' | 'leads' | 'availability';
+type Tab = 'apartments' | 'images' | 'content' | 'properties' | 'leads' | 'availability' | 'collector';
 
 export default function Admin() {
   const [token, setToken] = useState<string | null>(() => localStorage.getItem(TOKEN_KEY));
@@ -1174,6 +1184,7 @@ export default function Admin() {
     { id: 'properties', label: 'Propriedades' },
     { id: 'availability', label: 'Disponibilidade' },
     { id: 'leads', label: 'Leads' },
+    { id: 'collector', label: 'Coletor' },
   ];
 
   return (
@@ -1244,6 +1255,7 @@ export default function Admin() {
         {tab === 'properties' && !loading && <PropertiesTab site={site} api={api} onChanged={load} />}
         {tab === 'availability' && !loading && <AvailabilityTab api={api} />}
         {tab === 'leads' && !loading && <LeadsTab api={api} />}
+        {tab === 'collector' && <CollectorTab />}
       </main>
     </div>
   );
