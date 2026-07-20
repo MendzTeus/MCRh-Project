@@ -186,7 +186,8 @@ export default function PropertyDetail() {
               </div>
             </div>
             
-            <div className="grid grid-cols-2 gap-px bg-outline-variant/30 border border-outline-variant/30 rounded-lg mb-6 overflow-hidden">
+            <div ref={guestsDropdownRef} className="relative mb-6">
+            <div className="grid grid-cols-2 gap-px bg-outline-variant/30 border border-outline-variant/30 rounded-lg overflow-hidden">
               <button
                 type="button"
                 onClick={() => {
@@ -209,7 +210,7 @@ export default function PropertyDetail() {
                 <div className="font-body text-[10px] font-semibold text-on-surface-variant mb-1 uppercase">Check-out</div>
                 <div className="font-body text-body-md text-primary">{formatShortDate(checkOut)}</div>
               </button>
-              <div ref={guestsDropdownRef} className="col-span-2 relative">
+              <div className="col-span-2">
               <button
                 type="button"
                 onClick={() => {
@@ -224,6 +225,8 @@ export default function PropertyDetail() {
                 </div>
                 <ChevronDown className="w-5 h-5 text-on-surface-variant" />
               </button>
+              </div>
+            </div>
             {guestsOpen && (
               <div className="absolute left-0 right-0 top-full mt-2 z-50 rounded-xl border border-outline-variant/30 bg-surface p-5 shadow-2xl">
                 <div className="flex items-center justify-between">
@@ -251,7 +254,6 @@ export default function PropertyDetail() {
                 </div>
               </div>
             )}
-              </div>
             </div>
 
             {datesOpen && (
