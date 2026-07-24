@@ -239,19 +239,22 @@ export default function DateRangePicker({ checkIn, checkOut, onChange, onDone, c
           </button>
         </div>
 
-        {/* Calendars */}
-        <div className="flex gap-8 px-6 py-5">
+        {/* Calendars — two months side by side on desktop, a single month on
+            mobile so the grid never overflows the viewport width. */}
+        <div className="flex gap-8 px-3 sm:px-6 py-5">
           <button type="button" onClick={() => setLeftMonth((m) => addMonths(m, -1))}
-            className="absolute left-4 top-[4.5rem] p-2 rounded-full hover:bg-surface-container transition-colors text-primary">
+            className="absolute left-2 sm:left-4 top-[4.5rem] p-2 rounded-full hover:bg-surface-container transition-colors text-primary">
             <ChevronLeft className="w-4 h-4" />
           </button>
           <MonthGrid month={leftMonth} selectedStart={selectedStart} selectedEnd={selectedEnd}
             today={today} hovered={hovered} blockedDays={blockedDays} onSelect={selectDate} onHover={setHovered} />
-          <div className="w-px bg-outline-variant/20 self-stretch" />
-          <MonthGrid month={rightMonth} selectedStart={selectedStart} selectedEnd={selectedEnd}
-            today={today} hovered={hovered} blockedDays={blockedDays} onSelect={selectDate} onHover={setHovered} />
+          <div className="hidden sm:block w-px bg-outline-variant/20 self-stretch" />
+          <div className="hidden sm:flex flex-1 min-w-0">
+            <MonthGrid month={rightMonth} selectedStart={selectedStart} selectedEnd={selectedEnd}
+              today={today} hovered={hovered} blockedDays={blockedDays} onSelect={selectDate} onHover={setHovered} />
+          </div>
           <button type="button" onClick={() => setLeftMonth((m) => addMonths(m, 1))}
-            className="absolute right-4 top-[4.5rem] p-2 rounded-full hover:bg-surface-container transition-colors text-primary">
+            className="absolute right-2 sm:right-4 top-[4.5rem] p-2 rounded-full hover:bg-surface-container transition-colors text-primary">
             <ChevronRight className="w-4 h-4" />
           </button>
         </div>

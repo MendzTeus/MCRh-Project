@@ -10,7 +10,7 @@ import { useMapLocations } from '../hooks/useMapLocations';
 import { useClickOutside } from '../hooks/useClickOutside';
 import { useSiteContent, text, list } from '../hooks/useSiteContent';
 import { airbnbInventory, getInventoryForProperty } from '../data/airbnbInventory';
-import { getUnitGallery, getListingMedia } from '../data/listingMedia';
+import { getUnitGallery, getListingMedia, getLocationCardImage } from '../data/listingMedia';
 import { getPropertyBySlug, properties } from '../data/properties';
 import { usePublicUnits } from '../hooks/usePublicUnits';
 
@@ -30,6 +30,7 @@ export default function Home() {
   useClickOutside(filterRef, () => setFiltersOpen(false), filtersOpen);
   const [selectedArea, setSelectedArea] = useState<LocationArea>('all');
   const [selectedLocationId, setSelectedLocationId] = useState(1);
+  const [focusedCoords, setFocusedCoords] = useState<{ lat: number; lng: number } | null>(null);
   const allLocations = useMapLocations();
   const visibleLocations = useMemo(
     () => allLocations.filter((location) => selectedArea === 'all' || location.areaId === selectedArea),
@@ -210,8 +211,9 @@ export default function Home() {
         compact
       />
 
-      {/* Interactive Properties Map Section - simplified for React structure */}
-       <section className="py-section-gap px-margin-mobile md:px-margin-desktop bg-surface">
+      {/* Interactive Properties Map Section - simplified for React structure.
+          Hidden entirely on mobile (no adapted version) per QA — desktop only. */}
+       <section className="hidden lg:block py-section-gap px-margin-mobile md:px-margin-desktop bg-surface">
         <div className="max-w-[1280px] mx-auto flex flex-col lg:flex-row gap-8 lg:gap-16 h-auto lg:h-[800px]">
           <div className="w-full lg:w-1/2 flex flex-col h-full">
             <div className="flex justify-between items-center mb-8">
@@ -261,23 +263,41 @@ export default function Home() {
                     </span>
                   </div>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-                    {group.locations.map((location) => (
-                      <Link
-                        to={`/collection/${location.collectionSlug}`}
+                    {group.locations.map((location, cardIndex) => (
+                      <div
                         key={location.id}
-                        onClick={() => setSelectedLocationId(location.id)}
+                        role="button"
+                        tabIndex={0}
+                        onClick={() => {
+                          setSelectedLocationId(location.id);
+                          setFocusedCoords({ ...location.coordinates });
+                        }}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter' || e.key === ' ') {
+                            e.preventDefault();
+                            setSelectedLocationId(location.id);
+                            setFocusedCoords({ ...location.coordinates });
+                          }
+                        }}
                         className={`bg-surface-container-lowest rounded-xl overflow-hidden shadow-sm border group cursor-pointer hover:border-primary transition-all duration-300 text-left ${
                           selectedLocationId === location.id ? 'border-primary' : 'border-outline-variant/30'
                         }`}
                       >
                         <div className="aspect-[4/3] bg-surface-dim relative">
-                           <MediaImage propertySlug={location.propertySlug} alt={`${location.name} apartment`} />
+                           <MediaImage src={getLocationCardImage(location.collectionSlug, location.propertySlug, cardIndex)} alt={`${location.name} apartment`} />
                         </div>
                         <div className="p-6">
                           <h3 className="font-display text-lg mb-1 text-primary">{location.name}</h3>
                           <p className="font-body text-sm text-on-surface-variant">{location.area} - {location.postcode}</p>
+                          <Link
+                            to={`/collection/${location.collectionSlug}`}
+                            onClick={(e) => e.stopPropagation()}
+                            className="mt-4 inline-block font-body text-label-caps text-xs tracking-widest uppercase text-primary border-b border-primary pb-0.5 hover:text-secondary hover:border-secondary transition-colors"
+                          >
+                            View →
+                          </Link>
                         </div>
-                      </Link>
+                      </div>
                     ))}
                   </div>
                 </div>
@@ -287,7 +307,7 @@ export default function Home() {
           
           <div className="w-full lg:w-1/2 h-[500px] lg:h-full rounded-2xl overflow-hidden relative border border-outline-variant/30">
             <Suspense fallback={<div className="w-full h-full bg-surface-dim flex items-center justify-center"><span className="font-body text-label-caps text-on-surface-variant/50 tracking-widest uppercase">Loading map…</span></div>}>
-              <PropertyMap locations={groupedMapLocations} height="100%" />
+              <PropertyMap locations={groupedMapLocations} height="100%" focusedCoords={focusedCoords} areaCircles />
             </Suspense>
           </div>
         </div>

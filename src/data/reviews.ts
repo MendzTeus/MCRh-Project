@@ -4,6 +4,8 @@ export type Review = {
   text: string;
   property?: string;
   avatarUrl?: string;
+  /** Per-review star rating (1–5) when sourced from the database. */
+  rating?: number;
 };
 
 export const reviewsByProperty: Record<string, Review[]> = {

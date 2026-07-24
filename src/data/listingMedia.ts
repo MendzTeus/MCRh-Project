@@ -138,6 +138,15 @@ export function getPropertyImage(propertySlug?: string, index = 0) {
   return combined[index] || combined[combined.length - 1] || media.heroImage;
 }
 
+// Image for a home "Discover Our Locations" card: prefer the collection's own
+// scraped photo so grouped Ancoats collections (Loom St, Newton St, …) each show a
+// distinct image. Collections with no scrape of their own (e.g. Crusader, Lockgate)
+// fall back to the parent property gallery at a per-card index so siblings still
+// differ instead of all repeating the same hero.
+export function getLocationCardImage(collectionSlug?: string, propertySlug?: string, fallbackIndex = 0) {
+  return getPropertyImage(collectionSlug) || getPropertyImage(propertySlug, fallbackIndex);
+}
+
 export function getUnitGallery(unitSlug?: string, propertySlug?: string) {
   const unitMedia = getListingMedia(unitSlug);
   const propertyMedia = getPropertyMedia(propertySlug);

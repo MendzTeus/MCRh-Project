@@ -4,10 +4,12 @@ import { Helmet } from 'react-helmet-async';
 import { useState, useRef, useEffect, useMemo } from 'react';
 import { Calendar, User, SlidersHorizontal, ArrowUpDown, Heart, Bed, Bath, Plus, Minus, X } from 'lucide-react';
 import { mapLocations } from '../data/locations';
+import { pois } from '../data/pois';
 import { airbnbInventory, inventoryRegions, getRegionForProperty, type AirbnbInventoryUnit } from '../data/airbnbInventory';
 import { getListingMedia, getPropertyMedia } from '../data/listingMedia';
 import { usePublicUnits } from '../hooks/usePublicUnits';
 import { useSiteContent, text } from '../hooks/useSiteContent';
+import { useClickOutside } from '../hooks/useClickOutside';
 import DateRangePicker from '../components/DateRangePicker';
 
 function specsToNumbers(specs?: string) {
@@ -84,6 +86,24 @@ function PropertiesMap({
           lng: loc.coordinates.lng,
           makeIcon: (a: boolean) => makeIcon(loc.name, a),
         };
+      });
+
+      // Points of interest — deliberately styled apart from property pins (small
+      // blue landmark dot) so guests can tell landmarks from rentals at a glance.
+      const poiIcon = L.divIcon({
+        className: '',
+        html: `<div style="width:14px;height:14px;border-radius:50%;background:#2563eb;border:2px solid #fff;box-shadow:0 1px 5px rgba(0,0,0,0.35);"></div>`,
+        iconSize: [14, 14],
+        iconAnchor: [7, 7],
+      });
+      pois.forEach((poi) => {
+        L.marker([poi.coordinates.lat, poi.coordinates.lng], { icon: poiIcon, zIndexOffset: -500 })
+          .addTo(map)
+          .bindTooltip(poi.name, { direction: 'top', offset: [0, -8] })
+          .bindPopup(
+            `<div style="font-family:sans-serif;min-width:140px"><b style="font-size:13px;color:#2563eb">${poi.name}</b><br/><span style="font-size:12px;color:#666">${poi.postcode}</span></div>`,
+            { closeButton: false, offset: [0, -6] }
+          );
       });
 
       map.invalidateSize();
@@ -165,6 +185,14 @@ export default function Properties() {
   // Refs for scrolling to groups from map click
   const groupRefs = useRef<Record<string, HTMLDivElement | null>>({});
   const leftColRef = useRef<HTMLDivElement>(null);
+
+  // Close the header dropdowns when clicking anywhere outside their box.
+  const guestsRef = useRef<HTMLDivElement>(null);
+  const sortRef = useRef<HTMLDivElement>(null);
+  const filterRef = useRef<HTMLDivElement>(null);
+  useClickOutside(guestsRef, () => setGuestsOpen(false), guestsOpen);
+  useClickOutside(sortRef, () => setSortOpen(false), sortOpen);
+  useClickOutside(filterRef, () => setFilterOpen(false), filterOpen);
 
   useEffect(() => {
     if (!checkIn || !checkOut) { setAvailability(null); return; }
@@ -275,13 +303,13 @@ export default function Properties() {
                 <span className="font-body text-on-surface-variant">{dateLabel}</span>
                 <Calendar style={{ width: 16, height: 16, color: '#44474c' }} />
               </button>
-              <div style={{ position: 'relative' }}>
+              <div ref={guestsRef} style={{ position: 'relative' }}>
                 <button onClick={() => { setGuestsOpen((o) => !o); setDatesOpen(false); setSortOpen(false); setFilterOpen(false); }} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 14px', border: '1px solid rgba(197,198,205,0.5)', borderRadius: 8, background: 'transparent', cursor: 'pointer', fontSize: 14, width: 130 }}>
                   <span className="font-body text-on-surface-variant">{guests === 2 ? 'Guests' : `${guests} Guests`}</span>
                   <User style={{ width: 16, height: 16, color: '#44474c', marginLeft: 'auto' }} />
                 </button>
                 {guestsOpen && (
-                  <div style={{ position: 'absolute', left: 0, top: 'calc(100% + 8px)', background: '#fdf9f3', border: '1px solid rgba(197,198,205,0.3)', borderRadius: 8, boxShadow: '0 8px 24px rgba(0,0,0,0.12)', padding: 16, zIndex: 30, width: 200 }}>
+                  <div style={{ position: 'absolute', left: isMobile ? 'auto' : 0, right: isMobile ? 0 : 'auto', top: 'calc(100% + 8px)', background: '#fdf9f3', border: '1px solid rgba(197,198,205,0.3)', borderRadius: 8, boxShadow: '0 8px 24px rgba(0,0,0,0.12)', padding: 16, zIndex: 30, width: 200, maxWidth: 'calc(100vw - 32px)' }}>
                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                       <span className="font-body text-sm text-primary">Guests</span>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
@@ -299,7 +327,7 @@ export default function Properties() {
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', position: 'relative' }}>
               <div style={{ display: 'flex', gap: 8 }}>
                 {/* Sort button + dropdown */}
-                <div style={{ position: 'relative' }}>
+                <div ref={sortRef} style={{ position: 'relative' }}>
                   <button
                     onClick={() => { setSortOpen((o) => !o); setFilterOpen(false); setGuestsOpen(false); }}
                     className="font-body text-sm"
@@ -328,7 +356,7 @@ export default function Properties() {
                 </div>
 
                 {/* Filter button + panel */}
-                <div style={{ position: 'relative' }}>
+                <div ref={filterRef} style={{ position: 'relative' }}>
                   <button
                     onClick={() => { setFilterOpen((o) => !o); setSortOpen(false); setGuestsOpen(false); }}
                     className="font-body text-sm"

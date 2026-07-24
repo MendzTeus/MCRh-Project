@@ -1,11 +1,13 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useMemo } from 'react';
 import { useParams } from 'react-router-dom';
 import { Helmet } from 'react-helmet-async';
 import { Star, ChevronDown, BedDouble, Wifi, ChefHat, Coffee, Snowflake, Bath, ArrowRight, ArrowLeft, X, MessageCircle, Mail } from 'lucide-react';
 import Lightbox from '../components/Lightbox';
 import { getReviewsForProperty } from '../data/reviews';
 import { useReviews } from '../hooks/useReviews';
-import { getPropertyMapEmbedUrl } from '../data/locations';
+import { getLocationsForProperty } from '../data/locations';
+import { getNearestPois } from '../data/pois';
+import PropertyMap from '../components/PropertyMap';
 import DateRangePicker, { formatShortDate } from '../components/DateRangePicker';
 import MediaImage from '../components/MediaImage';
 import { getInventoryUnit } from '../data/airbnbInventory';
@@ -65,7 +67,6 @@ export default function PropertyDetail() {
   const unitGallery = adminPhotos.length > 0 ? adminPhotos.map((p) => p.url) : staticGallery;
   const whatsappNumber = text(site.content, 'contact.whatsapp', '').replace(/\D/g, '');
   const contactEmail = text(site.content, 'contact.email', 'hello@mcrh.co.uk');
-  const displayRating = listingMedia?.rating || '4.98';
   // Reviews are stored and managed (in /admin) per page-level property slug,
   // Reviews are keyed per unit slug, so each apartment shows its own review.
   const reviewSlug = inventoryUnit?.unitSlug || unit?.slug || id || 'chambers';
@@ -73,6 +74,14 @@ export default function PropertyDetail() {
   const reviews = dbReviews.loaded
     ? dbReviews.reviews
     : getReviewsForProperty(property?.slug || reviewSlug);
+  // Prefer an aggregate computed from the database review ratings (Supabase) when
+  // present; otherwise fall back to the scraped Airbnb rating, then a sane default.
+  const dbRatings = dbReviews.loaded
+    ? dbReviews.reviews.map((r) => r.rating).filter((n): n is number => typeof n === 'number' && n > 0)
+    : [];
+  const displayRating = dbRatings.length
+    ? (dbRatings.reduce((sum, n) => sum + n, 0) / dbRatings.length).toFixed(2)
+    : listingMedia?.rating || '4.98';
   const reviewsRef = useRef<HTMLDivElement>(null);
   const guestsDropdownRef = useRef<HTMLDivElement>(null);
   const contactRef = useRef<HTMLDivElement>(null);
@@ -150,6 +159,14 @@ export default function PropertyDetail() {
     specBeds != null && plural(specBeds, 'bed'),
     specBaths != null && plural(specBaths, 'bathroom'),
   ].filter(Boolean).join(' · ');
+
+  // Neighborhood map data — the property's own pin(s) plus the nearest landmarks.
+  // Memoised so the Leaflet map isn't torn down and rebuilt on every re-render.
+  const neighborhoodLocations = useMemo(() => getLocationsForProperty(property.slug), [property.slug]);
+  const nearbyPois = useMemo(() => {
+    const center = neighborhoodLocations[0]?.coordinates;
+    return center ? getNearestPois(center, 5) : [];
+  }, [neighborhoodLocations]);
 
   return (
     <div className="animate-in fade-in duration-500">
@@ -373,22 +390,27 @@ export default function PropertyDetail() {
         </div>
       </section>
 
-      {/* Gallery Grid */}
+      {/* Gallery Grid — no top padding; the amenities section above already
+          supplies the vertical rhythm, so a second pad opened an empty gap. */}
       {unitGallery.length > 0 && (
-        <section className="max-w-[1280px] mx-auto px-margin-mobile md:px-margin-desktop py-section-gap">
-          <div className="grid grid-cols-2 md:grid-cols-4 grid-rows-2 gap-2 md:gap-3" style={{ height: 480 }}>
+        <section className="max-w-[1280px] mx-auto px-margin-mobile md:px-margin-desktop pb-section-gap">
+          {/* On mobile the grid has only 2 columns, so the main image (col-span-2)
+              fills a row and the four thumbnails flow beneath it in a 2×2 block.
+              Explicit auto-rows give every cell a real height (a fixed grid height
+              collapsed the tracks on mobile). Desktop keeps the 4-col hero layout. */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-2 md:gap-3 auto-rows-[130px] sm:auto-rows-[180px] md:auto-rows-fr md:grid-rows-2 md:h-[480px]">
             {/* Main large image — spans 2 cols + 2 rows */}
             <div className="col-span-2 row-span-2 rounded-xl overflow-hidden cursor-pointer" onClick={() => { setGalleryIndex(0); setGalleryOpen(true); }}>
               <img src={unitGallery[0]} alt={`${unit.title} main`} className="w-full h-full object-cover hover:scale-[1.02] transition-transform duration-500" />
             </div>
-            {/* 4 thumbnails — right side, each 1 col × 1 row */}
+            {/* 4 thumbnails — each 1 col × 1 row */}
             {[1, 2, 3, 4].map((i) => (
               unitGallery[i] ? (
-                <div key={i} className={`overflow-hidden cursor-pointer ${i === 2 ? 'rounded-tr-xl' : ''} ${i === 4 ? 'rounded-br-xl' : ''}`}
+                <div key={i} className={`overflow-hidden rounded-lg md:rounded-none cursor-pointer ${i === 2 ? 'md:rounded-tr-xl' : ''} ${i === 4 ? 'md:rounded-br-xl' : ''}`}
                   onClick={() => { setGalleryIndex(i); setGalleryOpen(true); }}>
                   <img src={unitGallery[i]} alt={`${unit.title} photo ${i + 1}`} className="w-full h-full object-cover hover:scale-[1.04] transition-transform duration-500" />
                 </div>
-              ) : <div key={i} className="bg-surface-dim rounded" />
+              ) : <div key={i} className="bg-surface-dim rounded-lg" />
             ))}
           </div>
           <div className="flex justify-end mt-4">
@@ -465,26 +487,7 @@ export default function PropertyDetail() {
       <section className="max-w-[1280px] mx-auto px-margin-mobile md:px-margin-desktop py-section-gap">
         <h2 className="font-display text-headline-md text-primary mb-12">The Neighborhood</h2>
         <div className="rounded-xl overflow-hidden h-[500px] relative border border-outline-variant/20">
-          {getPropertyMapEmbedUrl(property.slug) ? (
-            <iframe
-              title={`Map of ${property.name}`}
-              src={getPropertyMapEmbedUrl(property.slug)!}
-              className="w-full h-full border-0"
-              loading="lazy"
-              referrerPolicy="no-referrer"
-            />
-          ) : (
-            <div className="w-full h-full bg-surface-variant flex items-center justify-center">
-              <div className="flex flex-col items-center">
-                <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center animate-pulse">
-                  <div className="w-4 h-4 bg-primary rounded-full"></div>
-                </div>
-                <div className="mt-2 bg-surface px-4 py-2 rounded-lg shadow-lg border border-outline-variant/20">
-                  <span className="font-body text-label-caps text-primary tracking-widest uppercase font-semibold">{unit.title}</span>
-                </div>
-              </div>
-            </div>
-          )}
+          <PropertyMap locations={neighborhoodLocations} pois={nearbyPois} height="100%" />
         </div>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mt-12">
           {property.distances.slice(0, 3).map((item, i) => (
