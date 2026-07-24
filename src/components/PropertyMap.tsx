@@ -164,7 +164,12 @@ export default function PropertyMap({ locations = mapLocations, height = '100%',
         markersRef.current = [];
       }
     };
-  }, [locations, pois]);
+    // `pois` is intentionally omitted: it's rendered once on init and, for the
+    // callers that pass it, is memoised. Including the default `[]` here would make
+    // a new reference every render, tearing down and rebuilding the whole map
+    // (which cancelled the focus flyTo mid-animation).
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [locations]);
 
   // Fly to location when activeLocation changes externally — not needed but could be used
   useEffect(() => {
