@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef, type FormEvent, type ReactNode, type ChangeEvent } from 'react';
+import { useState, useEffect, useCallback, useRef, useMemo, type FormEvent, type ReactNode, type ChangeEvent } from 'react';
 import { getListingMedia, cleanListingTitle } from '../data/listingMedia';
 import { mapLocationDefaults } from '../data/locations';
 import { parseAirbnbReviews } from '../lib/parseAirbnbReviews';
@@ -1045,6 +1045,262 @@ function LeadsTab({ api }: { api: ReturnType<typeof useApi> }) {
   );
 }
 
+// ── Photos tab — per-apartment photo manager ─────────────────────────
+function PhotosTab({ units, api, onChanged }: { units: Unit[]; api: ReturnType<typeof useApi>; onChanged: () => void }) {
+  const [selectedPropertySlug, setSelectedPropertySlug] = useState('');
+  const [selectedUnitSlug, setSelectedUnitSlug] = useState('');
+  const [status, setStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
+  const [bulkCat, setBulkCat] = useState('');
+  const fileRef = useRef<HTMLInputElement>(null);
+
+  // Build ordered property list from loaded units
+  const properties = useMemo(() => {
+    const seen = new Map<string, string>();
+    for (const u of units) if (!seen.has(u.propertySlug)) seen.set(u.propertySlug, u.propertyName);
+    return [...seen.entries()].map(([slug, name]) => ({ slug, name }));
+  }, [units]);
+
+  const propertyUnits = useMemo(
+    () => units.filter((u) => u.propertySlug === selectedPropertySlug),
+    [units, selectedPropertySlug],
+  );
+
+  const currentUnit = units.find((u) => u.unitSlug === selectedUnitSlug);
+
+  const sortedPhotos = useMemo(
+    () => [...(currentUnit?.photos || [])].sort((a, b) => a.displayOrder - b.displayOrder),
+    [currentUnit],
+  );
+
+  // Group sorted photos by roomCategory for display
+  const groups = useMemo(() => {
+    const map = new Map<string, Photo[]>();
+    const order: string[] = [];
+    for (const p of sortedPhotos) {
+      const cat = p.roomCategory || '';
+      if (!map.has(cat)) { map.set(cat, []); order.push(cat); }
+      map.get(cat)!.push(p);
+    }
+    return order.map((cat) => ({ cat, photos: map.get(cat)! }));
+  }, [sortedPhotos]);
+
+  const uncategorizedCount = sortedPhotos.filter((p) => !p.roomCategory).length;
+
+  async function uploadPhoto(file: File) {
+    if (!selectedUnitSlug || !currentUnit) return;
+    const { base64, type } = await fileToBase64(file);
+    try {
+      await api(`/admin/units/${selectedUnitSlug}/photos`, {
+        method: 'POST',
+        body: JSON.stringify({ dataBase64: base64, contentType: type, alt: currentUnit.unitName }),
+      });
+      onChanged();
+    } catch { setStatus('error'); }
+  }
+
+  async function moveCategoryPhoto(id: string, dir: -1 | 1, catKey: string) {
+    const catPhotos = sortedPhotos.filter((p) => (p.roomCategory || '') === catKey);
+    const catIdx = catPhotos.findIndex((p) => p.id === id);
+    const swapIdx = catIdx + dir;
+    if (catIdx === -1 || swapIdx < 0 || swapIdx >= catPhotos.length) return;
+
+    const ids = sortedPhotos.map((p) => p.id);
+    const gA = ids.indexOf(id);
+    const gB = ids.indexOf(catPhotos[swapIdx].id);
+    [ids[gA], ids[gB]] = [ids[gB], ids[gA]];
+
+    setStatus('saving');
+    try {
+      await api(`/admin/units/${selectedUnitSlug}/photos/reorder`, { method: 'POST', body: JSON.stringify({ orderedIds: ids }) });
+      setStatus('saved'); setTimeout(() => setStatus('idle'), 1200); onChanged();
+    } catch { setStatus('error'); }
+  }
+
+  async function setCategory(id: string, roomCategory: string | null) {
+    setStatus('saving');
+    try {
+      await api(`/admin/photos/${id}`, { method: 'PATCH', body: JSON.stringify({ roomCategory }) });
+      setStatus('saved'); setTimeout(() => setStatus('idle'), 1200); onChanged();
+    } catch { setStatus('error'); }
+  }
+
+  async function bulkSetCategory(ids: string[], roomCategory: string | null) {
+    if (!ids.length) return;
+    setStatus('saving');
+    try {
+      await Promise.all(ids.map((id) => api(`/admin/photos/${id}`, { method: 'PATCH', body: JSON.stringify({ roomCategory }) })));
+      setStatus('saved'); setTimeout(() => setStatus('idle'), 1200); onChanged();
+    } catch { setStatus('error'); }
+  }
+
+  return (
+    <div className="max-w-5xl space-y-8">
+      <div>
+        <h2 className="font-display text-headline-md text-primary mb-1">Gestão de fotos</h2>
+        <p className="font-body text-sm text-on-surface-variant">Selecione um edifício e apartamento. As fotos são separadas por divisão e aparecem assim no Photo Tour público.</p>
+      </div>
+
+      {/* Building + apartment selector */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+        <div>
+          <label className={label}>Edifício / coleção</label>
+          <select
+            value={selectedPropertySlug}
+            onChange={(e) => { setSelectedPropertySlug(e.target.value); setSelectedUnitSlug(''); }}
+            className={field}
+          >
+            <option value="">— selecione —</option>
+            {properties.map((p) => <option key={p.slug} value={p.slug}>{p.name}</option>)}
+          </select>
+        </div>
+        <div>
+          <label className={label}>Apartamento</label>
+          <select
+            value={selectedUnitSlug}
+            onChange={(e) => setSelectedUnitSlug(e.target.value)}
+            className={field}
+            disabled={!selectedPropertySlug}
+          >
+            <option value="">— selecione —</option>
+            {propertyUnits.map((u) => (
+              <option key={u.unitSlug} value={u.unitSlug}>
+                {u.unitName} ({u.photos.length} foto{u.photos.length !== 1 ? 's' : ''})
+              </option>
+            ))}
+          </select>
+        </div>
+      </div>
+
+      {!selectedPropertySlug && (
+        <p className="font-body text-sm text-on-surface-variant/50">Selecione um edifício para continuar.</p>
+      )}
+
+      {selectedPropertySlug && !currentUnit && (
+        <p className="font-body text-sm text-on-surface-variant">Selecione um apartamento para gerir as fotos.</p>
+      )}
+
+      {currentUnit && (
+        <>
+          {/* Unit info + upload */}
+          <div className="flex items-start justify-between border-b border-outline-variant/30 pb-5 gap-4 flex-wrap">
+            <div>
+              <p className="font-display text-xl text-primary">{currentUnit.propertyName}</p>
+              <p className="font-body text-sm text-on-surface-variant mt-0.5">
+                {currentUnit.unitName} · {sortedPhotos.length} foto{sortedPhotos.length !== 1 ? 's' : ''}
+              </p>
+              {currentUnit.airbnbUrl && (
+                <p className="font-body text-[10px] text-on-surface-variant/40 mt-1 truncate max-w-xs">{currentUnit.airbnbUrl}</p>
+              )}
+            </div>
+            <div className="flex items-center gap-4 shrink-0">
+              <Status s={status} />
+              <button
+                onClick={() => fileRef.current?.click()}
+                className="px-5 py-2 font-body text-[11px] uppercase tracking-[0.15em] border border-outline-variant/50 text-on-surface-variant hover:border-[#C5A059] hover:text-[#C5A059] transition-colors"
+              >
+                + Upload fotos
+              </button>
+              <input
+                ref={fileRef} type="file" accept="image/*" multiple className="hidden"
+                onChange={(e) => { Array.from(e.target.files || []).forEach((f) => uploadPhoto(f as File)); e.target.value = ''; }}
+              />
+            </div>
+          </div>
+
+          {/* Uncategorised warning + bulk assign */}
+          {uncategorizedCount > 0 && (
+            <div className="flex items-center gap-4 flex-wrap px-4 py-3 rounded-lg border border-amber-200 bg-amber-50/60">
+              <span className="font-body text-sm text-amber-700">
+                ⚠ {uncategorizedCount} foto{uncategorizedCount !== 1 ? 's' : ''} sem categoria — no Photo Tour aparecerão todas juntas em "Property".
+              </span>
+              <div className="ml-auto flex items-center gap-2 shrink-0">
+                <select
+                  value={bulkCat}
+                  onChange={(e) => setBulkCat(e.target.value)}
+                  className="bg-transparent border-b border-amber-400 font-body text-xs text-amber-700 focus:outline-none"
+                >
+                  <option value="">Mover todas para…</option>
+                  {ROOM_CATEGORIES.map((c) => <option key={c} value={c}>{c}</option>)}
+                </select>
+                {bulkCat && (
+                  <button
+                    onClick={async () => {
+                      const ids = sortedPhotos.filter((p) => !p.roomCategory).map((p) => p.id);
+                      await bulkSetCategory(ids, bulkCat);
+                      setBulkCat('');
+                    }}
+                    className="font-body text-[10px] uppercase tracking-widest text-amber-700 hover:text-amber-900 underline"
+                  >
+                    Aplicar
+                  </button>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* Empty state */}
+          {sortedPhotos.length === 0 && (
+            <div className="border border-dashed border-outline-variant/40 rounded-lg px-6 py-12 text-center">
+              <p className="font-body text-sm text-on-surface-variant/60">
+                Nenhuma foto. Clique em "+ Upload fotos" para começar.
+              </p>
+              <p className="font-body text-xs text-on-surface-variant/40 mt-2">
+                As fotos do Airbnb só aparecem no Photo Tour após serem carregadas aqui.
+              </p>
+            </div>
+          )}
+
+          {/* Photos grouped by room category */}
+          {groups.map(({ cat, photos: catPhotos }) => (
+            <div key={cat || '_uncategorized'} className="space-y-3">
+              <div className="flex items-center gap-3">
+                <h3 className="font-body text-[11px] uppercase tracking-[0.15em]" style={{ color: cat ? NAVY : '#92400e' }}>
+                  {cat || 'Sem categoria'}
+                </h3>
+                <span className="font-body text-[10px] text-on-surface-variant/50">
+                  {catPhotos.length} foto{catPhotos.length !== 1 ? 's' : ''}
+                </span>
+                <div className="flex-1 h-px bg-outline-variant/20" />
+              </div>
+              <div className="flex flex-wrap gap-3 items-start">
+                {catPhotos.map((p, i) => (
+                  <div key={p.id} className="flex flex-col items-center gap-1.5">
+                    <PhotoTile
+                      photo={p}
+                      canLeft={i > 0}
+                      canRight={i < catPhotos.length - 1}
+                      onMove={(dir) => moveCategoryPhoto(p.id, dir, cat)}
+                      onEditAlt={() => {
+                        const next = window.prompt('Alt text:', p.alt || '');
+                        if (next !== null) api(`/admin/photos/${p.id}`, { method: 'PATCH', body: JSON.stringify({ alt: next }) }).then(onChanged).catch(() => {});
+                      }}
+                      onSetCover={() => api(`/admin/photos/${p.id}`, { method: 'PATCH', body: JSON.stringify({ isPrimary: true }) }).then(onChanged).catch(() => {})}
+                      onDelete={() => {
+                        if (confirm(`Excluir esta foto${p.alt ? ` (${p.alt})` : ''}?`)) {
+                          api(`/admin/photos/${p.id}`, { method: 'DELETE' }).then(onChanged).catch(() => {});
+                        }
+                      }}
+                    />
+                    <select
+                      value={p.roomCategory || ''}
+                      onChange={(e) => setCategory(p.id, e.target.value || null)}
+                      className="w-24 bg-transparent border-b border-outline-variant/40 font-body text-[9px] text-on-surface-variant focus:outline-none focus:border-[#C5A059] transition-colors py-0.5"
+                      title="Categoria da divisão"
+                    >
+                      <option value="">— categoria —</option>
+                      {ROOM_CATEGORIES.map((c) => <option key={c} value={c}>{c}</option>)}
+                    </select>
+                  </div>
+                ))}
+              </div>
+            </div>
+          ))}
+        </>
+      )}
+    </div>
+  );
+}
+
 // ── Availability / iCal sync ────────────────────────────────────────
 type AvailRow = {
   unitSlug: string; unitName: string; propertySlug: string; propertyName: string;
@@ -1145,7 +1401,7 @@ function CollectorTab() {
 }
 
 // ── Main ────────────────────────────────────────────────────────────
-type Tab = 'apartments' | 'images' | 'content' | 'properties' | 'leads' | 'availability' | 'collector';
+type Tab = 'apartments' | 'photos' | 'images' | 'content' | 'properties' | 'leads' | 'availability' | 'collector';
 
 export default function Admin() {
   const [token, setToken] = useState<string | null>(() => localStorage.getItem(TOKEN_KEY));
@@ -1193,6 +1449,7 @@ export default function Admin() {
 
   const tabs: { id: Tab; label: string }[] = [
     { id: 'apartments', label: 'Apartamentos' },
+    { id: 'photos', label: 'Fotos' },
     { id: 'images', label: 'Imagens' },
     { id: 'content', label: 'Conteúdo' },
     { id: 'properties', label: 'Propriedades' },
@@ -1264,6 +1521,7 @@ export default function Admin() {
           </>
         )}
 
+        {tab === 'photos' && !loading && <PhotosTab units={units} api={api} onChanged={load} />}
         {tab === 'images' && !loading && <ImagesTab site={site} api={api} onChanged={load} />}
         {tab === 'content' && !loading && <ContentTab site={site} api={api} onChanged={load} />}
         {tab === 'properties' && !loading && <PropertiesTab site={site} api={api} onChanged={load} />}

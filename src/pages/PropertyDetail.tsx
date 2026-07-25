@@ -82,7 +82,7 @@ export default function PropertyDetail() {
     : undefined;
   const unit = routedUnit || legacyUnit?.unit || inventoryBackedUnit || property?.units[0];
   const staticGallery = getUnitGallery(unit?.slug, property?.slug);
-  const fullStaticGallery = getUnitFullGallery(unit?.slug, property?.slug);
+  const fullStaticGallery = getUnitFullGallery(unit?.slug);
   // Reserved dates (from the synced iCal) for this unit, to grey out the calendar.
   const blockedDates = useUnitBlockedDates(inventoryUnit?.unitSlug || id);
   // Booking links. VRBO uses the per-unit listing URL (not the iCal feed), so the

@@ -155,9 +155,8 @@ export function getUnitGallery(unitSlug?: string, propertySlug?: string) {
   return uniqueImages([...(unitMedia?.gallery || []), ...propertyMedia.gallery]).slice(0, 8);
 }
 
-/** Like getUnitGallery but returns ALL available photos (no 8-image cap) for the Photo Tour. */
-export function getUnitFullGallery(unitSlug?: string, propertySlug?: string): string[] {
-  const unitMedia = getListingMedia(unitSlug);
-  const propertyMedia = getPropertyMedia(propertySlug);
-  return uniqueImages([...(unitMedia?.gallery || []), ...propertyMedia.gallery]);
+/** Returns ALL photos for a single unit (no 8-image cap) for the Photo Tour.
+ *  Deliberately unit-scoped only — never aggregates sibling apartments. */
+export function getUnitFullGallery(unitSlug?: string): string[] {
+  return getListingMedia(unitSlug)?.gallery || [];
 }
