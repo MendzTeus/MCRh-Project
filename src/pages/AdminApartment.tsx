@@ -112,8 +112,8 @@ const DragTile: React.FC<DragTileProps> = ({
       draggable
       onDragStart={onDragStart}
       onDragEnd={onDragEnd}
-      className={`relative w-24 h-24 shrink-0 overflow-hidden cursor-grab active:cursor-grabbing select-none transition-opacity ${isDragging ? 'opacity-30' : ''}`}
-      style={{ border: '1px solid rgba(197,198,205,0.4)' }}
+      className={`relative shrink-0 overflow-hidden cursor-grab active:cursor-grabbing select-none transition-opacity ${isDragging ? 'opacity-30' : ''}`}
+      style={{ width: 180, height: 135, border: '1px solid rgba(197,198,205,0.4)' }}
     >
       <img src={url} alt="" referrerPolicy="no-referrer" className="w-full h-full object-cover" loading="lazy" />
       <div className="absolute bottom-0 left-0 right-0 flex" style={{ background: 'rgba(16,28,45,0.78)' }}>
