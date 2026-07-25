@@ -217,12 +217,23 @@ router.post('/units/:unitSlug/photos/references', async (req, res) => {
   }
 
   if (toInsert.length > 0) {
-    const { error } = await supabase.from('MediaAsset').insert(toInsert);
+    let { error } = await supabase.from('MediaAsset').insert(toInsert);
+    if (error?.message?.toLowerCase().includes('column')) {
+      // roomCategory column not yet added — insert without it
+      const stripped = toInsert.map(({ roomCategory: _rc, ...rest }) => rest);
+      ({ error } = await supabase.from('MediaAsset').insert(stripped));
+    }
     if (error) return res.status(500).json({ error: error.message });
   }
-  await Promise.all(toUpdate.map(({ id, roomCategory, displayOrder }) =>
-    supabase.from('MediaAsset').update({ roomCategory, displayOrder }).eq('id', id)
-  ));
+  const updateResults = await Promise.all(toUpdate.map(async ({ id, roomCategory, displayOrder }) => {
+    let { error } = await supabase.from('MediaAsset').update({ roomCategory, displayOrder }).eq('id', id);
+    if (error?.message?.toLowerCase().includes('column')) {
+      ({ error } = await supabase.from('MediaAsset').update({ displayOrder }).eq('id', id));
+    }
+    return error;
+  }));
+  const updateErr = updateResults.find(Boolean);
+  if (updateErr) return res.status(500).json({ error: updateErr.message });
   res.json({ ok: true, inserted: toInsert.length, updated: toUpdate.length });
 });
 

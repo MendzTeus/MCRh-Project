@@ -98,29 +98,50 @@ function getDynamicCategories(unit: Pick<FullUnit, 'bedrooms' | 'bathrooms' | 'e
 
 // ── Draggable photo tile ─────────────────────────────────────────────
 type DragTileProps = {
-  url: string; cat: string; index: number; total: number; isDragging: boolean;
+  url: string; cat: string; index: number; total: number;
+  isDragging: boolean; isSaving: boolean;
+  categories: string[];
   onDragStart: () => void; onDragEnd: () => void;
   onMoveLeft: () => void; onMoveRight: () => void; onRemove: () => void;
+  onCategoryChange: (cat: string) => void;
 };
 const DragTile: React.FC<DragTileProps> = ({
-  url, cat, index, total, isDragging,
-  onDragStart, onDragEnd, onMoveLeft, onMoveRight, onRemove,
+  url, cat, index, total, isDragging, isSaving,
+  categories, onDragStart, onDragEnd, onMoveLeft, onMoveRight, onRemove, onCategoryChange,
 }) => {
   const btn = 'flex-1 text-white/80 text-[11px] leading-none py-1 hover:text-[#C5A059] transition-colors disabled:opacity-25 disabled:hover:text-white/80';
   return (
-    <div
-      draggable
-      onDragStart={(e) => { e.dataTransfer.setData('text/plain', url); e.dataTransfer.effectAllowed = 'move'; onDragStart(); }}
-      onDragEnd={(e) => { e.dataTransfer.clearData(); onDragEnd(); }}
-      className={`relative shrink-0 overflow-hidden cursor-grab active:cursor-grabbing select-none transition-opacity ${isDragging ? 'opacity-30' : ''}`}
-      style={{ width: 180, height: 135, border: '1px solid rgba(197,198,205,0.4)' }}
-    >
-      <img src={url} alt="" referrerPolicy="no-referrer" className="w-full h-full object-cover" loading="lazy" />
-      <div className="absolute bottom-0 left-0 right-0 flex" style={{ background: 'rgba(16,28,45,0.78)' }}>
-        <button onClick={onMoveLeft} disabled={index === 0} className={btn}>◀</button>
-        <button onClick={onMoveRight} disabled={index === total - 1} className={btn}>▶</button>
-        {cat && <button onClick={onRemove} title="Remover da categoria" className={`${btn} hover:text-red-300`}>✕</button>}
+    <div className="flex flex-col gap-1" style={{ width: 180 }}>
+      {/* Image (draggable) */}
+      <div
+        draggable
+        onDragStart={(e) => { e.dataTransfer.setData('text/plain', url); e.dataTransfer.effectAllowed = 'move'; onDragStart(); }}
+        onDragEnd={(e) => { e.dataTransfer.clearData(); onDragEnd(); }}
+        className={`relative shrink-0 overflow-hidden cursor-grab active:cursor-grabbing select-none transition-opacity ${isDragging ? 'opacity-30' : isSaving ? 'opacity-60' : ''}`}
+        style={{ height: 135, border: '1px solid rgba(197,198,205,0.4)' }}
+      >
+        {isSaving && (
+          <div className="absolute inset-0 z-10 flex items-center justify-center bg-black/25">
+            <span className="font-body text-[9px] uppercase tracking-widest text-white">salvando…</span>
+          </div>
+        )}
+        <img src={url} alt="" referrerPolicy="no-referrer" className="w-full h-full object-cover" loading="lazy" />
+        <div className="absolute bottom-0 left-0 right-0 flex" style={{ background: 'rgba(16,28,45,0.78)' }}>
+          <button onClick={onMoveLeft} disabled={index === 0 || isSaving} className={btn}>◀</button>
+          <button onClick={onMoveRight} disabled={index === total - 1 || isSaving} className={btn}>▶</button>
+          {cat && <button onClick={onRemove} disabled={isSaving} title="Remover da categoria" className={`${btn} hover:text-red-300`}>✕</button>}
+        </div>
       </div>
+      {/* Category selector (always visible) */}
+      <select
+        value={cat}
+        onChange={(e) => onCategoryChange(e.target.value)}
+        disabled={isSaving}
+        className="w-full bg-surface border border-outline-variant/30 font-body text-[10px] text-on-surface-variant focus:outline-none focus:border-[#C5A059] py-1 px-1.5 rounded-sm cursor-pointer"
+      >
+        <option value="">— sem categoria —</option>
+        {categories.map((c) => <option key={c} value={c}>{c}</option>)}
+      </select>
     </div>
   );
 }
@@ -386,63 +407,57 @@ function buildCategoryMap(
 }
 
 // ══════════════════════════════════════════════════════════════════
-// TAB: Photos — drag to categorise
+// TAB: Photos — drag or select to categorise (auto-save on each change)
 // ══════════════════════════════════════════════════════════════════
 function PhotosTabUnit({ unit, api, onChanged }: { unit: FullUnit; api: ReturnType<typeof useApi>; onChanged: () => void }) {
   const dynamicCats = useMemo(() => getDynamicCategories(unit), [unit.bedrooms, unit.bathrooms, unit.ensuiteBathrooms, unit.wcCount]);
   const airbnbUrls = useMemo(() => getListingMedia(unit.unitSlug)?.gallery || [], [unit.unitSlug]);
 
-  // category → ordered url[] (local state; the source of truth while editing)
   const [catMap, setCatMap] = useState<Record<string, string[]>>(() =>
     buildCategoryMap(unit.photos, airbnbUrls, dynamicCats)
   );
-  const [dirty, setDirty] = useState(false);
-  const [status, setStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
+  const [saving, setSaving] = useState<Set<string>>(new Set());
+  const [lastError, setLastError] = useState('');
+  const [orderDirty, setOrderDirty] = useState(false);
+  const [orderStatus, setOrderStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
   const [dragging, setDragging] = useState<string | null>(null);
   const [dragOver, setDragOver] = useState<string | null>(null);
 
-  // Re-init when saved photos reload (after onChanged)
   const stateKey = unit.unitSlug + '|' + unit.photos.map((p) => p.id + p.roomCategory + p.displayOrder).join(',');
   useEffect(() => {
     setCatMap(buildCategoryMap(unit.photos, airbnbUrls, dynamicCats));
-    setDirty(false);
+    setOrderDirty(false);
   }, [stateKey]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const totalPhotos = useMemo(() => (Object.values(catMap) as string[][]).reduce((s, arr) => s + arr.length, 0), [catMap]);
   const uncatCount = (catMap[''] as string[] | undefined)?.length ?? 0;
 
-  // All category keys to render: '' first, then dynamic order, then any extras from saved photos
   const visibleCats = useMemo((): string[] => {
     const keys: string[] = ['', ...dynamicCats];
     for (const k of Object.keys(catMap)) if (!keys.includes(k)) keys.push(k);
     return keys.filter((k) => k === '' || ((catMap[k] as string[] | undefined)?.length ?? 0) > 0 || dynamicCats.includes(k));
   }, [catMap, dynamicCats]);
 
-  function moveToCategory(url: string, toCat: string) {
-    setCatMap((prev) => {
-      const next: Record<string, string[]> = {};
-      for (const [k, arr] of Object.entries(prev) as [string, string[]][]) next[k] = arr.filter((u) => u !== url);
-      if (!next[toCat]) next[toCat] = [];
-      next[toCat] = [...next[toCat], url];
-      return next;
-    });
-    setDirty(true);
+  // Auto-save a single photo's category change
+  async function saveOne(url: string, toCat: string, order: number) {
+    setSaving((prev) => new Set([...prev, url]));
+    setLastError('');
+    try {
+      await api(`/admin/units/${unit.unitSlug}/photos/references`, {
+        method: 'POST',
+        body: JSON.stringify({ assignments: [{ url, roomCategory: toCat || null, displayOrder: order, alt: unit.unitName }] }),
+      });
+      onChanged();
+    } catch (e) {
+      setLastError(e instanceof Error ? e.message : 'Erro ao salvar');
+    } finally {
+      setSaving((prev) => { const next = new Set(prev); next.delete(url); return next; });
+    }
   }
 
-  function moveWithin(url: string, cat: string, dir: -1 | 1) {
-    setCatMap((prev) => {
-      const arr = [...(prev[cat] || [])];
-      const idx = arr.indexOf(url);
-      const swap = idx + dir;
-      if (idx === -1 || swap < 0 || swap >= arr.length) return prev;
-      [arr[idx], arr[swap]] = [arr[swap], arr[idx]];
-      return { ...prev, [cat]: arr };
-    });
-    setDirty(true);
-  }
-
-  async function save() {
-    setStatus('saving');
+  // Save current order for a whole category (after ◀ ▶)
+  async function saveOrder() {
+    setOrderStatus('saving');
     const assignments: { url: string; roomCategory: string | null; displayOrder: number; alt: string }[] = [];
     for (const [cat, urls] of Object.entries(catMap) as [string, string[]][]) {
       urls.forEach((url, i) => assignments.push({ url, roomCategory: cat || null, displayOrder: i, alt: unit.unitName }));
@@ -451,49 +466,82 @@ function PhotosTabUnit({ unit, api, onChanged }: { unit: FullUnit; api: ReturnTy
       await api(`/admin/units/${unit.unitSlug}/photos/references`, {
         method: 'POST', body: JSON.stringify({ assignments }),
       });
-      setStatus('saved'); setDirty(false); setTimeout(() => setStatus('idle'), 1500);
+      setOrderStatus('saved'); setOrderDirty(false); setTimeout(() => setOrderStatus('idle'), 1500);
       onChanged();
-    } catch { setStatus('error'); }
+    } catch (e) {
+      setLastError(e instanceof Error ? e.message : 'Erro ao salvar ordem');
+      setOrderStatus('error');
+    }
+  }
+
+  function moveToCategory(url: string, toCat: string) {
+    const newOrder = (catMap[toCat] as string[] | undefined)?.length ?? 0;
+    setCatMap((prev) => {
+      const next: Record<string, string[]> = {};
+      for (const [k, arr] of Object.entries(prev) as [string, string[]][]) next[k] = arr.filter((u) => u !== url);
+      if (!next[toCat]) next[toCat] = [];
+      next[toCat] = [...next[toCat], url];
+      return next;
+    });
+    saveOne(url, toCat, newOrder);
+  }
+
+  function moveWithin(url: string, cat: string, dir: -1 | 1) {
+    setCatMap((prev) => {
+      const arr = [...((prev[cat] as string[] | undefined) || [])];
+      const idx = arr.indexOf(url);
+      const swap = idx + dir;
+      if (idx === -1 || swap < 0 || swap >= arr.length) return prev;
+      [arr[idx], arr[swap]] = [arr[swap], arr[idx]];
+      return { ...prev, [cat]: arr };
+    });
+    setOrderDirty(true);
   }
 
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between gap-4 flex-wrap">
+      <div className="flex items-start justify-between gap-4 flex-wrap">
         <div>
           <p className="font-display text-headline-sm text-primary">Fotos</p>
           <p className="font-body text-xs text-on-surface-variant mt-0.5">
-            {totalPhotos} foto{totalPhotos !== 1 ? 's' : ''} do Airbnb
-            {airbnbUrls.length > 0 && ` · arraste para categorizar`}
+            {totalPhotos} foto{totalPhotos !== 1 ? 's' : ''} · arraste ou use o seletor em cada foto
           </p>
+          {lastError && (
+            <p className="font-body text-xs text-red-600 mt-1 max-w-md">{lastError}</p>
+          )}
         </div>
-        <div className="flex items-center gap-3">
-          <SaveStatus s={status} />
+        {orderDirty && (
           <button
-            onClick={save}
-            disabled={!dirty}
-            className="px-5 py-2 font-body text-[11px] uppercase tracking-[0.15em] text-white transition-all disabled:opacity-30"
+            onClick={saveOrder}
+            disabled={orderStatus === 'saving'}
+            className="shrink-0 px-4 py-2 font-body text-[11px] uppercase tracking-[0.15em] text-white transition-all disabled:opacity-60"
             style={{ background: GOLD }}
           >
-            Salvar
+            {orderStatus === 'saving' ? 'Salvando…' : orderStatus === 'saved' ? '✓ Ordem salva' : 'Salvar ordem'}
           </button>
-        </div>
+        )}
       </div>
+
+      {saving.size > 0 && (
+        <div className="flex items-center gap-2 px-3 py-2 rounded border border-outline-variant/20 bg-surface-container/40">
+          <span className="font-body text-[11px] text-on-surface-variant/70" style={{ color: GOLD }}>
+            Salvando {saving.size} foto{saving.size !== 1 ? 's' : ''}…
+          </span>
+        </div>
+      )}
 
       {uncatCount > 0 && (
         <div className="px-4 py-3 rounded-lg border border-amber-200 bg-amber-50/60">
           <span className="font-body text-sm text-amber-700">
-            ⚠ {uncatCount} foto{uncatCount !== 1 ? 's' : ''} sem categoria — arraste para uma secção abaixo para categorizar
+            ⚠ {uncatCount} foto{uncatCount !== 1 ? 's' : ''} sem categoria — use o seletor ou arraste para uma secção abaixo
           </span>
         </div>
       )}
 
       {totalPhotos === 0 && (
         <div className="border border-dashed border-outline-variant/40 rounded-lg px-6 py-16 text-center">
-          <p className="font-body text-sm text-on-surface-variant/60">Nenhuma foto encontrada.</p>
-          <p className="font-body text-xs text-on-surface-variant/40 mt-2">
-            Certifique-se de que o slug do apartamento corresponde ao scrape do Airbnb.
-          </p>
+          <p className="font-body text-sm text-on-surface-variant/60">Nenhuma foto encontrada para este apartamento.</p>
         </div>
       )}
 
@@ -511,38 +559,27 @@ function PhotosTabUnit({ unit, api, onChanged }: { unit: FullUnit; api: ReturnTy
                 e.preventDefault();
                 setDragOver(null);
                 const url = e.dataTransfer.getData('text/plain');
-                if (url && url !== '') moveToCategory(url, cat);
+                if (url) moveToCategory(url, cat);
               }}
               className={`rounded-xl transition-all duration-150 ${
-                isOver
-                  ? 'ring-2 ring-primary/50 bg-primary/5'
-                  : dragging
-                    ? 'ring-1 ring-outline-variant/30 bg-surface-container/20'
-                    : ''
+                isOver ? 'ring-2 ring-primary/50 bg-primary/5' : dragging ? 'ring-1 ring-outline-variant/30' : ''
               }`}
             >
-              {/* Section header */}
               <div className="flex items-center gap-3 px-3 py-2.5">
-                <h3
-                  className="font-body text-[11px] uppercase tracking-[0.15em]"
-                  style={{ color: cat ? NAVY : '#92400e' }}
-                >
+                <h3 className="font-body text-[11px] uppercase tracking-[0.15em]" style={{ color: cat ? NAVY : '#92400e' }}>
                   {cat || 'Sem categoria'}
                 </h3>
-                <span className="font-body text-[10px] text-on-surface-variant/50">
-                  {catPhotos.length}
-                </span>
+                <span className="font-body text-[10px] text-on-surface-variant/50">{catPhotos.length}</span>
                 <div className="flex-1 h-px bg-outline-variant/20" />
                 {dragging && (
                   <span className="font-body text-[9px] uppercase tracking-widest"
-                    style={{ color: isOver ? GOLD : 'rgba(0,0,0,0.25)' }}>
-                    {isOver ? '↓ Soltar aqui' : 'Soltar aqui ↓'}
+                    style={{ color: isOver ? GOLD : 'rgba(0,0,0,0.2)' }}>
+                    {isOver ? '↓ Soltar aqui' : 'Soltar aqui'}
                   </span>
                 )}
               </div>
 
-              {/* Photos row */}
-              <div className="flex flex-wrap gap-3 px-3 pb-4 min-h-[40px]">
+              <div className="flex flex-wrap gap-4 px-3 pb-4 min-h-[40px]">
                 {catPhotos.map((url, i) => (
                   <DragTile
                     key={url}
@@ -551,13 +588,14 @@ function PhotosTabUnit({ unit, api, onChanged }: { unit: FullUnit; api: ReturnTy
                     index={i}
                     total={catPhotos.length}
                     isDragging={dragging === url}
-                    onDragStart={() => {
-                      setDragging(url);
-                    }}
+                    isSaving={saving.has(url)}
+                    categories={dynamicCats}
+                    onDragStart={() => setDragging(url)}
                     onDragEnd={() => { setDragging(null); setDragOver(null); }}
                     onMoveLeft={() => moveWithin(url, cat, -1)}
                     onMoveRight={() => moveWithin(url, cat, 1)}
                     onRemove={() => moveToCategory(url, '')}
+                    onCategoryChange={(newCat) => moveToCategory(url, newCat)}
                   />
                 ))}
 
