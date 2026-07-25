@@ -18,6 +18,32 @@ import { useUnitBlockedDates } from '../hooks/useUnitBlockedDates';
 import { useSiteContent, text } from '../hooks/useSiteContent';
 import { usePublicUnits } from '../hooks/usePublicUnits';
 
+function normalizeSpecs(raw: string): string {
+  const wordMap: Record<string, string> = {
+    bed: 'Bed', beds: 'Beds',
+    bath: 'Bathroom', baths: 'Bathrooms',
+    guest: 'Guest', guests: 'Guests',
+    bedroom: 'Bedroom', bedrooms: 'Bedrooms',
+    bathroom: 'Bathroom', bathrooms: 'Bathrooms',
+  };
+  const expandToken = (token: string): string => {
+    const m = token.match(/^(\d+)([a-zA-Z]+)$/);
+    if (m) {
+      const n = parseInt(m[1]);
+      const lower = m[2].toLowerCase();
+      const base = wordMap[lower] ?? (m[2].charAt(0).toUpperCase() + m[2].slice(1).toLowerCase());
+      const word = n !== 1 && !base.endsWith('s') ? base + 's' : base;
+      return `${n} ${word}`;
+    }
+    const lower = token.toLowerCase();
+    return wordMap[lower] ?? (token.charAt(0).toUpperCase() + token.slice(1).toLowerCase());
+  };
+  if (/[·•]/.test(raw)) {
+    return raw.split(/\s*[·•]\s*/).map(part => part.trim().split(/\s+/).map(expandToken).join(' ')).join(' · ');
+  }
+  return raw.trim().split(/\s+/).map(expandToken).join(' · ');
+}
+
 // Append/update query params on a saved listing URL, preserving any existing ones
 // (e.g. ?source=…). Returns the base untouched if it isn't a valid absolute URL.
 function withBookingParams(base: string, params: Record<string, string | number>): string {
@@ -374,7 +400,7 @@ export default function PropertyDetail() {
             <div className="font-body text-on-surface-variant text-body-lg space-y-6">
               <p>{unitDescription}</p>
               <p>{property.description}</p>
-              <p>{unit.specs}{unit.squareFeet ? ` / ${unit.squareFeet}` : ''}</p>
+              <p>{normalizeSpecs(unit.specs)}{unit.squareFeet ? ` / ${unit.squareFeet}` : ''}</p>
             </div>
           </div>
           

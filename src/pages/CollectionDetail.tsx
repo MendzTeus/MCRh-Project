@@ -21,22 +21,31 @@ const PropertyMap = lazy(() => import('../components/PropertyMap'));
 /** Expand Airbnb scraper abbreviations and title-case spec strings.
  *  e.g. "3 BED · 1 BATH" → "3 Beds · 1 Bathroom" */
 function normalizeSpecs(raw: string): string {
-  const expand: Record<string, string> = {
-    bath: 'Bathroom', baths: 'Bathrooms',
+  const wordMap: Record<string, string> = {
     bed: 'Bed', beds: 'Beds',
+    bath: 'Bathroom', baths: 'Bathrooms',
     guest: 'Guest', guests: 'Guests',
     bedroom: 'Bedroom', bedrooms: 'Bedrooms',
     bathroom: 'Bathroom', bathrooms: 'Bathrooms',
   };
-  return raw
-    .split(/\s*[·•]\s*/)
-    .map(part =>
-      part.trim().split(/\s+/).map(word => {
-        const lower = word.toLowerCase();
-        return expand[lower] ?? (word.charAt(0).toUpperCase() + word.slice(1).toLowerCase());
-      }).join(' ')
-    )
-    .join(' · ');
+  const expandToken = (token: string): string => {
+    // Handle compact format like "2BED", "1BATH", "3BEDROOM"
+    const m = token.match(/^(\d+)([a-zA-Z]+)$/);
+    if (m) {
+      const n = parseInt(m[1]);
+      const lower = m[2].toLowerCase();
+      const base = wordMap[lower] ?? (m[2].charAt(0).toUpperCase() + m[2].slice(1).toLowerCase());
+      const word = n !== 1 && !base.endsWith('s') ? base + 's' : base;
+      return `${n} ${word}`;
+    }
+    const lower = token.toLowerCase();
+    return wordMap[lower] ?? (token.charAt(0).toUpperCase() + token.slice(1).toLowerCase());
+  };
+  if (/[·•]/.test(raw)) {
+    return raw.split(/\s*[·•]\s*/).map(part => part.trim().split(/\s+/).map(expandToken).join(' ')).join(' · ');
+  }
+  // Space-separated compact format like "2BED 1BATH" — each token is its own spec
+  return raw.trim().split(/\s+/).map(expandToken).join(' · ');
 }
 
 export default function CollectionDetail() {
