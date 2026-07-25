@@ -185,11 +185,16 @@ export default function PropertyDetail() {
         {unitGallery[0] && <meta property="og:image" content={unitGallery[0]} />}
       </Helmet>
 
-      {/* On mobile the image is an in-flow block so the booking card flows naturally
-          beneath it. On desktop the image goes absolute-inset and the content
-          overlays the bottom of the hero with the floating card (translate-y-1/4). */}
-      <section className="relative w-full md:h-[921px] md:flex md:items-end md:pb-section-gap">
-        <div className="relative md:absolute md:inset-0 z-0 bg-surface-dim h-[55vh] min-h-[360px] md:h-full overflow-hidden">
+      {/* Two separate image divs: one in-flow for mobile (so the booking card stacks
+          cleanly below the photo), one absolute-fill for desktop (classic overlay). */}
+      <section className="md:relative w-full md:h-[921px] md:flex md:items-end md:pb-section-gap">
+        {/* Mobile hero image — in normal flow so nothing overlaps it */}
+        <div className="md:hidden relative h-[60vh] min-h-[380px] bg-surface-dim overflow-hidden">
+          <MediaImage src={unitGallery[0]} propertySlug={property.slug} alt={unit.title} loading="eager" />
+          <div className="absolute inset-0 bg-gradient-to-b from-transparent to-black/20"></div>
+        </div>
+        {/* Desktop hero image — fills the section absolutely */}
+        <div className="hidden md:block absolute inset-0 z-0 bg-surface-dim">
           <MediaImage src={unitGallery[0]} propertySlug={property.slug} alt={unit.title} loading="eager" />
           <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent"></div>
         </div>
