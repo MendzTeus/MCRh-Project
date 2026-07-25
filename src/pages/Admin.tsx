@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useRef, useMemo, type FormEvent, type ReactNode, type ChangeEvent } from 'react';
+import { Link } from 'react-router-dom';
 import { getListingMedia, cleanListingTitle } from '../data/listingMedia';
 import { mapLocationDefaults } from '../data/locations';
 import { parseAirbnbReviews } from '../lib/parseAirbnbReviews';
@@ -327,7 +328,15 @@ function UnitCard({ unit, api, onChanged, featured, onSaveFeatured, displayTitle
         {showReviews && <div className="mt-4"><ReviewsEditor slug={unit.unitSlug} api={api} /></div>}
       </div>
 
-      <div className="mt-3 h-4"><Status s={status} /></div>
+      <div className="mt-5 pt-4 border-t border-outline-variant/20 flex items-center justify-between">
+        <Status s={status} />
+        <Link
+          to={`/admin/apartments/${unit.unitSlug}`}
+          className="font-body text-[10px] uppercase tracking-[0.15em] text-on-surface-variant hover:text-primary transition-colors"
+        >
+          Editar →
+        </Link>
+      </div>
     </div>
   );
 }

@@ -37,7 +37,14 @@ function recordFailure(ip) {
 }
 
 // Fields an admin is allowed to edit on a Unit (allowlist — nothing else gets through).
-const EDITABLE = ['unitName', 'suppliedSpecs', 'postcode', 'airbnbUrl', 'description', 'squareFeet', 'visible', 'displayOrder', 'icalAirbnbUrl', 'icalVrboUrl'];
+const EDITABLE = [
+  'unitName', 'suppliedSpecs', 'postcode', 'airbnbUrl', 'description', 'squareFeet',
+  'visible', 'displayOrder', 'icalAirbnbUrl', 'icalVrboUrl',
+  // Extended fields (migration 002_unit_extended_fields.sql)
+  'maxGuests', 'bedrooms', 'beds', 'bathrooms', 'ensuiteBathrooms', 'wcCount',
+  'floor', 'hasLift', 'displayTitle', 'seoTitle', 'metaDescription', 'internalNotes',
+  'latitude', 'longitude',
+];
 
 // ── Login: password → signed token ──────────────────────────────────
 router.post('/login', loginThrottle, (req, res) => {
@@ -75,6 +82,34 @@ router.get('/units', async (_req, res) => {
   const byUnit = {};
   ((media.data) || []).forEach((m) => { (byUnit[m.ownerSlug] ||= []).push(m); });
   res.json({ units: (units || []).map((u) => ({ ...u, photos: byUnit[u.unitSlug] || [] })) });
+});
+
+// ── Single-unit detail (for per-apartment admin page) ───────────────
+router.get('/units/:unitSlug', async (req, res) => {
+  const { unitSlug } = req.params;
+
+  const { data: unit, error } = await supabase.from('Unit').select('*').eq('unitSlug', unitSlug).single();
+  if (error || !unit) return res.status(404).json({ error: 'Unit not found' });
+
+  // Photos — defensive against pre-migration missing roomCategory column
+  let mediaRes = await supabase.from('MediaAsset')
+    .select('id, url, alt, isPrimary, displayOrder, roomCategory')
+    .eq('ownerType', 'unit').eq('ownerSlug', unitSlug).order('displayOrder');
+  if (mediaRes.error?.message?.includes('column')) {
+    mediaRes = await supabase.from('MediaAsset')
+      .select('id, url, alt, isPrimary, displayOrder')
+      .eq('ownerType', 'unit').eq('ownerSlug', unitSlug).order('displayOrder');
+  }
+  const photos = (mediaRes.data || []).map((p) => ({ ...p, roomCategory: p.roomCategory || null }));
+
+  // Review stats
+  const { data: reviews } = await supabase.from('Review')
+    .select('rating').eq('propertySlug', unitSlug).eq('published', true);
+  const reviewsCount = reviews?.length || 0;
+  const ratings = (reviews || []).map((r) => r.rating).filter((n) => n > 0);
+  const avgRating = ratings.length ? ratings.reduce((s, n) => s + n, 0) / ratings.length : null;
+
+  res.json({ unit: { ...unit, photos, reviewsCount, avgRating } });
 });
 
 // ── Edit a unit (name, specs, airbnb link, visible toggle, ...) ─────

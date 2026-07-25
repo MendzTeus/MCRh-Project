@@ -2,6 +2,7 @@ import { Routes, Route, useLocation } from 'react-router-dom';
 import Navbar from './components/Navbar';
 import Footer from './components/Footer';
 import Admin from './pages/Admin';
+import AdminApartment from './pages/AdminApartment';
 import Home from './pages/Home';
 import Properties from './pages/Properties';
 import PropertyDetail from './pages/PropertyDetail';
@@ -20,6 +21,7 @@ export default function App() {
     return (
       <Routes>
         <Route path="/admin" element={<Admin />} />
+        <Route path="/admin/apartments/:unitSlug" element={<AdminApartment />} />
       </Routes>
     );
   }
