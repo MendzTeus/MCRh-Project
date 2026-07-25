@@ -18,6 +18,27 @@ import { usePropertyPhotos } from '../hooks/usePropertyPhotos';
 import { Star } from 'lucide-react';
 const PropertyMap = lazy(() => import('../components/PropertyMap'));
 
+/** Expand Airbnb scraper abbreviations and title-case spec strings.
+ *  e.g. "3 BED · 1 BATH" → "3 Beds · 1 Bathroom" */
+function normalizeSpecs(raw: string): string {
+  const expand: Record<string, string> = {
+    bath: 'Bathroom', baths: 'Bathrooms',
+    bed: 'Bed', beds: 'Beds',
+    guest: 'Guest', guests: 'Guests',
+    bedroom: 'Bedroom', bedrooms: 'Bedrooms',
+    bathroom: 'Bathroom', bathrooms: 'Bathrooms',
+  };
+  return raw
+    .split(/\s*[·•]\s*/)
+    .map(part =>
+      part.trim().split(/\s+/).map(word => {
+        const lower = word.toLowerCase();
+        return expand[lower] ?? (word.charAt(0).toUpperCase() + word.slice(1).toLowerCase());
+      }).join(' ')
+    )
+    .join(' · ');
+}
+
 export default function CollectionDetail() {
   const { id } = useParams();
   const property = getPropertyBySlug(id) || getPropertyBySlug('chambers');
@@ -138,19 +159,19 @@ export default function CollectionDetail() {
         <div className="max-w-[1280px] mx-auto px-margin-mobile md:px-margin-desktop flex flex-wrap gap-8 md:gap-16 justify-center md:justify-start">
           <div className="flex items-center gap-3">
             <PersonStanding className="w-5 h-5 text-on-surface-variant" />
-            <span className="font-body text-label-caps text-on-surface-variant tracking-widest uppercase">{property.maxGuests} GUESTS</span>
+            <span className="font-body text-label-caps text-on-surface-variant tracking-widest">{property.maxGuests} {property.maxGuests === 1 ? 'Guest' : 'Guests'}</span>
           </div>
           <div className="flex items-center gap-3">
             <BedDouble className="w-5 h-5 text-on-surface-variant" />
-            <span className="font-body text-label-caps text-on-surface-variant tracking-widest uppercase">{property.bedrooms} BEDROOMS</span>
+            <span className="font-body text-label-caps text-on-surface-variant tracking-widest">{property.bedrooms} {property.bedrooms === 1 ? 'Bedroom' : 'Bedrooms'}</span>
           </div>
           <div className="flex items-center gap-3">
             <BedDouble className="w-5 h-5 text-on-surface-variant" />
-            <span className="font-body text-label-caps text-on-surface-variant tracking-widest uppercase">{property.beds} BEDS</span>
+            <span className="font-body text-label-caps text-on-surface-variant tracking-widest">{property.beds} {property.beds === 1 ? 'Bed' : 'Beds'}</span>
           </div>
           <div className="flex items-center gap-3">
             <Bath className="w-5 h-5 text-on-surface-variant" />
-            <span className="font-body text-label-caps text-on-surface-variant tracking-widest uppercase">{property.bathrooms} BATHROOMS</span>
+            <span className="font-body text-label-caps text-on-surface-variant tracking-widest">{property.bathrooms} {property.bathrooms === 1 ? 'Bathroom' : 'Bathrooms'}</span>
           </div>
         </div>
       </section>
@@ -212,7 +233,7 @@ export default function CollectionDetail() {
               <div className="flex justify-between items-end">
                 <div>
                   <h3 className="font-display text-headline-sm text-primary">{apt.title}</h3>
-                  <p className="font-body text-[10px] text-on-surface-variant tracking-widest uppercase">{apt.label} · {apt.specs}</p>
+                  <p className="font-body text-[10px] text-on-surface-variant tracking-widest">{apt.label} · {normalizeSpecs(apt.specs)}</p>
                 </div>
                 <span className="font-body text-label-caps text-primary border-b border-primary pb-1 group-hover:text-secondary group-hover:border-secondary transition-colors uppercase tracking-widest">
                   View Residence

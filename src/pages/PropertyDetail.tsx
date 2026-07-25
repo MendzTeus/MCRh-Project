@@ -159,7 +159,8 @@ export default function PropertyDetail() {
   useEffect(() => {
     setGuests((value) => Math.min(Math.max(1, value), specGuests));
   }, [specGuests]);
-  const plural = (n: number, word: string) => `${n} ${n === 1 ? word : `${word}s`}`;
+  const cap = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
+  const plural = (n: number, word: string) => `${n} ${n === 1 ? cap(word) : cap(word) + 's'}`;
   const specsLine = [
     plural(specGuests, 'guest'),
     specBedrooms != null && plural(specBedrooms, 'bedroom'),
@@ -201,10 +202,10 @@ export default function PropertyDetail() {
 
         <div className="relative z-10 w-full max-w-[1280px] mx-auto px-margin-mobile md:px-margin-desktop flex flex-col md:flex-row justify-between md:items-end gap-6 md:gap-gutter py-8 md:py-0 md:pb-0 bg-surface md:bg-transparent">
           <div className="w-full md:w-2/3 md:text-white">
-            <p className="hidden md:block font-body text-label-caps tracking-widest mb-4 opacity-80 uppercase">{unit.label}</p>
-            <h1 className="hidden md:block font-display text-display-lg-mobile md:text-display-lg mb-6 leading-tight">{displayTitle}</h1>
+            <p className="font-body text-[10px] md:text-label-caps tracking-widest mb-2 md:mb-4 opacity-80 uppercase text-primary md:text-white">{unit.label}</p>
+            <h1 className="font-display text-xl md:text-display-lg-mobile lg:text-display-lg mb-4 md:mb-6 leading-tight text-primary md:text-white">{displayTitle}</h1>
             <p className="hidden md:block font-body text-body-lg opacity-90 max-w-2xl">{unitDescription}</p>
-            <p className="font-body text-label-caps tracking-widest uppercase text-xs md:text-sm text-on-surface-variant md:text-white/80 mt-0 md:mt-5">{specsLine}</p>
+            <p className="font-body text-label-caps tracking-wide text-xs md:text-sm text-on-surface-variant md:text-white/80 mt-0 md:mt-5">{specsLine}</p>
           </div>
 
           <div className="relative w-full md:w-1/3 bg-surface p-8 rounded-xl shadow-2xl md:translate-y-1/4 backdrop-blur-md bg-opacity-95 border border-outline-variant/20">
