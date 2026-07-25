@@ -91,6 +91,13 @@ export default function PropertyDetail() {
   const [galleryOpen, setGalleryOpen] = useState(false);
   const [galleryIndex, setGalleryIndex] = useState(0);
   const [datesOpen, setDatesOpen] = useState(false);
+  const [expandedReviews, setExpandedReviews] = useState<Set<number>>(new Set());
+  const toggleReview = (i: number) =>
+    setExpandedReviews((prev) => {
+      const next = new Set(prev);
+      if (next.has(i)) next.delete(i); else next.add(i);
+      return next;
+    });
 
   useEffect(() => {
     // The gallery lightbox handles its own keyboard nav; this only closes the
@@ -455,30 +462,47 @@ export default function PropertyDetail() {
             </div>
           </div>
 
-          <div ref={reviewsRef} className="flex items-start overflow-x-auto gap-8 pb-8 snap-x snap-mandatory" style={{ scrollbarWidth: 'none' }}>
+          <div ref={reviewsRef} className="flex items-start overflow-x-auto gap-6 pb-8 snap-x snap-mandatory" style={{ scrollbarWidth: 'none' }}>
             {reviews.map((review, i) => {
               const initials = review.name.split(' ').map((n) => n[0]).join('').slice(0, 2);
+              const isExpanded = expandedReviews.has(i);
+              const isLong = review.text.length > 260;
               return (
-                <div key={i} className="w-[300px] md:w-[400px] shrink-0 flex flex-col min-h-[260px] bg-surface p-8 rounded-xl border border-outline-variant/20 snap-start">
-                  <div className="flex items-center gap-4 mb-6">
+                <div
+                  key={i}
+                  className={`shrink-0 snap-start w-[82vw] sm:w-[calc(50%-12px)] md:w-[360px]
+                    flex flex-col gap-4 bg-surface p-6 rounded-xl border border-outline-variant/20
+                    overflow-hidden transition-all duration-300
+                    ${isExpanded ? 'h-auto' : 'h-[280px]'}`}
+                >
+                  <div className="flex gap-1">
+                    {[...Array(5)].map((_, si) => (
+                      <Star key={si} className="w-3 h-3 fill-[#C8A45C] text-[#C8A45C]" />
+                    ))}
+                  </div>
+                  <p className={`font-body text-body-md text-on-surface-variant flex-1 leading-relaxed whitespace-normal break-words text-center ${isExpanded ? '' : 'line-clamp-[7]'}`}>"{review.text}"</p>
+                  {isLong && (
+                    <button
+                      type="button"
+                      onClick={() => toggleReview(i)}
+                      className="self-center font-body text-xs text-primary/60 hover:text-primary transition-colors shrink-0"
+                    >
+                      {isExpanded ? '↑ Show less' : '↓ Read more'}
+                    </button>
+                  )}
+                  <div className="border-t border-outline-variant/20 pt-4 flex items-center gap-3 shrink-0">
                     {review.avatarUrl ? (
-                      <img src={review.avatarUrl} alt={review.name} loading="lazy" className="w-12 h-12 rounded-full object-cover shrink-0" />
+                      <img src={review.avatarUrl} alt={review.name} loading="lazy" className="w-9 h-9 rounded-full object-cover shrink-0" />
                     ) : (
-                      <div className="w-12 h-12 rounded-full bg-primary-container flex items-center justify-center shrink-0">
-                        <span className="font-body text-label-caps text-on-primary-container font-semibold">{initials}</span>
+                      <div className="w-9 h-9 rounded-full bg-primary-container flex items-center justify-center shrink-0">
+                        <span className="font-body text-[10px] text-on-primary-container font-semibold">{initials}</span>
                       </div>
                     )}
                     <div>
-                      <h4 className="font-body text-body-md font-semibold text-primary">{review.name}</h4>
-                      <p className="font-body text-sm text-on-surface-variant">{review.date}</p>
+                      <p className="font-body text-label-caps text-primary tracking-widest uppercase text-xs font-semibold">{review.name}</p>
+                      {review.date && <p className="font-body text-xs text-on-surface-variant mt-0.5">{review.date}</p>}
                     </div>
                   </div>
-                  <div className="flex-1 flex items-center">
-                    <p className="font-display text-lg md:text-xl text-on-surface italic opacity-90 leading-relaxed whitespace-normal break-words text-center w-full line-clamp-[12]">"{review.text}"</p>
-                  </div>
-                  {review.property && (
-                    <p className="font-body text-label-caps text-on-surface-variant/60 tracking-widest uppercase mt-4">{review.property}</p>
-                  )}
                 </div>
               );
             })}

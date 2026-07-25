@@ -28,6 +28,13 @@ export default function CollectionDetail() {
   const propertyPhotos = usePropertyPhotos(property?.slug || '');
   const unitsRef = useRef<HTMLDivElement>(null);
   const reviewsCarouselRef = useRef<HTMLDivElement>(null);
+  const [expandedReviews, setExpandedReviews] = useState<Set<number>>(new Set());
+  const toggleReview = (i: number) =>
+    setExpandedReviews((prev) => {
+      const next = new Set(prev);
+      if (next.has(i)) next.delete(i); else next.add(i);
+      return next;
+    });
   // Stable array reference so <PropertyMap> doesn't tear down and rebuild the
   // Leaflet map on every re-render (e.g. while checking availability).
   const allLocations = useMapLocations();
@@ -289,30 +296,44 @@ export default function CollectionDetail() {
             className="flex overflow-x-auto gap-6 pb-4 snap-x snap-mandatory -mx-4 px-4 md:mx-0 md:px-0"
             style={{ scrollbarWidth: 'none' }}
           >
-            {reviews.map((review, i) => (
-              <div
-                key={i}
-                className="shrink-0 snap-start w-[82vw] sm:w-[calc(50%-12px)] md:w-[calc(33.333%-16px)]
-                  border border-outline-variant/30 rounded-xl p-6 bg-surface-container-lowest
-                  flex flex-col gap-4 h-[260px] overflow-hidden"
-              >
-                <div className="flex gap-1">
-                  {[...Array(5)].map((_, si) => (
-                    <Star key={si} className="w-3 h-3 fill-[#C8A45C] text-[#C8A45C]" />
-                  ))}
-                </div>
-                <p className="font-body text-body-md text-on-surface-variant flex-1 leading-relaxed whitespace-normal break-words text-center line-clamp-[7]">"{review.text}"</p>
-                <div className="border-t border-outline-variant/20 pt-4 flex items-center gap-3 shrink-0">
-                  {review.avatarUrl && (
-                    <img src={review.avatarUrl} alt={review.name} loading="lazy" className="w-9 h-9 rounded-full object-cover shrink-0" />
+            {reviews.map((review, i) => {
+              const isExpanded = expandedReviews.has(i);
+              const isLong = review.text.length > 260;
+              return (
+                <div
+                  key={i}
+                  className={`shrink-0 snap-start w-[82vw] sm:w-[calc(50%-12px)] md:w-[calc(33.333%-16px)]
+                    border border-outline-variant/30 rounded-xl p-6 bg-surface-container-lowest
+                    flex flex-col gap-4 overflow-hidden transition-all duration-300
+                    ${isExpanded ? 'h-auto' : 'h-[260px]'}`}
+                >
+                  <div className="flex gap-1">
+                    {[...Array(5)].map((_, si) => (
+                      <Star key={si} className="w-3 h-3 fill-[#C8A45C] text-[#C8A45C]" />
+                    ))}
+                  </div>
+                  <p className={`font-body text-body-md text-on-surface-variant flex-1 leading-relaxed whitespace-normal break-words text-center ${isExpanded ? '' : 'line-clamp-[7]'}`}>"{review.text}"</p>
+                  {isLong && (
+                    <button
+                      type="button"
+                      onClick={() => toggleReview(i)}
+                      className="self-center font-body text-xs text-primary/60 hover:text-primary transition-colors shrink-0"
+                    >
+                      {isExpanded ? '↑ Show less' : '↓ Read more'}
+                    </button>
                   )}
-                  <div>
-                    <p className="font-body text-label-caps text-primary tracking-widest uppercase text-xs">{review.name}</p>
-                    {review.date && <p className="font-body text-xs text-on-surface-variant mt-0.5">{review.date}</p>}
+                  <div className="border-t border-outline-variant/20 pt-4 flex items-center gap-3 shrink-0">
+                    {review.avatarUrl && (
+                      <img src={review.avatarUrl} alt={review.name} loading="lazy" className="w-9 h-9 rounded-full object-cover shrink-0" />
+                    )}
+                    <div>
+                      <p className="font-body text-label-caps text-primary tracking-widest uppercase text-xs font-semibold">{review.name}</p>
+                      {review.date && <p className="font-body text-xs text-on-surface-variant mt-0.5">{review.date}</p>}
+                    </div>
                   </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </section>
       )}
