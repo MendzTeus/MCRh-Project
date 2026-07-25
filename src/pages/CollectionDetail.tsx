@@ -159,19 +159,19 @@ export default function CollectionDetail() {
         <div className="max-w-[1280px] mx-auto px-margin-mobile md:px-margin-desktop flex flex-wrap gap-8 md:gap-16 justify-center md:justify-start">
           <div className="flex items-center gap-3">
             <PersonStanding className="w-5 h-5 text-on-surface-variant" />
-            <span className="font-body text-label-caps text-on-surface-variant tracking-widest">{property.maxGuests} {property.maxGuests === 1 ? 'Guest' : 'Guests'}</span>
+            <span className="font-body text-label-caps normal-case text-on-surface-variant tracking-widest">{property.maxGuests} {property.maxGuests === 1 ? 'Guest' : 'Guests'}</span>
           </div>
           <div className="flex items-center gap-3">
             <BedDouble className="w-5 h-5 text-on-surface-variant" />
-            <span className="font-body text-label-caps text-on-surface-variant tracking-widest">{property.bedrooms} {property.bedrooms === 1 ? 'Bedroom' : 'Bedrooms'}</span>
+            <span className="font-body text-label-caps normal-case text-on-surface-variant tracking-widest">{property.bedrooms} {property.bedrooms === 1 ? 'Bedroom' : 'Bedrooms'}</span>
           </div>
           <div className="flex items-center gap-3">
             <BedDouble className="w-5 h-5 text-on-surface-variant" />
-            <span className="font-body text-label-caps text-on-surface-variant tracking-widest">{property.beds} {property.beds === 1 ? 'Bed' : 'Beds'}</span>
+            <span className="font-body text-label-caps normal-case text-on-surface-variant tracking-widest">{property.beds} {property.beds === 1 ? 'Bed' : 'Beds'}</span>
           </div>
           <div className="flex items-center gap-3">
             <Bath className="w-5 h-5 text-on-surface-variant" />
-            <span className="font-body text-label-caps text-on-surface-variant tracking-widest">{property.bathrooms} {property.bathrooms === 1 ? 'Bathroom' : 'Bathrooms'}</span>
+            <span className="font-body text-label-caps normal-case text-on-surface-variant tracking-widest">{property.bathrooms} {property.bathrooms === 1 ? 'Bathroom' : 'Bathrooms'}</span>
           </div>
         </div>
       </section>
