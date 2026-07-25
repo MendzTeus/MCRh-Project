@@ -65,14 +65,15 @@ router.get('/units', async (_req, res) => {
     .order('displayOrder');
   if (error) return res.status(500).json({ error: error.message });
 
-  const { data: media } = await supabase
-    .from('MediaAsset')
-    .select('*')
-    .eq('ownerType', 'unit')
-    .order('displayOrder');
+  let mediaRes = await supabase.from('MediaAsset').select('*').eq('ownerType', 'unit').order('displayOrder');
+  // If roomCategory column doesn't exist yet, retry without it (pre-migration graceful degradation)
+  if (mediaRes.error?.message?.includes('column')) {
+    mediaRes = await supabase.from('MediaAsset').select('id, ownerType, ownerSlug, url, storagePath, alt, isPrimary, displayOrder, createdAt, updatedAt').eq('ownerType', 'unit').order('displayOrder');
+  }
+  const media = mediaRes;
 
   const byUnit = {};
-  (media || []).forEach((m) => { (byUnit[m.ownerSlug] ||= []).push(m); });
+  ((media.data) || []).forEach((m) => { (byUnit[m.ownerSlug] ||= []).push(m); });
   res.json({ units: (units || []).map((u) => ({ ...u, photos: byUnit[u.unitSlug] || [] })) });
 });
 
@@ -126,6 +127,7 @@ router.patch('/photos/:id', async (req, res) => {
   const { id } = req.params;
   const patch = { updatedAt: new Date().toISOString() };
   if ('alt' in (req.body || {})) patch.alt = req.body.alt;
+  if ('roomCategory' in (req.body || {})) patch.roomCategory = req.body.roomCategory || null;
 
   if (req.body && req.body.isPrimary === true) {
     // Only one primary per owner: clear the others first.

@@ -85,7 +85,9 @@ export function getListingMedia(unitSlug?: string) {
   if (!unitSlug) return undefined;
   const listing = listings.find((item) => item.unitSlug === unitSlug && !item.likelyInvalid);
   if (!listing) return undefined;
-  const gallery = uniqueImages([listing.primaryImage, ...(listing.imageUrls || [])]);
+  // Full-res imageUrls come first so uniqueImages() keeps them over the
+  // thumbnail primaryImage (which carries ?im_w=720&quality=70 params).
+  const gallery = uniqueImages([...(listing.imageUrls || []), listing.primaryImage]);
 
   return {
     title: listing.airbnbName || undefined,
@@ -151,4 +153,11 @@ export function getUnitGallery(unitSlug?: string, propertySlug?: string) {
   const unitMedia = getListingMedia(unitSlug);
   const propertyMedia = getPropertyMedia(propertySlug);
   return uniqueImages([...(unitMedia?.gallery || []), ...propertyMedia.gallery]).slice(0, 8);
+}
+
+/** Like getUnitGallery but returns ALL available photos (no 8-image cap) for the Photo Tour. */
+export function getUnitFullGallery(unitSlug?: string, propertySlug?: string): string[] {
+  const unitMedia = getListingMedia(unitSlug);
+  const propertyMedia = getPropertyMedia(propertySlug);
+  return uniqueImages([...(unitMedia?.gallery || []), ...propertyMedia.gallery]);
 }

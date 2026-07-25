@@ -15,11 +15,21 @@ router.get('/units', async (_req, res) => {
     .order('displayOrder');
   if (error) return res.status(500).json({ error: error.message });
 
-  const { data: media } = await supabase
+  // Include roomCategory when the column exists (migration 001_add_room_category.sql).
+  // Falls back to the query without it so the site keeps working before the migration runs.
+  let mediaResult = await supabase
     .from('MediaAsset')
-    .select('ownerSlug, url, alt, isPrimary, displayOrder')
+    .select('id, ownerSlug, url, alt, isPrimary, displayOrder, roomCategory')
     .eq('ownerType', 'unit')
     .order('displayOrder');
+  if (mediaResult.error?.message?.includes('column')) {
+    mediaResult = await supabase
+      .from('MediaAsset')
+      .select('id, ownerSlug, url, alt, isPrimary, displayOrder')
+      .eq('ownerType', 'unit')
+      .order('displayOrder');
+  }
+  const media = mediaResult.data;
 
   const byUnit = {};
   (media || []).forEach((m) => { (byUnit[m.ownerSlug] ||= []).push(m); });

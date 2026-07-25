@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback, useRef, type FormEvent, type ReactNod
 import { getListingMedia, cleanListingTitle } from '../data/listingMedia';
 import { mapLocationDefaults } from '../data/locations';
 import { parseAirbnbReviews } from '../lib/parseAirbnbReviews';
+import { ROOM_CATEGORIES } from '../components/PhotoTour';
 
 // Quiet Luxury signature accent
 const GOLD = '#C5A059';
@@ -9,7 +10,7 @@ const NAVY = '#101c2d';
 const TOKEN_KEY = 'mcrh_admin_token';
 
 // ── Types ───────────────────────────────────────────────────────────
-type Photo = { id: string; url: string; alt: string | null; isPrimary: boolean; displayOrder: number };
+type Photo = { id: string; url: string; alt: string | null; isPrimary: boolean; displayOrder: number; roomCategory: string | null };
 type Unit = {
   unitSlug: string; unitName: string; propertySlug: string; propertyName: string;
   suppliedSpecs: string | null; postcode: string | null; airbnbUrl: string | null;
@@ -287,9 +288,9 @@ function UnitCard({ unit, api, onChanged, featured, onSaveFeatured, displayTitle
       </div>
 
       <label className={label}>Fotos</label>
-      <div className="flex flex-wrap gap-2 items-center">
+      <div className="flex flex-wrap gap-2 items-start">
         {unit.photos.map((p, i) => (
-          <div key={p.id} style={{ display: 'contents' }}>
+          <div key={p.id} className="flex flex-col items-center gap-1">
             <PhotoTile photo={p}
               canLeft={i > 0} canRight={i < unit.photos.length - 1}
               onMove={(dir) => movePhoto(p.id, dir)}
@@ -297,6 +298,19 @@ function UnitCard({ unit, api, onChanged, featured, onSaveFeatured, displayTitle
               onSetCover={async () => { await api(`/admin/photos/${p.id}`, { method: 'PATCH', body: JSON.stringify({ isPrimary: true }) }); onChanged(); }}
               onDelete={async () => { if (confirm('Excluir esta foto?')) { await api(`/admin/photos/${p.id}`, { method: 'DELETE' }); onChanged(); } }}
             />
+            <select
+              value={p.roomCategory || ''}
+              onChange={async (e) => {
+                const roomCategory = e.target.value || null;
+                await api(`/admin/photos/${p.id}`, { method: 'PATCH', body: JSON.stringify({ roomCategory }) });
+                onChanged();
+              }}
+              className="w-24 bg-transparent border-b border-outline-variant/40 font-body text-[9px] text-on-surface-variant focus:outline-none focus:border-[#C5A059] transition-colors py-0.5"
+              title="Categoria do cômodo"
+            >
+              <option value="">— categoria —</option>
+              {ROOM_CATEGORIES.map((cat) => <option key={cat} value={cat}>{cat}</option>)}
+            </select>
           </div>
         ))}
         <button onClick={() => fileRef.current?.click()} className="w-24 h-24 border border-dashed border-outline-variant/70 text-on-surface-variant/60 font-body text-[10px] uppercase tracking-widest hover:border-[#C5A059] hover:text-[#C5A059] transition-colors shrink-0">+ Foto</button>

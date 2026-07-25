@@ -6,14 +6,14 @@ const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 // Fetch + parse an iCal feed, retrying transient failures. Airbnb intermittently
 // drops individual feed requests (throttle / timeout), so one retry with a short
 // backoff recovers most of them within the same run.
-async function fetchIcal(url, attempts = 3) {
+async function fetchIcal(url, attempts = 2) {
   let lastErr;
   for (let attempt = 1; attempt <= attempts; attempt++) {
     try {
       return await ical.async.fromURL(url);
     } catch (err) {
       lastErr = err;
-      if (attempt < attempts) await sleep(2000 * attempt);
+      if (attempt < attempts) await sleep(2000);
     }
   }
   throw lastErr;

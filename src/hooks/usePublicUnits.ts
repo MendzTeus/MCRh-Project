@@ -10,7 +10,7 @@ export type PublicUnit = {
   airbnbUrl: string | null;
   description: string | null;
   primaryImage: string | null;
-  photos: { url: string; alt: string | null; isPrimary: boolean }[];
+  photos: { id: string; url: string; alt: string | null; isPrimary: boolean; displayOrder: number; roomCategory: string | null }[];
 };
 
 export type PublicUnitsState = {

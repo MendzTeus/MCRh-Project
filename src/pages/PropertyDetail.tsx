@@ -1,8 +1,9 @@
 import { useState, useRef, useEffect, useMemo } from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams, useSearchParams } from 'react-router-dom';
 import { Helmet } from 'react-helmet-async';
-import { Star, ChevronDown, BedDouble, Wifi, ChefHat, Coffee, Snowflake, Bath, ArrowRight, ArrowLeft, X, MessageCircle, Mail } from 'lucide-react';
+import { Star, ChevronDown, BedDouble, Wifi, ChefHat, Coffee, Snowflake, Bath, ArrowRight, ArrowLeft, X, MessageCircle, Mail, Images } from 'lucide-react';
 import Lightbox from '../components/Lightbox';
+import PhotoTour, { type TourPhoto } from '../components/PhotoTour';
 import { getReviewsForProperty } from '../data/reviews';
 import { useReviews } from '../hooks/useReviews';
 import { getLocationsForProperty } from '../data/locations';
@@ -11,7 +12,7 @@ import PropertyMap from '../components/PropertyMap';
 import DateRangePicker, { formatShortDate } from '../components/DateRangePicker';
 import MediaImage from '../components/MediaImage';
 import { getInventoryUnit } from '../data/airbnbInventory';
-import { getListingMedia, getUnitGallery, getUnitSpecs, cleanListingTitle, isListingActive } from '../data/listingMedia';
+import { getListingMedia, getUnitGallery, getUnitFullGallery, getUnitSpecs, cleanListingTitle, isListingActive } from '../data/listingMedia';
 import { getPropertyBySlug, getUnitBySlug, type PropertyUnit } from '../data/properties';
 import { useClickOutside } from '../hooks/useClickOutside';
 import { useUnitBlockedDates } from '../hooks/useUnitBlockedDates';
@@ -60,6 +61,10 @@ function withBookingParams(base: string, params: Record<string, string | number>
 
 export default function PropertyDetail() {
   const { propertySlug, id } = useParams();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const photoTourOpen = searchParams.get('modal') === 'photo-tour';
+  const openPhotoTour = () => setSearchParams((p) => { const n = new URLSearchParams(p); n.set('modal', 'photo-tour'); return n; });
+  const closePhotoTour = () => setSearchParams((p) => { const n = new URLSearchParams(p); n.delete('modal'); return n; });
   const routedProperty = getPropertyBySlug(propertySlug);
   const routedUnit = routedProperty?.units.find((item) => item.slug === id);
   const legacyUnit = getUnitBySlug(id);
@@ -77,6 +82,7 @@ export default function PropertyDetail() {
     : undefined;
   const unit = routedUnit || legacyUnit?.unit || inventoryBackedUnit || property?.units[0];
   const staticGallery = getUnitGallery(unit?.slug, property?.slug);
+  const fullStaticGallery = getUnitFullGallery(unit?.slug, property?.slug);
   // Reserved dates (from the synced iCal) for this unit, to grey out the calendar.
   const blockedDates = useUnitBlockedDates(inventoryUnit?.unitSlug || id);
   // Booking links. VRBO uses the per-unit listing URL (not the iCal feed), so the
@@ -91,6 +97,19 @@ export default function PropertyDetail() {
   // Admin-uploaded photos override the scraped/static gallery when present.
   const adminPhotos = adminUnit?.photos || [];
   const unitGallery = adminPhotos.length > 0 ? adminPhotos.map((p) => p.url) : staticGallery;
+  // Full gallery for Photo Tour (all photos, not capped at 8)
+  const fullGallery = adminPhotos.length > 0 ? adminPhotos.map((p) => p.url) : fullStaticGallery;
+  // Build TourPhoto[] for Photo Tour — admin photos carry roomCategory; Airbnb photos default to "Property"
+  const tourPhotos: TourPhoto[] = fullGallery.map((src, i) => {
+    const adminPhoto = adminPhotos.find((p) => p.url === src);
+    return {
+      id: adminPhoto?.id || `photo-${i}`,
+      src,
+      alt: adminPhoto?.alt || `${unit?.title || 'Apartment'} — Photo ${i + 1}`,
+      roomCategory: adminPhoto?.roomCategory || 'Property',
+      displayOrder: adminPhoto?.displayOrder ?? i,
+    };
+  });
   const whatsappNumber = text(site.content, 'contact.whatsapp', '').replace(/\D/g, '');
   const contactEmail = text(site.content, 'contact.email', 'hello@mcrh.co.uk');
   // Reviews are stored and managed (in /admin) per page-level property slug,
@@ -461,10 +480,11 @@ export default function PropertyDetail() {
           </div>
           <div className="flex justify-end mt-4">
             <button
-              onClick={() => { setGalleryIndex(0); setGalleryOpen(true); }}
-              className="flex items-center gap-2 text-primary font-body text-label-caps tracking-widest hover:opacity-70 transition-opacity uppercase border border-outline-variant/50 px-4 py-2 rounded-lg text-xs"
+              onClick={openPhotoTour}
+              className="flex items-center gap-2 text-primary font-body text-xs font-semibold tracking-wide hover:opacity-70 transition-opacity border border-outline-variant/50 px-4 py-2 rounded-lg"
             >
-              View All {unitGallery.length} Photos <ArrowRight className="w-3 h-3" />
+              <Images className="w-3.5 h-3.5" />
+              Photo Tour · {fullGallery.length} photos
             </button>
           </div>
         </section>
@@ -597,9 +617,14 @@ export default function PropertyDetail() {
         </div>
       )}
 
-      {/* Gallery Lightbox */}
+      {/* Gallery Lightbox (hero grid click) */}
       {galleryOpen && unitGallery.length > 0 && (
         <Lightbox images={unitGallery} startIndex={galleryIndex} alt={unit.title} onClose={() => setGalleryOpen(false)} />
+      )}
+
+      {/* Photo Tour overlay */}
+      {photoTourOpen && tourPhotos.length > 0 && (
+        <PhotoTour photos={tourPhotos} unitTitle={displayTitle} onClose={closePhotoTour} />
       )}
     </div>
   );
