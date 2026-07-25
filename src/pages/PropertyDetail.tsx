@@ -180,6 +180,8 @@ export default function PropertyDetail() {
   const specBaths = scrapedSpecs?.baths ?? property.bathrooms;
   // Admin description overrides the auto-generated fallback.
   const unitDescription = adminUnit?.description || inventoryBackedUnit?.description || unit?.description || '';
+  // Admin suppliedSpecs (Supabase) overrides both the static inventory and the Airbnb scrape.
+  const adminSpecs = adminUnit?.suppliedSpecs || null;
   const reviewsCount = scrapedSpecs?.reviewsCount ?? null;
   // Keep the selected guest count within the unit's real capacity.
   useEffect(() => {
@@ -187,12 +189,14 @@ export default function PropertyDetail() {
   }, [specGuests]);
   const cap = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
   const plural = (n: number, word: string) => `${n} ${n === 1 ? cap(word) : cap(word) + 's'}`;
-  const specsLine = [
-    plural(specGuests, 'guest'),
-    specBedrooms != null && plural(specBedrooms, 'bedroom'),
-    specBeds != null && plural(specBeds, 'bed'),
-    specBaths != null && plural(specBaths, 'bathroom'),
-  ].filter(Boolean).join(' · ');
+  const specsLine = adminSpecs
+    ? normalizeSpecs(adminSpecs)
+    : [
+        plural(specGuests, 'guest'),
+        specBedrooms != null && plural(specBedrooms, 'bedroom'),
+        specBeds != null && plural(specBeds, 'bed'),
+        specBaths != null && plural(specBaths, 'bathroom'),
+      ].filter(Boolean).join(' · ');
 
   // Neighborhood map data — the property's own pin(s) plus the nearest landmarks.
   // Memoised so the Leaflet map isn't torn down and rebuilt on every re-render.
@@ -400,7 +404,7 @@ export default function PropertyDetail() {
             <div className="font-body text-on-surface-variant text-body-lg space-y-6">
               <p>{unitDescription}</p>
               <p>{property.description}</p>
-              <p>{normalizeSpecs(unit.specs)}{unit.squareFeet ? ` / ${unit.squareFeet}` : ''}</p>
+              <p>{normalizeSpecs(adminSpecs || unit.specs)}{unit.squareFeet ? ` / ${unit.squareFeet}` : ''}</p>
             </div>
           </div>
           
