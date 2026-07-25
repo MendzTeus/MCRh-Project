@@ -185,20 +185,21 @@ export default function PropertyDetail() {
         {unitGallery[0] && <meta property="og:image" content={unitGallery[0]} />}
       </Helmet>
 
-      <section className="relative w-full min-h-[600px] md:h-[921px] flex items-end pb-section-gap">
-        <div className="absolute inset-0 z-0 bg-surface-dim">
+      {/* On mobile the image is an in-flow block so the booking card flows naturally
+          beneath it. On desktop the image goes absolute-inset and the content
+          overlays the bottom of the hero with the floating card (translate-y-1/4). */}
+      <section className="relative w-full md:h-[921px] md:flex md:items-end md:pb-section-gap">
+        <div className="relative md:absolute md:inset-0 z-0 bg-surface-dim h-[55vh] min-h-[360px] md:h-full overflow-hidden">
           <MediaImage src={unitGallery[0]} propertySlug={property.slug} alt={unit.title} loading="eager" />
           <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent"></div>
         </div>
 
-        <div className="relative z-10 w-full max-w-[1280px] mx-auto px-margin-mobile md:px-margin-desktop flex flex-col md:flex-row justify-between items-end gap-gutter pb-12 md:pb-0">
-          <div className="text-white w-full md:w-2/3">
-            {/* On mobile only the specs line is shown — the title block is revealed
-                on desktop where layout space allows it to breathe. */}
+        <div className="relative z-10 w-full max-w-[1280px] mx-auto px-margin-mobile md:px-margin-desktop flex flex-col md:flex-row justify-between md:items-end gap-6 md:gap-gutter py-8 md:py-0 md:pb-0 bg-surface md:bg-transparent">
+          <div className="w-full md:w-2/3 md:text-white">
             <p className="hidden md:block font-body text-label-caps tracking-widest mb-4 opacity-80 uppercase">{unit.label}</p>
             <h1 className="hidden md:block font-display text-display-lg-mobile md:text-display-lg mb-6 leading-tight">{displayTitle}</h1>
             <p className="hidden md:block font-body text-body-lg opacity-90 max-w-2xl">{unitDescription}</p>
-            <p className="font-body text-label-caps tracking-widest uppercase text-xs md:text-sm text-white/80 mt-2 md:mt-5">{specsLine}</p>
+            <p className="font-body text-label-caps tracking-widest uppercase text-xs md:text-sm text-on-surface-variant md:text-white/80 mt-0 md:mt-5">{specsLine}</p>
           </div>
 
           <div className="relative w-full md:w-1/3 bg-surface p-8 rounded-xl shadow-2xl md:translate-y-1/4 backdrop-blur-md bg-opacity-95 border border-outline-variant/20">
