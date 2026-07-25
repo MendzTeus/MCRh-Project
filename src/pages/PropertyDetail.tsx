@@ -205,7 +205,7 @@ export default function PropertyDetail() {
             <p className="font-body text-[10px] md:text-label-caps tracking-widest mb-2 md:mb-4 opacity-80 uppercase text-primary md:text-white">{unit.label}</p>
             <h1 className="font-display text-xl md:text-display-lg-mobile lg:text-display-lg mb-4 md:mb-6 leading-tight text-primary md:text-white">{displayTitle}</h1>
             <p className="hidden md:block font-body text-body-lg opacity-90 max-w-2xl">{unitDescription}</p>
-            <p className="font-body text-label-caps normal-case tracking-wide text-xs md:text-sm text-on-surface-variant md:text-white/80 mt-0 md:mt-5">{specsLine}</p>
+            <p className="font-body text-xs md:text-sm font-semibold tracking-wide text-on-surface-variant md:text-white/80 mt-0 md:mt-5">{specsLine}</p>
           </div>
 
           <div className="relative w-full md:w-1/3 bg-surface p-8 rounded-xl shadow-2xl md:translate-y-1/4 backdrop-blur-md bg-opacity-95 border border-outline-variant/20">
