@@ -110,8 +110,8 @@ const DragTile: React.FC<DragTileProps> = ({
   return (
     <div
       draggable
-      onDragStart={onDragStart}
-      onDragEnd={onDragEnd}
+      onDragStart={(e) => { e.dataTransfer.setData('text/plain', url); e.dataTransfer.effectAllowed = 'move'; onDragStart(); }}
+      onDragEnd={(e) => { e.dataTransfer.clearData(); onDragEnd(); }}
       className={`relative shrink-0 overflow-hidden cursor-grab active:cursor-grabbing select-none transition-opacity ${isDragging ? 'opacity-30' : ''}`}
       style={{ width: 180, height: 135, border: '1px solid rgba(197,198,205,0.4)' }}
     >
