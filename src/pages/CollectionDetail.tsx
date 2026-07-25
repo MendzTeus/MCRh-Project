@@ -1,4 +1,4 @@
-import { BedDouble, Bath, PersonStanding } from 'lucide-react';
+import { BedDouble, Bath, PersonStanding, ArrowLeft, ArrowRight } from 'lucide-react';
 import { Link, useParams } from 'react-router-dom';
 import { Helmet } from 'react-helmet-async';
 import { lazy, Suspense, useState, useRef, useMemo } from 'react';
@@ -27,6 +27,7 @@ export default function CollectionDetail() {
   const publicUnits = usePublicUnits();
   const propertyPhotos = usePropertyPhotos(property?.slug || '');
   const unitsRef = useRef<HTMLDivElement>(null);
+  const reviewsCarouselRef = useRef<HTMLDivElement>(null);
   // Stable array reference so <PropertyMap> doesn't tear down and rebuild the
   // Leaflet map on every re-render (e.g. while checking availability).
   const allLocations = useMapLocations();
@@ -248,31 +249,60 @@ export default function CollectionDetail() {
         </div>
       </section>
 
-      {/* Reviews Section */}
+      {/* Reviews Section — horizontal carousel */}
       {reviews.length > 0 && (
         <section className="py-section-gap px-margin-mobile md:px-margin-desktop max-w-[1280px] mx-auto border-t border-outline-variant/30">
-          <div className="mb-10 flex items-end justify-between">
+          <div className="mb-10 flex items-end justify-between gap-4">
             <div>
               <span className="font-body text-label-caps text-secondary mb-2 block tracking-widest uppercase">Guest Reviews</span>
               <h2 className="font-display text-headline-md text-primary">What Guests Say</h2>
             </div>
-            <div className="flex items-center gap-2">
-              {[...Array(5)].map((_, i) => (
-                <Star key={i} className="w-4 h-4 fill-[#C8A45C] text-[#C8A45C]" />
-              ))}
-              <span className="font-body text-label-caps text-on-surface-variant tracking-widest uppercase ml-2">5.0</span>
+            <div className="flex items-center gap-4 shrink-0">
+              <div className="hidden sm:flex items-center gap-1.5">
+                {[...Array(5)].map((_, i) => (
+                  <Star key={i} className="w-4 h-4 fill-[#C8A45C] text-[#C8A45C]" />
+                ))}
+                <span className="font-body text-label-caps text-on-surface-variant tracking-widest uppercase ml-1">5.0</span>
+              </div>
+              <div className="flex gap-2">
+                <button
+                  type="button"
+                  aria-label="Previous review"
+                  onClick={() => reviewsCarouselRef.current?.scrollBy({ left: -340, behavior: 'smooth' })}
+                  className="w-10 h-10 rounded-full border border-outline-variant flex items-center justify-center hover:border-primary hover:bg-surface-container transition-all"
+                >
+                  <ArrowLeft className="w-5 h-5 text-primary" />
+                </button>
+                <button
+                  type="button"
+                  aria-label="Next review"
+                  onClick={() => reviewsCarouselRef.current?.scrollBy({ left: 340, behavior: 'smooth' })}
+                  className="w-10 h-10 rounded-full border border-outline-variant flex items-center justify-center hover:border-primary hover:bg-surface-container transition-all"
+                >
+                  <ArrowRight className="w-5 h-5 text-primary" />
+                </button>
+              </div>
             </div>
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-3 items-start gap-8">
+          <div
+            ref={reviewsCarouselRef}
+            className="flex overflow-x-auto gap-6 pb-4 snap-x snap-mandatory -mx-4 px-4 md:mx-0 md:px-0"
+            style={{ scrollbarWidth: 'none' }}
+          >
             {reviews.map((review, i) => (
-              <div key={i} className="border border-outline-variant/30 rounded-xl p-6 bg-surface-container-lowest flex flex-col gap-4 min-h-[200px]">
+              <div
+                key={i}
+                className="shrink-0 snap-start w-[82vw] sm:w-[calc(50%-12px)] md:w-[calc(33.333%-16px)]
+                  border border-outline-variant/30 rounded-xl p-6 bg-surface-container-lowest
+                  flex flex-col gap-4 h-[260px] overflow-hidden"
+              >
                 <div className="flex gap-1">
                   {[...Array(5)].map((_, si) => (
                     <Star key={si} className="w-3 h-3 fill-[#C8A45C] text-[#C8A45C]" />
                   ))}
                 </div>
-                <p className="font-body text-body-md text-on-surface-variant flex-1 leading-relaxed whitespace-normal break-words text-center line-clamp-[12]">"{review.text}"</p>
-                <div className="border-t border-outline-variant/20 pt-4 flex items-center gap-3">
+                <p className="font-body text-body-md text-on-surface-variant flex-1 leading-relaxed whitespace-normal break-words text-center line-clamp-[7]">"{review.text}"</p>
+                <div className="border-t border-outline-variant/20 pt-4 flex items-center gap-3 shrink-0">
                   {review.avatarUrl && (
                     <img src={review.avatarUrl} alt={review.name} loading="lazy" className="w-9 h-9 rounded-full object-cover shrink-0" />
                   )}

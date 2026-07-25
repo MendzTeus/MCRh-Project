@@ -11,7 +11,14 @@ export default function PhotoGallery({ images, alt = 'Property photo' }: PhotoGa
 
   if (!images.length) return null;
 
-  const [primary, ...rest] = images;
+  // Pad to 5 by cycling existing images so no grid cell is ever blank.
+  // Only cycles when there are at least 2 images (1 image → single full-width hero).
+  const displayImages =
+    images.length >= 2 && images.length < 5
+      ? Array.from({ length: 5 }, (_, i) => images[i % images.length])
+      : images;
+
+  const [primary, ...rest] = displayImages;
 
   return (
     <>

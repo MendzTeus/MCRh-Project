@@ -17,6 +17,17 @@ function fixLeafletIcons(L: typeof import('leaflet')) {
   });
 }
 
+/** Walking time in minutes between two coords assuming 5 km/h pace. */
+function walkingMins(from: { lat: number; lng: number }, to: { lat: number; lng: number }): number {
+  const R = 6371000;
+  const dLat = ((to.lat - from.lat) * Math.PI) / 180;
+  const dLng = ((to.lng - from.lng) * Math.PI) / 180;
+  const lat1 = (from.lat * Math.PI) / 180;
+  const lat2 = (to.lat * Math.PI) / 180;
+  const h = Math.sin(dLat / 2) ** 2 + Math.sin(dLng / 2) ** 2 * Math.cos(lat1) * Math.cos(lat2);
+  return Math.max(1, Math.round((2 * R * Math.asin(Math.sqrt(h))) / (5000 / 60)));
+}
+
 interface PropertyMapProps {
   locations?: MapLocation[];
   height?: string;
@@ -31,13 +42,31 @@ interface PropertyMapProps {
   /** Nearby landmarks to plot with a distinct pin style (used on the per-property
    *  "Neighborhood" map). Included in the fitted bounds so they stay in view. */
   pois?: Poi[];
+  /** ID of the currently selected location — darkens the matching area circle and
+   *  lightens the rest (used on the "Discover Our Locations" map). */
+  selectedLocationId?: number;
 }
 
-export default function PropertyMap({ locations = mapLocations, height = '100%', className = '', highlightedSlug, focusedCoords, areaCircles = false, pois = [] }: PropertyMapProps) {
+export default function PropertyMap({
+  locations = mapLocations,
+  height = '100%',
+  className = '',
+  highlightedSlug: _highlightedSlug,
+  focusedCoords,
+  areaCircles = false,
+  pois = [],
+  selectedLocationId,
+}: PropertyMapProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<LeafletMap | null>(null);
   const markersRef = useRef<Layer[]>([]);
   const [activeLocation, setActiveLocation] = useState<MapLocation | null>(null);
+  // Ref lets the async init closure read the latest selectedLocationId without
+  // being in the effect's dep array (which would rebuild the map on every click).
+  const selectedLocationIdRef = useRef(selectedLocationId);
+  useEffect(() => {
+    selectedLocationIdRef.current = selectedLocationId;
+  }, [selectedLocationId]);
 
   useEffect(() => {
     if (!containerRef.current || mapRef.current) return;
@@ -62,7 +91,7 @@ export default function PropertyMap({ locations = mapLocations, height = '100%',
         maxZoom: 19,
       }).addTo(map);
 
-      // Custom dark pin icon
+      // Standard circular pin for the regular properties map
       const pinIcon = (active = false) =>
         L.divIcon({
           className: '',
@@ -80,20 +109,55 @@ export default function PropertyMap({ locations = mapLocations, height = '100%',
           iconAnchor: [active ? 9 : 7, active ? 9 : 7],
         });
 
+      // Diamond-shaped pin for the Neighborhood map so the rental is immediately
+      // distinct from the round POI dots guests might otherwise confuse it with.
+      const neighborhoodPropertyIcon = L.divIcon({
+        className: '',
+        html: `<div style="
+          width:16px;height:16px;
+          background:#000;
+          transform:rotate(45deg);
+          border:2.5px solid #fff;
+          box-shadow:0 2px 10px rgba(0,0,0,0.5);
+        "></div>`,
+        iconSize: [20, 20],
+        iconAnchor: [10, 10],
+      });
+
+      // In neighborhood mode (pois present + no area circles) use the diamond pin
+      const useNeighborhoodPin = !areaCircles && pois.length > 0;
+
+      // Nearby landmarks — a distinct blue pin so guests don't mistake a POI for a rental
+      const poiIcon = L.divIcon({
+        className: '',
+        html: `<div style="
+          width:11px;height:11px;background:#2563eb;border-radius:50%;
+          border:2px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,0.35);
+        "></div>`,
+        iconSize: [11, 11],
+        iconAnchor: [5.5, 5.5],
+      });
+
+      const propertyCenter = locations[0]?.coordinates;
+
       locations.forEach((loc) => {
         const layer = areaCircles
           ? L.circle([loc.coordinates.lat, loc.coordinates.lng], {
-              radius: 320,
+              // Smaller circles (180 m) so the map stays legible at city scale;
+              // the selected circle is darkened via a separate useEffect.
+              radius: 180,
               color: '#000',
               weight: 1,
-              opacity: 0.45,
+              opacity: 0.2,
               fillColor: '#000',
-              fillOpacity: 0.1,
+              fillOpacity: 0.06,
             })
-          : L.marker([loc.coordinates.lat, loc.coordinates.lng], { icon: pinIcon() });
+          : L.marker([loc.coordinates.lat, loc.coordinates.lng], {
+              icon: useNeighborhoodPin ? neighborhoodPropertyIcon : pinIcon(),
+            });
 
         layer
-          .addTo(map)
+          .addTo(map!)
           .bindPopup(
             `<div style="font-family:sans-serif;min-width:140px">
               <div style="font-weight:600;font-size:14px;margin-bottom:2px">${loc.name}</div>
@@ -105,10 +169,23 @@ export default function PropertyMap({ locations = mapLocations, height = '100%',
 
         layer.on('click', () => {
           setActiveLocation(loc);
-          // Re-render marker icons to reflect the active pin (circles need no icon swap).
-          if (!areaCircles) {
+          if (areaCircles) {
+            // Darken clicked circle, fade the rest
             markersRef.current.forEach((m, i) => {
-              (m as import('leaflet').Marker).setIcon(pinIcon(locations[i]?.id === loc.id));
+              const isSelected = locations[i]?.id === loc.id;
+              (m as import('leaflet').Circle).setStyle({
+                fillOpacity: isSelected ? 0.28 : 0.06,
+                opacity: isSelected ? 0.65 : 0.2,
+                weight: isSelected ? 2 : 1,
+              });
+            });
+          } else {
+            markersRef.current.forEach((m, i) => {
+              (m as import('leaflet').Marker).setIcon(
+                useNeighborhoodPin
+                  ? neighborhoodPropertyIcon
+                  : pinIcon(locations[i]?.id === loc.id),
+              );
             });
           }
         });
@@ -116,41 +193,49 @@ export default function PropertyMap({ locations = mapLocations, height = '100%',
         markersRef.current.push(layer);
       });
 
-      // Nearby landmarks — a distinct blue pin so guests don't mistake a POI for a
-      // rental. Rendered beneath property pins via a negative z-index offset.
-      const poiIcon = L.divIcon({
-        className: '',
-        html: `<div style="
-          width:11px;height:11px;background:#2563eb;border-radius:50%;
-          border:2px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,0.35);
-        "></div>`,
-        iconSize: [11, 11],
-        iconAnchor: [5.5, 5.5],
-      });
+      // Apply initial selection highlight once all circles are created
+      if (areaCircles) {
+        markersRef.current.forEach((layer, i) => {
+          if (locations[i]?.id === selectedLocationIdRef.current) {
+            (layer as import('leaflet').Circle).setStyle({
+              fillOpacity: 0.28,
+              opacity: 0.65,
+              weight: 2,
+            });
+          }
+        });
+      }
+
+      // POI landmarks — blue dots with tooltip showing name, category, walking time
       pois.forEach((poi) => {
+        const mins = propertyCenter ? walkingMins(propertyCenter, poi.coordinates) : null;
+        const tooltipContent = `<div style="font-family:sans-serif;font-size:12px;padding:2px 4px;text-align:left;line-height:1.4">
+          <div style="font-weight:600;margin-bottom:1px">${poi.name}</div>
+          <div style="color:#555;font-size:11px">${poi.category}${mins ? ` · ${mins} min walk` : ''}</div>
+        </div>`;
         L.marker([poi.coordinates.lat, poi.coordinates.lng], { icon: poiIcon, zIndexOffset: -500 })
           .addTo(map!)
-          .bindTooltip(poi.name, { direction: 'top', offset: [0, -6] })
+          .bindTooltip(tooltipContent, { direction: 'auto', offset: [0, -8], opacity: 1 })
           .bindPopup(
-            `<div style="font-family:sans-serif;min-width:120px">
+            `<div style="font-family:sans-serif;min-width:140px">
               <div style="font-weight:600;font-size:13px;margin-bottom:2px">${poi.name}</div>
-              <div style="font-size:12px;color:#666">${poi.postcode}</div>
+              <div style="font-size:12px;color:#666">${poi.category}${mins ? ` · ${mins} min walk` : ''}</div>
+              <div style="font-size:11px;color:#999;margin-top:2px">${poi.postcode}</div>
             </div>`,
             { closeButton: false, offset: [0, -6] }
           );
       });
 
       // Frame the relevant pins: a single location (with no POIs) gets a close-up;
-      // otherwise fit every property pin and nearby landmark so the map focuses on
-      // its own context.
+      // otherwise fit every property pin and nearby landmark in view.
       const framePoints: [number, number][] = [
         ...locations.map((loc) => [loc.coordinates.lat, loc.coordinates.lng] as [number, number]),
         ...pois.map((poi) => [poi.coordinates.lat, poi.coordinates.lng] as [number, number]),
       ];
       if (framePoints.length === 1) {
-        map.setView(framePoints[0], 15);
+        map.setView(framePoints[0], 16);
       } else if (framePoints.length > 1) {
-        map.fitBounds(L.latLngBounds(framePoints), { padding: [48, 48], maxZoom: 15 });
+        map.fitBounds(L.latLngBounds(framePoints), { padding: [48, 48], maxZoom: 16 });
       }
 
       mapRef.current = map;
@@ -166,23 +251,34 @@ export default function PropertyMap({ locations = mapLocations, height = '100%',
     };
     // `pois` is intentionally omitted: it's rendered once on init and, for the
     // callers that pass it, is memoised. Including the default `[]` here would make
-    // a new reference every render, tearing down and rebuilding the whole map
-    // (which cancelled the focus flyTo mid-animation).
+    // a new reference every render, tearing down and rebuilding the whole map.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [locations]);
 
-  // Fly to location when activeLocation changes externally — not needed but could be used
   useEffect(() => {
     if (!mapRef.current || !activeLocation) return;
-    mapRef.current.flyTo([activeLocation.coordinates.lat, activeLocation.coordinates.lng], 15, { duration: 0.8 });
+    mapRef.current.flyTo([activeLocation.coordinates.lat, activeLocation.coordinates.lng], 16, { duration: 0.8 });
   }, [activeLocation]);
 
-  // Fly to coordinates supplied by a parent (e.g. a card click) so selecting a
-  // location zooms the map to it instead of navigating away.
   useEffect(() => {
     if (!mapRef.current || !focusedCoords) return;
-    mapRef.current.flyTo([focusedCoords.lat, focusedCoords.lng], 15, { duration: 0.8 });
+    mapRef.current.flyTo([focusedCoords.lat, focusedCoords.lng], 16, { duration: 0.8 });
   }, [focusedCoords]);
+
+  // Sync circle highlight when the parent updates selectedLocationId (card click)
+  useEffect(() => {
+    if (!areaCircles || !mapRef.current) return;
+    markersRef.current.forEach((layer, i) => {
+      const isSelected = locations[i]?.id === selectedLocationId;
+      (layer as import('leaflet').Circle).setStyle({
+        color: '#000',
+        fillColor: '#000',
+        fillOpacity: isSelected ? 0.28 : 0.06,
+        opacity: isSelected ? 0.65 : 0.2,
+        weight: isSelected ? 2 : 1,
+      });
+    });
+  }, [selectedLocationId, areaCircles, locations]);
 
   return (
     <div className={`relative isolate ${className}`} style={{ height }}>

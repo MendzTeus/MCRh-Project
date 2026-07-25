@@ -307,7 +307,7 @@ export default function Home() {
           
           <div className="w-full lg:w-1/2 h-[500px] lg:h-full rounded-2xl overflow-hidden relative border border-outline-variant/30">
             <Suspense fallback={<div className="w-full h-full bg-surface-dim flex items-center justify-center"><span className="font-body text-label-caps text-on-surface-variant/50 tracking-widest uppercase">Loading map…</span></div>}>
-              <PropertyMap locations={groupedMapLocations} height="100%" focusedCoords={focusedCoords} areaCircles />
+              <PropertyMap locations={groupedMapLocations} height="100%" focusedCoords={focusedCoords} areaCircles selectedLocationId={selectedLocationId} />
             </Suspense>
           </div>
         </div>

@@ -186,10 +186,12 @@ export default function PropertyDetail() {
 
         <div className="relative z-10 w-full max-w-[1280px] mx-auto px-margin-mobile md:px-margin-desktop flex flex-col md:flex-row justify-between items-end gap-gutter pb-12 md:pb-0">
           <div className="text-white w-full md:w-2/3">
-            <p className="font-body text-label-caps tracking-widest mb-4 opacity-80 uppercase">{unit.label}</p>
-            <h1 className="font-display text-display-lg-mobile md:text-display-lg mb-6 leading-tight">{displayTitle}</h1>
-            <p className="font-body text-body-lg opacity-90 max-w-2xl">{unitDescription}</p>
-            <p className="font-body text-label-caps tracking-widest uppercase text-sm text-white/80 mt-5">{specsLine}</p>
+            {/* On mobile only the specs line is shown — the title block is revealed
+                on desktop where layout space allows it to breathe. */}
+            <p className="hidden md:block font-body text-label-caps tracking-widest mb-4 opacity-80 uppercase">{unit.label}</p>
+            <h1 className="hidden md:block font-display text-display-lg-mobile md:text-display-lg mb-6 leading-tight">{displayTitle}</h1>
+            <p className="hidden md:block font-body text-body-lg opacity-90 max-w-2xl">{unitDescription}</p>
+            <p className="font-body text-label-caps tracking-widest uppercase text-xs md:text-sm text-white/80 mt-2 md:mt-5">{specsLine}</p>
           </div>
 
           <div className="relative w-full md:w-1/3 bg-surface p-8 rounded-xl shadow-2xl md:translate-y-1/4 backdrop-blur-md bg-opacity-95 border border-outline-variant/20">
