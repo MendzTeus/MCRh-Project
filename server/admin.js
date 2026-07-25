@@ -188,6 +188,44 @@ router.post('/units/:unitSlug/photos/reorder', async (req, res) => {
   res.json({ ok: true });
 });
 
+// ── Batch save Airbnb URL references with category + order ──────────
+router.post('/units/:unitSlug/photos/references', async (req, res) => {
+  const { unitSlug } = req.params;
+  const { assignments } = req.body;
+  if (!Array.isArray(assignments)) return res.status(400).json({ error: 'assignments must be an array' });
+
+  const { data: existing } = await supabase
+    .from('MediaAsset').select('id, url').eq('ownerType', 'unit').eq('ownerSlug', unitSlug);
+  const byUrl = new Map((existing || []).map((e) => [e.url, e.id]));
+
+  const toInsert = [];
+  const toUpdate = [];
+  for (const { url, roomCategory, displayOrder, alt } of assignments) {
+    if (!url) continue;
+    const id = byUrl.get(url);
+    if (id) {
+      toUpdate.push({ id, roomCategory: roomCategory || null, displayOrder: displayOrder ?? 0 });
+    } else {
+      toInsert.push({
+        ownerType: 'unit', ownerSlug: unitSlug,
+        url, alt: alt || null,
+        roomCategory: roomCategory || null,
+        displayOrder: displayOrder ?? 0,
+        isPrimary: false,
+      });
+    }
+  }
+
+  if (toInsert.length > 0) {
+    const { error } = await supabase.from('MediaAsset').insert(toInsert);
+    if (error) return res.status(500).json({ error: error.message });
+  }
+  await Promise.all(toUpdate.map(({ id, roomCategory, displayOrder }) =>
+    supabase.from('MediaAsset').update({ roomCategory, displayOrder }).eq('id', id)
+  ));
+  res.json({ ok: true, inserted: toInsert.length, updated: toUpdate.length });
+});
+
 // ── Delete a photo (Storage object + row) ───────────────────────────
 router.delete('/photos/:id', async (req, res) => {
   const { data: photo } = await supabase.from('MediaAsset').select('storagePath').eq('id', req.params.id).single();
