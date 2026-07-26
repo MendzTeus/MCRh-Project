@@ -21,7 +21,7 @@ export function AdminButton({
       type={type || 'button'}
       onClick={onClick}
       disabled={disabled}
-      className="px-6 py-2.5 font-body text-[11px] uppercase tracking-[0.15em] transition-colors disabled:opacity-40"
+      className="px-6 py-2.5 rounded-lg font-body text-[11px] uppercase tracking-[0.15em] transition-colors disabled:opacity-40"
       style={{ border: `1px solid ${c}`, color: c, background: 'transparent' }}
       onMouseEnter={(e) => { if (!disabled) { e.currentTarget.style.background = c; e.currentTarget.style.color = '#fff'; } }}
       onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = c; }}
@@ -33,7 +33,7 @@ export function AdminButton({
 
 export function AdminCard({ children, className = '' }: { children: ReactNode; className?: string }) {
   return (
-    <div className={`border border-outline-variant/30 bg-surface-container-lowest p-5 ${className}`}>
+    <div className={`border border-outline-variant/30 rounded-xl shadow-sm bg-surface-container-lowest p-5 ${className}`}>
       {children}
     </div>
   );
@@ -147,7 +147,7 @@ export function ConfirmDialog({
         aria-modal="true"
         aria-labelledby="admin-confirm-title"
         aria-describedby="admin-confirm-message"
-        className="bg-surface-container-lowest border border-outline-variant/30 p-6 max-w-sm w-full mx-4"
+        className="bg-surface-container-lowest border border-outline-variant/30 rounded-xl shadow-lg p-6 max-w-sm w-full mx-4"
         onClick={(e) => e.stopPropagation()}
       >
         <h2 id="admin-confirm-title" className="font-display text-headline-sm text-on-surface mb-2">{title}</h2>
@@ -158,7 +158,7 @@ export function ConfirmDialog({
             ref={confirmRef}
             type="button"
             onClick={onConfirm}
-            className="px-6 py-2.5 font-body text-[11px] uppercase tracking-[0.15em] text-white min-h-[44px]"
+            className="px-6 py-2.5 rounded-lg font-body text-[11px] uppercase tracking-[0.15em] text-white min-h-[44px]"
             style={{ background: '#ba1a1a' }}
           >
             {confirmLabel}

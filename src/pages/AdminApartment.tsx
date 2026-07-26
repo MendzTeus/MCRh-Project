@@ -175,7 +175,7 @@ function OverviewTab({ unit }: { unit: FullUnit }) {
   if (!unit.airbnbUrl) warnings.push('Sem link Airbnb configurado');
 
   const stat = (label: string, value: string | number | null | undefined) => (
-    <div className="border border-outline-variant/20 rounded-lg p-4">
+    <div className="border border-outline-variant/20 rounded-xl shadow-sm p-4">
       <p className="font-body text-[10px] uppercase tracking-[0.12em] text-on-surface-variant/60 mb-1">{label}</p>
       <p className="font-display text-2xl text-primary">{value ?? '—'}</p>
     </div>
@@ -201,7 +201,7 @@ function OverviewTab({ unit }: { unit: FullUnit }) {
         {stat('Área', unit.squareFeet ? `${unit.squareFeet} ft²` : null)}
       </div>
 
-      <div className="space-y-3 border border-outline-variant/20 rounded-lg p-5">
+      <div className="space-y-3 border border-outline-variant/20 rounded-xl shadow-sm p-5">
         <div className="flex items-center gap-2 flex-wrap">
           <span className="px-3 py-1 rounded-full font-body text-[10px] uppercase tracking-widest text-white"
             style={{ background: unit.visible ? '#3f7d5b' : '#6b7280' }}>
@@ -627,7 +627,7 @@ function PhotosTabUnit({ unit, api, onChanged }: { unit: FullUnit; api: ReturnTy
       )}
 
       {totalPhotos === 0 && (
-        <div className="border border-dashed border-outline-variant/40 rounded-lg px-6 py-16 text-center">
+        <div className="border border-dashed border-outline-variant/40 rounded-xl px-6 py-16 text-center">
           <p className="font-body text-sm text-on-surface-variant/60">Nenhuma foto encontrada para este apartamento.</p>
         </div>
       )}
@@ -841,11 +841,11 @@ function PhotoTourTab({ unit }: { unit: FullUnit }) {
       </div>
 
       <div className="grid grid-cols-3 gap-4">
-        <div className="border border-outline-variant/20 rounded-lg p-4 text-center">
+        <div className="border border-outline-variant/20 rounded-xl shadow-sm p-4 text-center">
           <p className="font-display text-3xl text-primary">{sectionCount}</p>
           <p className="font-body text-[10px] uppercase tracking-widest text-on-surface-variant/60 mt-1">Secções</p>
         </div>
-        <div className="border border-outline-variant/20 rounded-lg p-4 text-center">
+        <div className="border border-outline-variant/20 rounded-xl shadow-sm p-4 text-center">
           <p className="font-display text-3xl text-primary">{catCount}</p>
           <p className="font-body text-[10px] uppercase tracking-widest text-on-surface-variant/60 mt-1">Fotos categorizadas</p>
         </div>
@@ -948,7 +948,7 @@ function ReviewsTabUnit({ unit, api }: { unit: FullUnit; api: ReturnType<typeof 
 
       <div className="space-y-4">
         {reviews.map((r) => (
-          <div key={r.id} className="border border-outline-variant/30 p-4 grid gap-3" style={{ opacity: r.published ? 1 : 0.55 }}>
+          <div key={r.id} className="border border-outline-variant/30 rounded-xl shadow-sm p-4 grid gap-3" style={{ opacity: r.published ? 1 : 0.55 }}>
             <div className="flex items-center gap-3 flex-wrap">
               <input value={r.name || ''} placeholder="Nome do hóspede" onChange={(e) => update(r.id, { name: e.target.value })} className={`${fld} flex-1 min-w-0`} />
               <input value={r.date || ''} placeholder="Mês AAAA" onChange={(e) => update(r.id, { date: e.target.value })} className={`${fld} w-28`} />
@@ -1071,7 +1071,7 @@ function SettingsTab({ unit, api, onChanged }: { unit: FullUnit; api: ReturnType
       </div>
 
       {/* Visibility toggle */}
-      <div className="border border-outline-variant/20 rounded-lg p-5 space-y-4">
+      <div className="border border-outline-variant/20 rounded-xl shadow-sm p-5 space-y-4">
         <p className={lbl}>Visibilidade pública</p>
         <label className="flex items-center gap-3 cursor-pointer select-none">
           <button type="button"

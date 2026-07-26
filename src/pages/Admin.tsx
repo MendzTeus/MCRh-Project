@@ -45,7 +45,7 @@ function Btn({ children, onClick, gold, disabled, type }: { children: ReactNode;
   const c = gold ? GOLD : '#101c2d';
   return (
     <button type={type || 'button'} onClick={onClick} disabled={disabled}
-      className="px-6 py-2.5 font-body text-[11px] uppercase tracking-[0.15em] transition-colors disabled:opacity-40"
+      className="px-6 py-2.5 rounded-lg font-body text-[11px] uppercase tracking-[0.15em] transition-colors disabled:opacity-40"
       style={{ border: `1px solid ${c}`, color: c, background: 'transparent' }}
       onMouseEnter={(e) => { if (!disabled) { e.currentTarget.style.background = c; e.currentTarget.style.color = '#fff'; } }}
       onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = c; }}>
@@ -189,7 +189,7 @@ function UnitCard({ unit, api, onChanged, featured, onSaveFeatured, displayTitle
   const cover = unit.photos.find((p) => p.isPrimary) || unit.photos[0];
 
   return (
-    <div className="bg-surface-container-lowest border border-outline-variant/40 p-5" style={{ opacity: unit.visible ? 1 : 0.55 }}>
+    <div className="bg-surface-container-lowest border border-outline-variant/40 rounded-xl shadow-sm p-5" style={{ opacity: unit.visible ? 1 : 0.55 }}>
       <div className="flex items-center gap-3 mb-4">
         {cover ? (
           <img src={cover.url} alt="" className="w-12 h-12 object-cover shrink-0" />
@@ -370,7 +370,7 @@ function ImagesTab({ site, api, onChanged }: { site: SiteData; api: ReturnType<t
   return (
     <div className="max-w-3xl">
       <p className="font-body text-body-md text-on-surface-variant mb-8">Troque as imagens de capa das páginas. Sem uma imagem definida aqui, o site usa a imagem padrão.</p>
-      <div className="divide-y divide-outline-variant/30 border-y border-outline-variant/30">
+      <div className="divide-y divide-outline-variant/30 border border-outline-variant/30 rounded-xl overflow-hidden shadow-sm">
         {IMAGE_SLOTS.map((s) => {
           const current = site.images[s.slot];
           return (
@@ -453,7 +453,7 @@ function ContentTab({ site, api, onChanged }: { site: SiteData; api: ReturnType<
   // Titled card that groups related fields, so a long section reads as a few
   // labelled blocks instead of one endless column of inputs.
   const Group = ({ title, children }: { title: string; children: ReactNode }) => (
-    <div className="border border-outline-variant/30 rounded-lg p-5 space-y-4">
+    <div className="border border-outline-variant/30 rounded-xl shadow-sm p-5 space-y-4">
       <p className="font-body text-label-caps tracking-widest uppercase text-xs" style={{ color: GOLD }}>{title}</p>
       {children}
     </div>
@@ -759,7 +759,7 @@ function PropertiesTab({ site, api, onChanged }: { site: SiteData; api: ReturnTy
   return (
     <div className="max-w-3xl">
       <p className="font-body text-body-md text-on-surface-variant mb-8">Edite o conteúdo de cada coleção. Clique no nome para expandir.</p>
-      <div className="divide-y divide-outline-variant/30 border-y border-outline-variant/30">
+      <div className="divide-y divide-outline-variant/30 border border-outline-variant/30 rounded-xl overflow-hidden shadow-sm">
         {PROPERTY_SLUGS.map(({ slug, label: propLabel }) => (
           <div key={slug}>
             <button type="button" onClick={() => setOpen(open === slug ? '' : slug)}
@@ -952,7 +952,7 @@ function ReviewsEditor({ slug, api }: { slug: string; api: ReturnType<typeof use
       <ImportBox slug={slug} api={api} onDone={load} />
       <div className="space-y-4">
         {reviews.map((r) => (
-          <div key={r.id} className="border border-outline-variant/30 p-4 grid gap-3" style={{ opacity: r.published ? 1 : 0.5 }}>
+          <div key={r.id} className="border border-outline-variant/30 rounded-xl shadow-sm p-4 grid gap-3" style={{ opacity: r.published ? 1 : 0.5 }}>
             <div className="flex items-center gap-3">
               <input value={r.name || ''} placeholder="Nome" onChange={(e) => update(r.id, { name: e.target.value })} className={`${field} flex-1`} />
               <input value={r.date || ''} placeholder="Mês AAAA" onChange={(e) => update(r.id, { date: e.target.value })} className={`${field} w-32`} />
@@ -1020,7 +1020,7 @@ function ImportBox({ slug, api, onDone }: { slug: string; api: ReturnType<typeof
   }
 
   return (
-    <div className="mb-4 border border-outline-variant/30 p-4 grid gap-3">
+    <div className="mb-4 border border-outline-variant/30 rounded-xl shadow-sm p-4 grid gap-3">
       <p className="font-body text-[11px] text-on-surface-variant/70">
         Cole o HTML copiado do Airbnb (Inspect → Copy outerHTML) ou envie um arquivo .html. O sistema extrai nome, foto, nota, texto e o review-id automaticamente.
       </p>
@@ -1201,7 +1201,7 @@ function ReviewsTab({ units, api }: { units: Unit[]; api: ReturnType<typeof useA
       )}
 
       {!loading && filtered.length === 0 && (
-        <div className="border border-dashed border-outline-variant/40 rounded-lg px-6 py-16 text-center">
+        <div className="border border-dashed border-outline-variant/40 rounded-xl px-6 py-16 text-center">
           <p className="font-body text-sm text-on-surface-variant/60">Nenhum review encontrado com estes filtros.</p>
         </div>
       )}
@@ -1211,7 +1211,7 @@ function ReviewsTab({ units, api }: { units: Unit[]; api: ReturnType<typeof useA
           const isLong = (r.text || '').length > 280;
           const isExpanded = expanded.has(r.id);
           return (
-            <div key={r.id} className="border border-outline-variant/30 rounded-lg p-4 grid gap-3" style={{ opacity: r.published ? 1 : 0.55 }}>
+            <div key={r.id} className="border border-outline-variant/30 rounded-xl shadow-sm p-4 grid gap-3" style={{ opacity: r.published ? 1 : 0.55 }}>
               <div className="flex items-start gap-3">
                 <input type="checkbox" checked={selected.has(r.id)} onChange={() => toggleSelected(r.id)} className="mt-1.5 accent-[#C5A059]" aria-label="Selecionar review" />
                 {r.avatarUrl
@@ -1323,13 +1323,13 @@ function LeadsTab({ api }: { api: ReturnType<typeof useApi> }) {
       {loading ? (
         <p className="font-body text-sm text-on-surface-variant">Carregando…</p>
       ) : filtered.length === 0 ? (
-        <div className="border border-outline-variant/30 rounded-lg px-6 py-12 text-center">
+        <div className="border border-outline-variant/30 rounded-xl px-6 py-12 text-center">
           <p className="font-body text-sm text-on-surface-variant">Nenhum lead encontrado.</p>
         </div>
       ) : (
         <div className="space-y-3">
           {filtered.map((lead) => (
-            <div key={lead.id} className="border border-outline-variant/30 rounded-lg p-5 bg-surface-container-lowest space-y-3">
+            <div key={lead.id} className="border border-outline-variant/30 rounded-xl shadow-sm p-5 bg-surface-container-lowest space-y-3">
               <div className="flex items-start justify-between gap-4">
                 <div>
                   <p className="font-display text-headline-sm text-primary">{lead.name}</p>
@@ -1649,7 +1649,7 @@ function PhotosTab({ units, api, onChanged }: { units: Unit[]; api: ReturnType<t
 
           {/* Empty state */}
           {sortedPhotos.length === 0 && (
-            <div className="border border-dashed border-outline-variant/40 rounded-lg px-6 py-12 text-center">
+            <div className="border border-dashed border-outline-variant/40 rounded-xl px-6 py-12 text-center">
               <p className="font-body text-sm text-on-surface-variant/60">
                 Nenhuma foto. Clique em "+ Upload fotos" para começar.
               </p>
@@ -1764,7 +1764,7 @@ function AvailabilityTab({ api }: { api: ReturnType<typeof useApi> }) {
       {loading ? (
         <p className="font-body text-sm text-on-surface-variant">Carregando…</p>
       ) : rows.length === 0 ? (
-        <div className="border border-outline-variant/30 rounded-lg px-6 py-12 text-center">
+        <div className="border border-outline-variant/30 rounded-xl px-6 py-12 text-center">
           <p className="font-body text-sm text-on-surface-variant">Nenhuma unidade encontrada.</p>
         </div>
       ) : (
@@ -1775,7 +1775,7 @@ function AvailabilityTab({ api }: { api: ReturnType<typeof useApi> }) {
               <div className="flex-1 h-px" style={{ background: `${GOLD}55` }} />
             </div>
             {groupRows.map((r) => (
-              <div key={r.unitSlug} className="border border-outline-variant/30 rounded-lg p-5 bg-surface-container-lowest flex items-center justify-between gap-4 flex-wrap">
+              <div key={r.unitSlug} className="border border-outline-variant/30 rounded-xl shadow-sm p-5 bg-surface-container-lowest flex items-center justify-between gap-4 flex-wrap">
                 <div>
                   <p className="font-display text-headline-sm text-primary">{r.unitName}</p>
                   <div className="flex flex-wrap gap-3 font-body text-xs text-on-surface-variant mt-1">
