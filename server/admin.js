@@ -7,6 +7,24 @@ const { syncAll, syncUnit } = require('./sync');
 const router = express.Router();
 const BUCKET = 'property-media';
 
+// Photo uploads: allowlist real image types only, and cap size well under the
+// 15mb JSON body limit (base64 inflates ~33%, so 8mb of actual file data is a
+// safe photo-sized ceiling).
+const ALLOWED_PHOTO_MIME_TYPES = new Set(['image/jpeg', 'image/png', 'image/webp', 'image/avif']);
+const MAX_PHOTO_BYTES = 8 * 1024 * 1024;
+
+function validatePhotoUpload(contentType, buffer, res) {
+  if (!ALLOWED_PHOTO_MIME_TYPES.has(contentType)) {
+    res.status(400).json({ error: `Unsupported image type: ${contentType}` });
+    return false;
+  }
+  if (buffer.length > MAX_PHOTO_BYTES) {
+    res.status(400).json({ error: `Image too large (max ${MAX_PHOTO_BYTES / 1024 / 1024}mb)` });
+    return false;
+  }
+  return true;
+}
+
 // ── Login rate-limit ────────────────────────────────────────────────
 // In-memory sliding window per IP. A single shared password is the only secret,
 // so throttle brute-force: after MAX_ATTEMPTS failures inside WINDOW_MS, reject
@@ -46,6 +64,25 @@ const EDITABLE = [
   'latitude', 'longitude',
 ];
 
+// airbnbUrl, icalAirbnbUrl and icalVrboUrl are all fetched server-side later
+// (server/airbnb-listing.js's scheduled listing probe, server/sync.js's scheduled
+// + on-demand iCal sync) — reject non-https and obviously-internal/private hosts
+// here so a malicious or compromised admin session can't turn those fetchers into
+// an SSRF probe against localhost/private networks/cloud metadata endpoints.
+const FETCHED_URL_FIELDS = new Set(['airbnbUrl', 'icalAirbnbUrl', 'icalVrboUrl']);
+
+function isSafeExternalUrl(value) {
+  let u;
+  try { u = new URL(value); } catch { return false; }
+  if (u.protocol !== 'https:') return false;
+  const host = u.hostname.toLowerCase();
+  if (host === 'localhost' || host.endsWith('.localhost') || host.endsWith('.local')) return false;
+  if (/^(127\.|10\.|192\.168\.|169\.254\.)/.test(host)) return false;
+  if (/^172\.(1[6-9]|2\d|3[0-1])\./.test(host)) return false;
+  if (host === '0.0.0.0' || host === '::1') return false;
+  return true;
+}
+
 // ── Login: password → signed token ──────────────────────────────────
 router.post('/login', loginThrottle, (req, res) => {
   const { password } = req.body || {};
@@ -68,7 +105,7 @@ router.use(requireAdmin);
 router.get('/units', async (_req, res) => {
   const { data: units, error } = await supabase
     .from('Unit')
-    .select('unitSlug, unitName, propertySlug, propertyName, suppliedSpecs, postcode, airbnbUrl, description, squareFeet, icalAirbnbUrl, icalVrboUrl, visible, airbnbListed, displayOrder')
+    .select('unitSlug, unitName, propertySlug, propertyName, suppliedSpecs, postcode, airbnbUrl, description, squareFeet, icalAirbnbUrl, icalVrboUrl, visible, airbnbListed, displayOrder, updatedAt')
     .order('displayOrder');
   if (error) return res.status(500).json({ error: error.message });
 
@@ -93,14 +130,14 @@ router.get('/units/:unitSlug', async (req, res) => {
 
   // Photos — defensive against pre-migration missing roomCategory column
   let mediaRes = await supabase.from('MediaAsset')
-    .select('id, url, alt, isPrimary, displayOrder, roomCategory')
+    .select('id, url, alt, isPrimary, displayOrder, roomCategory, hidden')
     .eq('ownerType', 'unit').eq('ownerSlug', unitSlug).order('displayOrder');
   if (mediaRes.error?.message?.includes('column')) {
     mediaRes = await supabase.from('MediaAsset')
       .select('id, url, alt, isPrimary, displayOrder')
       .eq('ownerType', 'unit').eq('ownerSlug', unitSlug).order('displayOrder');
   }
-  const photos = (mediaRes.data || []).map((p) => ({ ...p, roomCategory: p.roomCategory || null }));
+  const photos = (mediaRes.data || []).map((p) => ({ ...p, roomCategory: p.roomCategory || null, hidden: p.hidden ?? false }));
 
   // Review stats
   const { data: reviews } = await supabase.from('Review')
@@ -117,6 +154,14 @@ router.patch('/units/:unitSlug', async (req, res) => {
   const patch = {};
   for (const k of EDITABLE) if (k in (req.body || {})) patch[k] = req.body[k];
   if (!Object.keys(patch).length) return res.status(400).json({ error: 'No editable fields' });
+
+  for (const field of FETCHED_URL_FIELDS) {
+    const value = patch[field];
+    if (value && !isSafeExternalUrl(value)) {
+      return res.status(400).json({ error: `${field} must be a valid https URL to a public host` });
+    }
+  }
+
   patch.updatedAt = new Date().toISOString();
 
   const { data, error } = await supabase
@@ -132,9 +177,11 @@ router.post('/units/:unitSlug/photos', async (req, res) => {
   const { dataBase64, contentType, alt } = req.body || {};
   if (!dataBase64 || !contentType) return res.status(400).json({ error: 'dataBase64 and contentType required' });
 
+  const buffer = Buffer.from(dataBase64, 'base64');
+  if (!validatePhotoUpload(contentType, buffer, res)) return;
+
   const ext = (contentType.split('/')[1] || 'jpg').replace('jpeg', 'jpg');
   const path = `units/${unitSlug}/${Date.now()}-${crypto.randomBytes(4).toString('hex')}.${ext}`;
-  const buffer = Buffer.from(dataBase64, 'base64');
 
   const { error: upErr } = await supabase.storage.from(BUCKET).upload(path, buffer, { contentType, upsert: false });
   if (upErr) return res.status(500).json({ error: upErr.message });
@@ -177,6 +224,17 @@ router.patch('/photos/:id', async (req, res) => {
   res.json({ photo: data });
 });
 
+// ── Reorder units within a property ────────────────────────────────
+router.post('/units/reorder', async (req, res) => {
+  const { orderedSlugs } = req.body || {};
+  if (!Array.isArray(orderedSlugs)) return res.status(400).json({ error: 'orderedSlugs required' });
+  const now = new Date().toISOString();
+  for (let i = 0; i < orderedSlugs.length; i++) {
+    await supabase.from('Unit').update({ displayOrder: i + 1, updatedAt: now }).eq('unitSlug', orderedSlugs[i]);
+  }
+  res.json({ ok: true });
+});
+
 // ── Reorder a unit's photos ─────────────────────────────────────────
 router.post('/units/:unitSlug/photos/reorder', async (req, res) => {
   const { orderedIds } = req.body || {};
@@ -200,17 +258,19 @@ router.post('/units/:unitSlug/photos/references', async (req, res) => {
 
   const toInsert = [];
   const toUpdate = [];
-  for (const { url, roomCategory, displayOrder, alt } of assignments) {
+  for (const { url, roomCategory, displayOrder, alt, hidden } of assignments) {
     if (!url) continue;
     const id = byUrl.get(url);
     if (id) {
-      toUpdate.push({ id, roomCategory: roomCategory || null, displayOrder: displayOrder ?? 0 });
+      toUpdate.push({ id, roomCategory: roomCategory || null, displayOrder: displayOrder ?? 0, hidden: hidden ?? false });
     } else {
       toInsert.push({
+        id: crypto.randomUUID(),
         ownerType: 'unit', ownerSlug: unitSlug,
         url, alt: alt || null,
         roomCategory: roomCategory || null,
         displayOrder: displayOrder ?? 0,
+        hidden: hidden ?? false,
         isPrimary: false,
       });
     }
@@ -219,14 +279,13 @@ router.post('/units/:unitSlug/photos/references', async (req, res) => {
   if (toInsert.length > 0) {
     let { error } = await supabase.from('MediaAsset').insert(toInsert);
     if (error?.message?.toLowerCase().includes('column')) {
-      // roomCategory column not yet added — insert without it
-      const stripped = toInsert.map(({ roomCategory: _rc, ...rest }) => rest);
+      const stripped = toInsert.map(({ roomCategory: _rc, hidden: _h, ...rest }) => rest);
       ({ error } = await supabase.from('MediaAsset').insert(stripped));
     }
     if (error) return res.status(500).json({ error: error.message });
   }
-  const updateResults = await Promise.all(toUpdate.map(async ({ id, roomCategory, displayOrder }) => {
-    let { error } = await supabase.from('MediaAsset').update({ roomCategory, displayOrder }).eq('id', id);
+  const updateResults = await Promise.all(toUpdate.map(async ({ id, roomCategory, displayOrder, hidden }) => {
+    let { error } = await supabase.from('MediaAsset').update({ roomCategory, displayOrder, hidden }).eq('id', id);
     if (error?.message?.toLowerCase().includes('column')) {
       ({ error } = await supabase.from('MediaAsset').update({ displayOrder }).eq('id', id));
     }
@@ -253,9 +312,12 @@ router.post('/properties/:slug/photos', async (req, res) => {
   const { dataBase64, contentType, alt } = req.body || {};
   if (!dataBase64 || !contentType) return res.status(400).json({ error: 'dataBase64 and contentType required' });
 
+  const buffer = Buffer.from(dataBase64, 'base64');
+  if (!validatePhotoUpload(contentType, buffer, res)) return;
+
   const ext = (contentType.split('/')[1] || 'jpg').replace('jpeg', 'jpg');
   const path = `properties/${slug}/${Date.now()}-${crypto.randomBytes(4).toString('hex')}.${ext}`;
-  const { error: upErr } = await supabase.storage.from(BUCKET).upload(path, Buffer.from(dataBase64, 'base64'), { contentType, upsert: false });
+  const { error: upErr } = await supabase.storage.from(BUCKET).upload(path, buffer, { contentType, upsert: false });
   if (upErr) return res.status(500).json({ error: upErr.message });
 
   const { data: pub } = supabase.storage.from(BUCKET).getPublicUrl(path);
@@ -495,3 +557,5 @@ router.delete('/leads/:id', async (req, res) => {
 });
 
 module.exports = router;
+module.exports.validatePhotoUpload = validatePhotoUpload;
+module.exports.isSafeExternalUrl = isSafeExternalUrl;

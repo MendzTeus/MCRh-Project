@@ -36,6 +36,20 @@
   --spacing-container-max: 1280px;
 
   --radius-default: 0.25rem;
+
+  /* Admin panel tokens (Phase 10 design-system pass). NAVY/GOLD were previously
+     hardcoded as local `const GOLD`/`const NAVY` in both Admin.tsx and
+     AdminApartment.tsx — centralized here so the upcoming shell/dashboard/editor
+     redesigns (Phases 11-15) have one source of truth to build against.
+     `--color-admin-gold-text` is a darkened variant of the accent gold: the raw
+     accent (#C5A059) is only 2.46:1 against the surface background — fails WCAG
+     AA (needs 4.5:1) for body text — so use the -text variant whenever gold is
+     used as small/normal text on a light background (borders/backgrounds/large
+     dark-background text can keep using the raw accent, which is fine there:
+     6.97:1 against the navy container). */
+  --color-admin-navy: #101c2d;
+  --color-admin-gold: #c5a059;
+  --color-admin-gold-text: #826927;
 }
 
 @utility font-display-lg {
@@ -100,4 +114,17 @@ body {
   outline: 2px solid var(--color-secondary);
   outline-offset: 3px;
   border-radius: 2px;
+}
+
+/* Respect OS-level reduced-motion preference: neutralise CSS
+   transitions/animations (incl. the admin panel's transition-colors /
+   transition-opacity / transition-all utility classes and drag/reorder
+   opacity fades) without having to touch every call site individually. */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
 }

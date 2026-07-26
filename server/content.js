@@ -7,45 +7,49 @@ const router = express.Router();
 // VISIBLE (admin toggle) AND still LISTED on Airbnb (daily auto-check). With
 // their photos ordered.
 router.get('/units', async (_req, res) => {
-  const { data: units, error } = await supabase
-    .from('Unit')
-    .select('unitSlug, unitName, propertySlug, propertyName, suppliedSpecs, postcode, airbnbUrl, description, squareFeet, displayOrder')
-    .eq('visible', true)
-    .eq('airbnbListed', true)
-    .order('displayOrder');
-  if (error) return res.status(500).json({ error: error.message });
-
-  // Include roomCategory when the column exists (migration 001_add_room_category.sql).
-  // Falls back to the query without it so the site keeps working before the migration runs.
-  let mediaResult = await supabase
-    .from('MediaAsset')
-    .select('id, ownerSlug, url, alt, isPrimary, displayOrder, roomCategory')
-    .eq('ownerType', 'unit')
-    .order('displayOrder');
-  if (mediaResult.error?.message?.includes('column')) {
-    mediaResult = await supabase
+  const [unitsResult, mediaResult, reviewsResult, hiddenResult] = await Promise.all([
+    supabase
+      .from('Unit')
+      .select('unitSlug, unitName, displayTitle, propertySlug, propertyName, suppliedSpecs, postcode, airbnbUrl, description, squareFeet, displayOrder')
+      .eq('visible', true)
+      .eq('airbnbListed', true)
+      .order('displayOrder'),
+    supabase
       .from('MediaAsset')
-      .select('id, ownerSlug, url, alt, isPrimary, displayOrder')
+      .select('id, ownerSlug, url, alt, isPrimary, displayOrder, roomCategory, hidden')
       .eq('ownerType', 'unit')
-      .order('displayOrder');
-  }
-  const media = mediaResult.data;
+      .order('displayOrder')
+      .then((r) => r.error?.message?.includes('column')
+        ? supabase.from('MediaAsset').select('id, ownerSlug, url, alt, isPrimary, displayOrder').eq('ownerType', 'unit').order('displayOrder')
+        : r),
+    supabase.from('Review').select('propertySlug, rating').eq('published', true),
+    supabase.from('Unit').select('unitSlug').or('visible.eq.false,airbnbListed.eq.false'),
+  ]);
+
+  if (unitsResult.error) return res.status(500).json({ error: unitsResult.error.message });
 
   const byUnit = {};
-  (media || []).forEach((m) => { (byUnit[m.ownerSlug] ||= []).push(m); });
+  ((await mediaResult).data || []).forEach((m) => { (byUnit[m.ownerSlug] ||= []).push(m); });
 
-  const result = (units || []).map((u) => {
+  // Pre-compute avg rating per unit from published reviews.
+  const ratingsBySlug = {};
+  (reviewsResult.data || []).forEach((r) => {
+    if (r.rating > 0) (ratingsBySlug[r.propertySlug] ||= []).push(r.rating);
+  });
+
+  const result = (unitsResult.data || []).map((u) => {
     const photos = byUnit[u.unitSlug] || [];
     const primary = photos.find((p) => p.isPrimary) || photos[0];
-    return { ...u, primaryImage: primary?.url || null, photos };
+    const ratings = ratingsBySlug[u.unitSlug] || [];
+    const avgRating = ratings.length
+      ? (ratings.reduce((s, n) => s + n, 0) / ratings.length).toFixed(2)
+      : null;
+    return { ...u, primaryImage: primary?.url || null, photos, avgRating };
   });
 
   // Explicit list of hidden slugs so the site knows exactly what to remove
   // (never inferred from absence — keeps the public site safe if the DB lags).
-  // Hidden = manually hidden OR unlisted on Airbnb by the daily check.
-  const { data: hidden } = await supabase
-    .from('Unit').select('unitSlug').or('visible.eq.false,airbnbListed.eq.false');
-  const hiddenSlugs = (hidden || []).map((h) => h.unitSlug);
+  const hiddenSlugs = (hiddenResult.data || []).map((h) => h.unitSlug);
 
   res.json({ units: result, hiddenSlugs, count: result.length });
 });

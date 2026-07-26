@@ -2,18 +2,19 @@ import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { useParams, useSearchParams, useNavigate } from 'react-router-dom';
 import { ROOM_CATEGORIES } from '../components/PhotoTour';
 import { getListingMedia } from '../data/listingMedia';
+import { useApi, fileToBase64, useUnsavedChangesGuard, ADMIN_TOKEN_KEY as TOKEN_KEY } from '../hooks/useAdminApi';
+import { AdminShell } from '../components/admin/AdminShell';
 
 // ── Design tokens (must match Admin.tsx) ───────────────────────────
 const GOLD = '#C5A059';
 const NAVY = '#101c2d';
-const TOKEN_KEY = 'mcrh_admin_token';
 const lbl = 'font-body text-[10px] uppercase tracking-[0.15em] text-on-surface-variant block mb-1.5';
 const fld = 'w-full bg-transparent border-b border-outline-variant/50 py-1.5 font-body text-sm text-on-surface focus:outline-none focus:border-[#C5A059] transition-colors';
 
 // ── Types ───────────────────────────────────────────────────────────
 type Photo = {
   id: string; url: string; alt: string | null; isPrimary: boolean;
-  displayOrder: number; roomCategory: string | null;
+  displayOrder: number; roomCategory: string | null; hidden: boolean;
 };
 
 type FullUnit = {
@@ -32,55 +33,36 @@ type FullUnit = {
   photos: Photo[]; reviewsCount: number; avgRating: number | null;
 };
 
-// ── Auth + API ──────────────────────────────────────────────────────
-function useApi(token: string | null, onUnauthorized: () => void) {
-  return useCallback(async (path: string, opts: RequestInit = {}) => {
-    const res = await fetch(`/api${path}`, {
-      ...opts,
-      headers: { 'content-type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}), ...(opts.headers || {}) },
-    });
-    if (res.status === 401) { onUnauthorized(); throw new Error('Unauthorized'); }
-    if (!res.ok) throw new Error((await res.json().catch(() => ({}))).error || `HTTP ${res.status}`);
-    return res.json();
-  }, [token, onUnauthorized]);
-}
-
-function fileToBase64(file: File): Promise<{ base64: string; type: string }> {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => resolve({ base64: (reader.result as string).split(',')[1], type: file.type });
-    reader.onerror = () => reject(new Error('Falha ao ler o arquivo'));
-    reader.readAsDataURL(file);
-  });
-}
-
 // ── Shared UI ───────────────────────────────────────────────────────
-function SaveStatus({ s }: { s: 'idle' | 'saving' | 'saved' | 'error' }) {
+function SaveStatus({ s, error }: { s: 'idle' | 'saving' | 'saved' | 'error'; error?: string }) {
   if (s === 'idle') return null;
   return (
-    <span className="font-body text-[10px] uppercase tracking-[0.15em]" style={{ color: s === 'error' ? '#ba1a1a' : GOLD }}>
-      {s === 'saving' ? 'Salvando…' : s === 'saved' ? '✓ Salvo' : 'Erro ao salvar'}
+    <span className="font-body text-[10px] uppercase tracking-[0.15em]" style={{ color: s === 'error' ? '#ba1a1a' : GOLD }}
+      title={s === 'error' && error ? error : undefined}>
+      {s === 'saving' ? 'Salvando…' : s === 'saved' ? '✓ Salvo' : `Erro: ${error || 'ao salvar'}`}
     </span>
   );
 }
 
 function useAutosave(api: ReturnType<typeof useApi>, unitSlug: string) {
   const [status, setStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
+  const [lastError, setLastError] = useState('');
   const save = useCallback(async (patch: Record<string, unknown>) => {
     setStatus('saving');
+    setLastError('');
     try {
       await api(`/admin/units/${unitSlug}`, { method: 'PATCH', body: JSON.stringify(patch) });
       setStatus('saved');
       setTimeout(() => setStatus('idle'), 1500);
-    } catch { setStatus('error'); }
+    } catch (e) { setStatus('error'); setLastError(e instanceof Error ? e.message : String(e)); }
   }, [api, unitSlug]);
-  return { save, status };
+  return { save, status, lastError };
 }
 
 // ── Dynamic room categories ─────────────────────────────────────────
 function getDynamicCategories(unit: Pick<FullUnit, 'bedrooms' | 'bathrooms' | 'ensuiteBathrooms' | 'wcCount'> | null): string[] {
-  const bedrooms = unit?.bedrooms || 0;
-  const bathrooms = unit?.bathrooms || 0;
+  const bedrooms = unit?.bedrooms ?? 3;
+  const bathrooms = unit?.bathrooms ?? 1;
   const ensuite = unit?.ensuiteBathrooms || 0;
   const wc = unit?.wcCount || 0;
 
@@ -99,15 +81,19 @@ function getDynamicCategories(unit: Pick<FullUnit, 'bedrooms' | 'bathrooms' | 'e
 // ── Draggable photo tile ─────────────────────────────────────────────
 type DragTileProps = {
   url: string; cat: string; index: number; total: number;
-  isDragging: boolean; isSaving: boolean;
+  isDragging: boolean; isSaving: boolean; isHidden: boolean; isPrimary: boolean; canSetCover: boolean;
   categories: string[];
+  selectable: boolean; isSelected: boolean; onToggleSelected: () => void;
   onDragStart: () => void; onDragEnd: () => void;
   onMoveLeft: () => void; onMoveRight: () => void; onRemove: () => void;
   onCategoryChange: (cat: string) => void;
+  onToggleHidden: () => void;
+  onSetCover: () => void;
 };
 const DragTile: React.FC<DragTileProps> = ({
-  url, cat, index, total, isDragging, isSaving,
-  categories, onDragStart, onDragEnd, onMoveLeft, onMoveRight, onRemove, onCategoryChange,
+  url, cat, index, total, isDragging, isSaving, isHidden, isPrimary, canSetCover,
+  categories, selectable, isSelected, onToggleSelected,
+  onDragStart, onDragEnd, onMoveLeft, onMoveRight, onRemove, onCategoryChange, onToggleHidden, onSetCover,
 }) => {
   const btn = 'flex-1 text-white/80 text-[11px] leading-none py-1 hover:text-[#C5A059] transition-colors disabled:opacity-25 disabled:hover:text-white/80';
   return (
@@ -117,19 +103,34 @@ const DragTile: React.FC<DragTileProps> = ({
         draggable
         onDragStart={(e) => { e.dataTransfer.setData('text/plain', url); e.dataTransfer.effectAllowed = 'move'; onDragStart(); }}
         onDragEnd={(e) => { e.dataTransfer.clearData(); onDragEnd(); }}
-        className={`relative shrink-0 overflow-hidden cursor-grab active:cursor-grabbing select-none transition-opacity ${isDragging ? 'opacity-30' : isSaving ? 'opacity-60' : ''}`}
-        style={{ height: 135, border: '1px solid rgba(197,198,205,0.4)' }}
+        className={`relative shrink-0 overflow-hidden cursor-grab active:cursor-grabbing select-none transition-opacity ${isDragging ? 'opacity-30' : isSaving ? 'opacity-60' : isHidden ? 'opacity-40' : ''}`}
+        style={{ height: 135, border: `1px solid ${isSelected ? '#C5A059' : isHidden ? 'rgba(186,26,26,0.5)' : 'rgba(197,198,205,0.4)'}`, boxShadow: isSelected ? '0 0 0 2px rgba(197,160,89,0.5) inset' : undefined }}
       >
+        {selectable && (
+          <label className="absolute top-1 left-1 z-20 flex items-center justify-center w-5 h-5 rounded bg-black/40 cursor-pointer">
+            <input type="checkbox" checked={isSelected} onChange={onToggleSelected} className="accent-[#C5A059]" aria-label="Selecionar foto" />
+          </label>
+        )}
+        {isPrimary && (
+          <div className="absolute top-1 right-1 z-10 font-body text-[8px] uppercase tracking-widest text-white px-1.5 py-0.5 rounded"
+            style={{ background: GOLD }}>Capa</div>
+        )}
         {isSaving && (
           <div className="absolute inset-0 z-10 flex items-center justify-center bg-black/25">
             <span className="font-body text-[9px] uppercase tracking-widest text-white">salvando…</span>
           </div>
         )}
+        {isHidden && !isSaving && (
+          <div className="absolute inset-0 z-10 flex items-center justify-center pointer-events-none">
+            <span className="font-body text-[9px] uppercase tracking-widest text-white bg-red-700/80 px-2 py-0.5 rounded">Oculto</span>
+          </div>
+        )}
         <img src={url} alt="" referrerPolicy="no-referrer" className="w-full h-full object-cover" loading="lazy" />
         <div className="absolute bottom-0 left-0 right-0 flex" style={{ background: 'rgba(16,28,45,0.78)' }}>
-          <button onClick={onMoveLeft} disabled={index === 0 || isSaving} className={btn}>◀</button>
-          <button onClick={onMoveRight} disabled={index === total - 1 || isSaving} className={btn}>▶</button>
-          {cat && <button onClick={onRemove} disabled={isSaving} title="Remover da categoria" className={`${btn} hover:text-red-300`}>✕</button>}
+          <button onClick={onMoveLeft} disabled={index === 0 || isSaving} title="Mover para a esquerda" aria-label="Mover para a esquerda" className={btn}>◀</button>
+          <button onClick={onMoveRight} disabled={index === total - 1 || isSaving} title="Mover para a direita" aria-label="Mover para a direita" className={btn}>▶</button>
+          {canSetCover && <button onClick={onSetCover} disabled={isSaving || isPrimary} title="Definir como capa" aria-label="Definir como capa" className={btn} style={{ color: isPrimary ? GOLD : undefined }}>★</button>}
+          {cat && <button onClick={onRemove} disabled={isSaving} title="Remover da categoria" aria-label="Remover da categoria" className={`${btn} hover:text-red-300`}>✕</button>}
         </div>
       </div>
       {/* Category selector (always visible) */}
@@ -142,6 +143,15 @@ const DragTile: React.FC<DragTileProps> = ({
         <option value="">— sem categoria —</option>
         {categories.map((c) => <option key={c} value={c}>{c}</option>)}
       </select>
+      {/* Hide toggle */}
+      <button
+        onClick={onToggleHidden}
+        disabled={isSaving}
+        className="w-full font-body text-[9px] uppercase tracking-[0.12em] py-1 transition-colors disabled:opacity-40"
+        style={{ color: isHidden ? '#ba1a1a' : 'rgba(0,0,0,0.35)' }}
+      >
+        {isHidden ? '● Oculto do tour' : '○ Ocultar do tour'}
+      </button>
     </div>
   );
 }
@@ -231,7 +241,7 @@ function OverviewTab({ unit }: { unit: FullUnit }) {
 // TAB: Content
 // ══════════════════════════════════════════════════════════════════
 function ContentTab({ unit, api, onChanged }: { unit: FullUnit; api: ReturnType<typeof useApi>; onChanged: () => void }) {
-  const { save, status } = useAutosave(api, unit.unitSlug);
+  const { save, status, lastError } = useAutosave(api, unit.unitSlug);
   const [name, setName] = useState(unit.unitName);
   const [displayTitle, setDisplayTitle] = useState(unit.displayTitle || '');
   const [description, setDescription] = useState(unit.description || '');
@@ -246,11 +256,16 @@ function ContentTab({ unit, api, onChanged }: { unit: FullUnit; api: ReturnType<
     setSquareFeet(unit.squareFeet != null ? String(unit.squareFeet) : '');
   }, [unit.unitSlug]);
 
+  useUnsavedChangesGuard(
+    name !== unit.unitName || displayTitle !== (unit.displayTitle || '') || description !== (unit.description || '')
+    || postcode !== (unit.postcode || '') || squareFeet !== (unit.squareFeet != null ? String(unit.squareFeet) : '')
+  );
+
   return (
     <div className="max-w-2xl space-y-6">
       <div className="flex items-center gap-4">
         <p className="font-display text-headline-sm text-primary">Conteúdo</p>
-        <SaveStatus s={status} />
+        <SaveStatus s={status} error={lastError} />
       </div>
 
       <div>
@@ -292,6 +307,9 @@ function ContentTab({ unit, api, onChanged }: { unit: FullUnit; api: ReturnType<
               if (v !== unit.squareFeet) save({ squareFeet: v });
             }}
             className={fld} placeholder="800" />
+          {squareFeet !== '' && parseInt(squareFeet, 10) < 0 && (
+            <p className="font-body text-[10px] mt-1" style={{ color: '#ba1a1a' }}>A área não pode ser negativa.</p>
+          )}
         </div>
       </div>
     </div>
@@ -302,7 +320,7 @@ function ContentTab({ unit, api, onChanged }: { unit: FullUnit; api: ReturnType<
 // TAB: Rooms & Capacity
 // ══════════════════════════════════════════════════════════════════
 function RoomsTab({ unit, api, onChanged }: { unit: FullUnit; api: ReturnType<typeof useApi>; onChanged: () => void }) {
-  const { save, status } = useAutosave(api, unit.unitSlug);
+  const { save, status, lastError } = useAutosave(api, unit.unitSlug);
   const [maxGuests, setMaxGuests] = useState(unit.maxGuests != null ? String(unit.maxGuests) : '');
   const [bedrooms, setBedrooms] = useState(unit.bedrooms != null ? String(unit.bedrooms) : '');
   const [beds, setBeds] = useState(unit.beds != null ? String(unit.beds) : '');
@@ -326,6 +344,11 @@ function RoomsTab({ unit, api, onChanged }: { unit: FullUnit; api: ReturnType<ty
   const n = (v: string) => (v !== '' ? parseInt(v, 10) : null);
   const nf = (v: string, u: number | null) => n(v) !== u;
 
+  useUnsavedChangesGuard(
+    nf(maxGuests, unit.maxGuests) || nf(bedrooms, unit.bedrooms) || nf(beds, unit.beds)
+    || nf(bathrooms, unit.bathrooms) || nf(ensuite, unit.ensuiteBathrooms) || nf(wc, unit.wcCount) || nf(floor, unit.floor)
+  );
+
   // Live preview of dynamic categories based on current field values
   const dynamicPreview = useMemo(() => getDynamicCategories({
     bedrooms: n(bedrooms), bathrooms: n(bathrooms),
@@ -343,7 +366,7 @@ function RoomsTab({ unit, api, onChanged }: { unit: FullUnit; api: ReturnType<ty
     <div className="max-w-2xl space-y-8">
       <div className="flex items-center gap-4">
         <p className="font-display text-headline-sm text-primary">Divisões e capacidade</p>
-        <SaveStatus s={status} />
+        <SaveStatus s={status} error={lastError} />
       </div>
       <p className="font-body text-sm text-on-surface-variant -mt-4">
         Os valores aqui definem as categorias geradas automaticamente no Photo Tour.
@@ -422,10 +445,67 @@ function PhotosTabUnit({ unit, api, onChanged }: { unit: FullUnit; api: ReturnTy
   const [orderStatus, setOrderStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
   const [dragging, setDragging] = useState<string | null>(null);
   const [dragOver, setDragOver] = useState<string | null>(null);
+  const customCatsKey = `mcrh_custom_cats_${unit.unitSlug}`;
+  const [hiddenUrls, setHiddenUrls] = useState<Set<string>>(
+    () => new Set(unit.photos.filter((p) => p.hidden).map((p) => p.url))
+  );
+
+  const [customCats, setCustomCats] = useState<string[]>(() => {
+    try { return JSON.parse(localStorage.getItem(customCatsKey) || '[]'); } catch { return []; }
+  });
+  const [newCatName, setNewCatName] = useState('');
+  const [catFilter, setCatFilter] = useState<string | null>(null);
+  const [selected, setSelected] = useState<Set<string>>(new Set());
+  const [bulkTargetCat, setBulkTargetCat] = useState('');
+
+  // url -> Photo record (only urls already saved as MediaAsset rows have an id/isPrimary)
+  const photoByUrl = useMemo(() => new Map(unit.photos.map((p) => [p.url, p])), [unit.photos]);
+
+  function toggleSelected(url: string) {
+    setSelected((prev) => { const next = new Set(prev); next.has(url) ? next.delete(url) : next.add(url); return next; });
+  }
+
+  async function setCover(url: string) {
+    const photo = photoByUrl.get(url);
+    if (!photo) return;
+    setSaving((prev) => new Set([...prev, url]));
+    try {
+      await api(`/admin/photos/${photo.id}`, { method: 'PATCH', body: JSON.stringify({ isPrimary: true }) });
+      onChanged();
+    } catch (e) {
+      setLastError(e instanceof Error ? e.message : 'Erro ao definir capa');
+    } finally {
+      setSaving((prev) => { const next = new Set(prev); next.delete(url); return next; });
+    }
+  }
+
+  function bulkMoveToCategory() {
+    if (selected.size === 0 || !bulkTargetCat) return;
+    const toCat = bulkTargetCat === '__uncat__' ? '' : bulkTargetCat;
+    for (const url of selected) moveToCategory(url, toCat);
+    setSelected(new Set());
+    setBulkTargetCat('');
+  }
+
+  const allCats = useMemo(
+    () => [...dynamicCats, ...customCats.filter((c) => !dynamicCats.includes(c))],
+    [dynamicCats, customCats],
+  );
+
+  function addCustomCat() {
+    const name = newCatName.trim();
+    if (!name || allCats.includes(name)) return;
+    const next = [...customCats, name];
+    setCustomCats(next);
+    localStorage.setItem(customCatsKey, JSON.stringify(next));
+    setCatMap((prev) => ({ ...prev, [name]: [] }));
+    setNewCatName('');
+  }
 
   const stateKey = unit.unitSlug + '|' + unit.photos.map((p) => p.id + p.roomCategory + p.displayOrder).join(',');
   useEffect(() => {
     setCatMap(buildCategoryMap(unit.photos, airbnbUrls, dynamicCats));
+    setHiddenUrls(new Set(unit.photos.filter((p) => p.hidden).map((p) => p.url)));
     setOrderDirty(false);
   }, [stateKey]); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -433,19 +513,19 @@ function PhotosTabUnit({ unit, api, onChanged }: { unit: FullUnit; api: ReturnTy
   const uncatCount = (catMap[''] as string[] | undefined)?.length ?? 0;
 
   const visibleCats = useMemo((): string[] => {
-    const keys: string[] = ['', ...dynamicCats];
+    const keys: string[] = ['', ...allCats];
     for (const k of Object.keys(catMap)) if (!keys.includes(k)) keys.push(k);
-    return keys.filter((k) => k === '' || ((catMap[k] as string[] | undefined)?.length ?? 0) > 0 || dynamicCats.includes(k));
-  }, [catMap, dynamicCats]);
+    return keys.filter((k) => k === '' || ((catMap[k] as string[] | undefined)?.length ?? 0) > 0 || allCats.includes(k));
+  }, [catMap, allCats]);
 
-  // Auto-save a single photo's category change
-  async function saveOne(url: string, toCat: string, order: number) {
+  // Auto-save a single photo's category/hidden change
+  async function saveOne(url: string, toCat: string, order: number, hidden?: boolean) {
     setSaving((prev) => new Set([...prev, url]));
     setLastError('');
     try {
       await api(`/admin/units/${unit.unitSlug}/photos/references`, {
         method: 'POST',
-        body: JSON.stringify({ assignments: [{ url, roomCategory: toCat || null, displayOrder: order, alt: unit.unitName }] }),
+        body: JSON.stringify({ assignments: [{ url, roomCategory: toCat || null, displayOrder: order, alt: unit.unitName, hidden: hidden ?? hiddenUrls.has(url) }] }),
       });
       onChanged();
     } catch (e) {
@@ -453,6 +533,13 @@ function PhotosTabUnit({ unit, api, onChanged }: { unit: FullUnit; api: ReturnTy
     } finally {
       setSaving((prev) => { const next = new Set(prev); next.delete(url); return next; });
     }
+  }
+
+  function toggleHidden(url: string, cat: string) {
+    const nowHidden = !hiddenUrls.has(url);
+    setHiddenUrls((prev) => { const next = new Set(prev); nowHidden ? next.add(url) : next.delete(url); return next; });
+    const order = (catMap[cat] as string[] | undefined)?.indexOf(url) ?? 0;
+    saveOne(url, cat, order, nowHidden);
   }
 
   // Save current order for a whole category (after ◀ ▶)
@@ -545,8 +632,84 @@ function PhotosTabUnit({ unit, api, onChanged }: { unit: FullUnit; api: ReturnTy
         </div>
       )}
 
+      {/* Category filter chips */}
+      <div className="flex flex-wrap items-center gap-2">
+        <span className="font-body text-[10px] uppercase tracking-[0.15em] text-on-surface-variant/60 shrink-0">Filtrar:</span>
+        <button
+          onClick={() => setCatFilter(null)}
+          className="px-2.5 py-1 rounded-full font-body text-[10px] uppercase tracking-widest transition-colors"
+          style={catFilter === null ? { background: NAVY, color: '#fff' } : { border: '1px solid rgba(0,0,0,0.15)', color: 'rgba(0,0,0,0.5)' }}
+        >
+          Todas
+        </button>
+        <button
+          onClick={() => setCatFilter('')}
+          className="px-2.5 py-1 rounded-full font-body text-[10px] uppercase tracking-widest transition-colors"
+          style={catFilter === '' ? { background: '#92400e', color: '#fff' } : { border: '1px solid rgba(0,0,0,0.15)', color: 'rgba(0,0,0,0.5)' }}
+        >
+          Sem categoria ({uncatCount})
+        </button>
+        {allCats.map((c) => (
+          <button
+            key={c}
+            onClick={() => setCatFilter(c)}
+            className="px-2.5 py-1 rounded-full font-body text-[10px] uppercase tracking-widest transition-colors"
+            style={catFilter === c ? { background: GOLD, color: '#fff' } : { border: '1px solid rgba(0,0,0,0.15)', color: 'rgba(0,0,0,0.5)' }}
+          >
+            {c} ({(catMap[c] as string[] | undefined)?.length ?? 0})
+          </button>
+        ))}
+      </div>
+
+      {/* Bulk selection bar */}
+      {selected.size > 0 && (
+        <div className="flex items-center gap-3 px-4 py-2.5 rounded-lg border" style={{ borderColor: GOLD, background: 'rgba(197,160,89,0.08)' }}>
+          <span className="font-body text-xs text-on-surface">{selected.size} selecionada{selected.size !== 1 ? 's' : ''}</span>
+          <select
+            value={bulkTargetCat}
+            onChange={(e) => setBulkTargetCat(e.target.value)}
+            className="bg-surface border border-outline-variant/30 font-body text-[11px] text-on-surface-variant py-1 px-2 rounded-sm"
+          >
+            <option value="">Mover para…</option>
+            <option value="__uncat__">— sem categoria —</option>
+            {allCats.map((c) => <option key={c} value={c}>{c}</option>)}
+          </select>
+          <button
+            onClick={bulkMoveToCategory}
+            disabled={!bulkTargetCat}
+            className="px-3 py-1 font-body text-[10px] uppercase tracking-[0.15em] text-white disabled:opacity-40"
+            style={{ background: GOLD }}
+          >
+            Aplicar
+          </button>
+          <button onClick={() => setSelected(new Set())} className="font-body text-[10px] uppercase tracking-widest text-on-surface-variant/60 hover:text-on-surface-variant ml-auto">
+            Limpar seleção
+          </button>
+        </div>
+      )}
+
+      {/* Add custom category */}
+      <div className="flex items-center gap-3 pb-2 border-b border-outline-variant/20">
+        <span className="font-body text-[10px] uppercase tracking-[0.15em] text-on-surface-variant shrink-0">Nova categoria</span>
+        <input
+          value={newCatName}
+          onChange={(e) => setNewCatName(e.target.value)}
+          onKeyDown={(e) => e.key === 'Enter' && addCustomCat()}
+          placeholder="Ex: Bedroom 4, Estúdio, Varanda Sul…"
+          className="flex-1 bg-transparent border-b border-outline-variant/40 py-1 font-body text-sm text-on-surface focus:outline-none focus:border-[#C5A059] transition-colors"
+        />
+        <button
+          onClick={addCustomCat}
+          disabled={!newCatName.trim() || allCats.includes(newCatName.trim())}
+          className="shrink-0 px-4 py-1.5 font-body text-[11px] uppercase tracking-[0.15em] text-white disabled:opacity-40 transition-opacity"
+          style={{ background: GOLD }}
+        >
+          Adicionar
+        </button>
+      </div>
+
       {/* Category sections — each is a drop zone */}
-      {visibleCats.map((cat: string) => {
+      {visibleCats.filter((cat) => catFilter === null || cat === catFilter).map((cat: string) => {
         const catPhotos = (catMap[cat] as string[] | undefined) ?? [];
         const isOver = dragOver === cat;
 
@@ -570,6 +733,19 @@ function PhotosTabUnit({ unit, api, onChanged }: { unit: FullUnit; api: ReturnTy
                   {cat || 'Sem categoria'}
                 </h3>
                 <span className="font-body text-[10px] text-on-surface-variant/50">{catPhotos.length}</span>
+                {catPhotos.length > 0 && (
+                  <button
+                    onClick={() => setSelected((prev) => {
+                      const allIn = catPhotos.every((u) => prev.has(u));
+                      const next = new Set(prev);
+                      catPhotos.forEach((u) => allIn ? next.delete(u) : next.add(u));
+                      return next;
+                    })}
+                    className="font-body text-[9px] uppercase tracking-widest text-on-surface-variant/40 hover:text-on-surface-variant transition-colors"
+                  >
+                    {catPhotos.every((u) => selected.has(u)) ? 'Desmarcar todas' : 'Selecionar todas'}
+                  </button>
+                )}
                 <div className="flex-1 h-px bg-outline-variant/20" />
                 {dragging && (
                   <span className="font-body text-[9px] uppercase tracking-widest"
@@ -589,13 +765,21 @@ function PhotosTabUnit({ unit, api, onChanged }: { unit: FullUnit; api: ReturnTy
                     total={catPhotos.length}
                     isDragging={dragging === url}
                     isSaving={saving.has(url)}
-                    categories={dynamicCats}
+                    isHidden={hiddenUrls.has(url)}
+                    isPrimary={photoByUrl.get(url)?.isPrimary ?? false}
+                    canSetCover={!!photoByUrl.get(url)?.id}
+                    categories={allCats}
+                    selectable
+                    isSelected={selected.has(url)}
+                    onToggleSelected={() => toggleSelected(url)}
                     onDragStart={() => setDragging(url)}
                     onDragEnd={() => { setDragging(null); setDragOver(null); }}
                     onMoveLeft={() => moveWithin(url, cat, -1)}
                     onMoveRight={() => moveWithin(url, cat, 1)}
                     onRemove={() => moveToCategory(url, '')}
                     onCategoryChange={(newCat) => moveToCategory(url, newCat)}
+                    onToggleHidden={() => toggleHidden(url, cat)}
+                    onSetCover={() => setCover(url)}
                   />
                 ))}
 
@@ -803,7 +987,7 @@ function ReviewsTabUnit({ unit, api }: { unit: FullUnit; api: ReturnType<typeof 
 // TAB: Booking
 // ══════════════════════════════════════════════════════════════════
 function BookingTab({ unit, api }: { unit: FullUnit; api: ReturnType<typeof useApi> }) {
-  const { save, status } = useAutosave(api, unit.unitSlug);
+  const { save, status, lastError } = useAutosave(api, unit.unitSlug);
   const [airbnbUrl, setAirbnbUrl] = useState(unit.airbnbUrl || '');
   const [icalAirbnb, setIcalAirbnb] = useState(unit.icalAirbnbUrl || '');
   const [icalVrbo, setIcalVrbo] = useState(unit.icalVrboUrl || '');
@@ -818,7 +1002,7 @@ function BookingTab({ unit, api }: { unit: FullUnit; api: ReturnType<typeof useA
     <div className="max-w-2xl space-y-6">
       <div className="flex items-center gap-4">
         <p className="font-display text-headline-sm text-primary">Reservas e calendário</p>
-        <SaveStatus s={status} />
+        <SaveStatus s={status} error={lastError} />
       </div>
 
       <div>
@@ -854,7 +1038,7 @@ function BookingTab({ unit, api }: { unit: FullUnit; api: ReturnType<typeof useA
 // TAB: Settings
 // ══════════════════════════════════════════════════════════════════
 function SettingsTab({ unit, api, onChanged }: { unit: FullUnit; api: ReturnType<typeof useApi>; onChanged: () => void }) {
-  const { save, status } = useAutosave(api, unit.unitSlug);
+  const { save, status, lastError } = useAutosave(api, unit.unitSlug);
   const [visible, setVisible] = useState(unit.visible);
   const [displayOrder, setDisplayOrder] = useState(String(unit.displayOrder));
   const [seoTitle, setSeoTitle] = useState(unit.seoTitle || '');
@@ -873,11 +1057,17 @@ function SettingsTab({ unit, api, onChanged }: { unit: FullUnit; api: ReturnType
     setLng(unit.longitude != null ? String(unit.longitude) : '');
   }, [unit.unitSlug]);
 
+  useUnsavedChangesGuard(
+    visible !== unit.visible || displayOrder !== String(unit.displayOrder) || seoTitle !== (unit.seoTitle || '')
+    || metaDesc !== (unit.metaDescription || '') || notes !== (unit.internalNotes || '')
+    || lat !== (unit.latitude != null ? String(unit.latitude) : '') || lng !== (unit.longitude != null ? String(unit.longitude) : '')
+  );
+
   return (
     <div className="max-w-2xl space-y-8">
       <div className="flex items-center gap-4">
         <p className="font-display text-headline-sm text-primary">Configurações</p>
-        <SaveStatus s={status} />
+        <SaveStatus s={status} error={lastError} />
       </div>
 
       {/* Visibility toggle */}
@@ -936,12 +1126,18 @@ function SettingsTab({ unit, api, onChanged }: { unit: FullUnit; api: ReturnType
             <input type="number" step="any" value={lat} onChange={(e) => setLat(e.target.value)}
               onBlur={() => { const v = lat ? parseFloat(lat) : null; if (v !== unit.latitude) save({ latitude: v }); }}
               className={fld} placeholder="53.4794" />
+            {lat !== '' && (parseFloat(lat) < -90 || parseFloat(lat) > 90) && (
+              <p className="font-body text-[10px] mt-1" style={{ color: '#ba1a1a' }}>A latitude deve estar entre -90 e 90.</p>
+            )}
           </div>
           <div>
             <label className={lbl}>Longitude</label>
             <input type="number" step="any" value={lng} onChange={(e) => setLng(e.target.value)}
               onBlur={() => { const v = lng ? parseFloat(lng) : null; if (v !== unit.longitude) save({ longitude: v }); }}
               className={fld} placeholder="-2.2453" />
+            {lng !== '' && (parseFloat(lng) < -180 || parseFloat(lng) > 180) && (
+              <p className="font-body text-[10px] mt-1" style={{ color: '#ba1a1a' }}>A longitude deve estar entre -180 e 180.</p>
+            )}
           </div>
         </div>
         <p className="font-body text-[10px] text-on-surface-variant/40">Use Google Maps para obter as coordenadas exatas.</p>
@@ -984,7 +1180,10 @@ export default function AdminApartment() {
   const setTab = (t: ApartmentTab) => setSearchParams({ tab: t }, { replace: true });
 
   const token = localStorage.getItem(TOKEN_KEY);
-  const api = useApi(token, () => navigate('/admin'));
+  const api = useApi(token, () => {
+    localStorage.removeItem(TOKEN_KEY);
+    navigate('/admin');
+  });
 
   const [unit, setUnit] = useState<FullUnit | null>(null);
   const [loading, setLoading] = useState(true);
@@ -1023,54 +1222,28 @@ export default function AdminApartment() {
     : '#';
 
   return (
-    <div className="min-h-screen bg-surface">
-      {/* Sticky header */}
-      <header className="sticky top-0 z-20 text-white" style={{ background: NAVY, borderBottom: `1px solid ${GOLD}66` }}>
-        <div className="max-w-[1280px] mx-auto px-4 md:px-10">
-          <div className="flex items-center justify-between h-14 gap-4">
-            <div className="flex items-center gap-4 min-w-0">
-              <button onClick={() => navigate('/admin')}
-                className="shrink-0 font-body text-[11px] uppercase tracking-[0.12em] text-white/50 hover:text-white transition-colors">
-                ← Admin
-              </button>
-              {unit && (
-                <div className="min-w-0">
-                  <p className="font-body text-[9px] uppercase tracking-widest text-white/40 leading-none">{unit.propertyName}</p>
-                  <div className="flex items-center gap-2 mt-0.5">
-                    <p className="font-display text-base text-white truncate">{unit.unitName}</p>
-                    <span className="shrink-0 px-2 py-0.5 rounded-full font-body text-[8px] uppercase tracking-widest text-white"
-                      style={{ background: unit.visible ? '#3f7d5b' : '#6b7280' }}>
-                      {unit.visible ? 'Visível' : 'Oculto'}
-                    </span>
-                  </div>
-                </div>
-              )}
-            </div>
-            {unit && (
-              <a href={publicUrl} target="_blank" rel="noopener noreferrer"
-                className="shrink-0 font-body text-[10px] uppercase tracking-[0.12em] text-white/50 hover:text-white border border-white/20 px-3 py-1.5 hover:bg-white/10 transition-colors rounded">
-                Ver público →
-              </a>
-            )}
-          </div>
-
-          {/* Tab navigation */}
-          <nav className="flex overflow-x-auto gap-0" style={{ scrollbarWidth: 'none' }}>
-            {tabs.map((t) => (
-              <button key={t.id} onClick={() => setTab(t.id)}
-                className="shrink-0 font-body text-[10px] uppercase tracking-[0.12em] px-4 py-3 border-b-2 transition-colors"
-                style={{
-                  color: tab === t.id ? GOLD : 'rgba(255,255,255,0.45)',
-                  borderBottomColor: tab === t.id ? GOLD : 'transparent',
-                }}>
-                {t.label}
-              </button>
-            ))}
-          </nav>
-        </div>
-      </header>
-
-      <main className="max-w-[1280px] mx-auto px-4 md:px-10 py-10">
+    <AdminShell
+      navItems={tabs.map((t) => ({ id: t.id, label: t.label, onClick: () => setTab(t.id) }))}
+      activeId={tab}
+      breadcrumbs={[
+        { label: 'Admin', onClick: () => navigate('/admin') },
+        { label: unit ? unit.unitName : (unitSlug || '') },
+      ]}
+      rightSlot={
+        unit && (
+          <>
+            <span className="shrink-0 px-2 py-0.5 rounded-full font-body text-[8px] uppercase tracking-widest text-white"
+              style={{ background: unit.visible ? '#3f7d5b' : '#6b7280' }}>
+              {unit.visible ? 'Visível' : 'Oculto'}
+            </span>
+            <a href={publicUrl} target="_blank" rel="noopener noreferrer"
+              className="shrink-0 font-body text-[10px] uppercase tracking-[0.12em] text-white/50 hover:text-white border border-white/20 px-3 py-1.5 hover:bg-white/10 transition-colors rounded">
+              Ver público →
+            </a>
+          </>
+        )
+      }
+    >
         {loading && <p className="font-body text-on-surface-variant">Carregando apartamento…</p>}
         {error && (
           <div className="border border-red-200 bg-red-50/60 rounded-lg p-4">
@@ -1091,7 +1264,6 @@ export default function AdminApartment() {
             {tab === 'settings' && <SettingsTab unit={unit} api={api} onChanged={loadUnit} />}
           </>
         )}
-      </main>
-    </div>
+    </AdminShell>
   );
 }

@@ -1,21 +1,24 @@
 import { useState, useEffect, useCallback, useRef, useMemo, type FormEvent, type ReactNode, type ChangeEvent } from 'react';
 import { Link } from 'react-router-dom';
 import { getListingMedia, cleanListingTitle } from '../data/listingMedia';
+import { getInventoryForProperty } from '../data/airbnbInventory';
 import { mapLocationDefaults } from '../data/locations';
 import { parseAirbnbReviews } from '../lib/parseAirbnbReviews';
 import { ROOM_CATEGORIES } from '../components/PhotoTour';
+import { useApi, fileToBase64, ADMIN_TOKEN_KEY as TOKEN_KEY } from '../hooks/useAdminApi';
+import { AdminShell } from '../components/admin/AdminShell';
+import { ConfirmDialog } from '../components/admin/AdminUI';
 
 // Quiet Luxury signature accent
 const GOLD = '#C5A059';
 const NAVY = '#101c2d';
-const TOKEN_KEY = 'mcrh_admin_token';
 
 // ── Types ───────────────────────────────────────────────────────────
 type Photo = { id: string; url: string; alt: string | null; isPrimary: boolean; displayOrder: number; roomCategory: string | null };
 type Unit = {
   unitSlug: string; unitName: string; propertySlug: string; propertyName: string;
   suppliedSpecs: string | null; postcode: string | null; airbnbUrl: string | null;
-  description: string | null; squareFeet: number | null; icalAirbnbUrl: string | null; icalVrboUrl: string | null; visible: boolean; airbnbListed?: boolean; displayOrder: number; photos: Photo[];
+  description: string | null; squareFeet: number | null; icalAirbnbUrl: string | null; icalVrboUrl: string | null; visible: boolean; airbnbListed?: boolean; displayOrder: number; photos: Photo[]; updatedAt?: string;
 };
 type SiteData = { content: Record<string, unknown>; images: Record<string, { url: string; alt: string | null }> };
 
@@ -33,28 +36,6 @@ const IMAGE_SLOTS: { slot: string; label: string; page: string }[] = [
   { slot: 'management.hero', label: 'Hero', page: 'Management Services' },
   { slot: 'about.hero', label: 'Hero', page: 'About' },
 ];
-
-// ── API helper ──────────────────────────────────────────────────────
-function useApi(token: string | null, onUnauthorized: () => void) {
-  return useCallback(async (path: string, opts: RequestInit = {}) => {
-    const res = await fetch(`/api${path}`, {
-      ...opts,
-      headers: { 'content-type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}), ...(opts.headers || {}) },
-    });
-    if (res.status === 401) { onUnauthorized(); throw new Error('Unauthorized'); }
-    if (!res.ok) throw new Error((await res.json().catch(() => ({}))).error || `HTTP ${res.status}`);
-    return res.json();
-  }, [token, onUnauthorized]);
-}
-
-function fileToBase64(file: File): Promise<{ base64: string; type: string }> {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => resolve({ base64: (reader.result as string).split(',')[1], type: file.type });
-    reader.onerror = () => reject(new Error('Falha ao ler o arquivo'));
-    reader.readAsDataURL(file);
-  });
-}
 
 // ── Shared primitives (Quiet Luxury) ────────────────────────────────
 const label = 'font-body text-[10px] uppercase tracking-[0.15em] text-on-surface-variant block mb-1.5';
@@ -205,23 +186,54 @@ function UnitCard({ unit, api, onChanged, featured, onSaveFeatured, displayTitle
     catch { setStatus('error'); }
   }
 
+  const cover = unit.photos.find((p) => p.isPrimary) || unit.photos[0];
+
   return (
     <div className="bg-surface-container-lowest border border-outline-variant/40 p-5" style={{ opacity: unit.visible ? 1 : 0.55 }}>
-      <div className="flex justify-between items-center mb-4">
-        <span className="font-body text-[10px] uppercase tracking-[0.12em] text-on-surface-variant/70">{unit.unitSlug}</span>
-        {unit.airbnbListed === false && (
-          <span title="A verificação diária detectou que este anúncio está 'não listado' no Airbnb, por isso ele não aparece no site. Volta automaticamente quando você reativar no Airbnb."
-            className="font-body text-[9px] uppercase tracking-[0.12em] text-red-600 border border-red-300 px-1.5 py-0.5">
-            Não listado no Airbnb
-          </span>
+      <div className="flex items-center gap-3 mb-4">
+        {cover ? (
+          <img src={cover.url} alt="" className="w-12 h-12 object-cover shrink-0" />
+        ) : (
+          <div className="w-12 h-12 shrink-0 border border-dashed border-outline-variant/50" />
         )}
+        <div className="min-w-0 flex-1">
+          <div className="flex items-center gap-2 flex-wrap">
+            <span className="font-body text-[10px] uppercase tracking-[0.12em] text-on-surface-variant/70">{unit.unitSlug}</span>
+            <span className="font-body text-[9px] uppercase tracking-[0.12em] px-1.5 py-0.5 border"
+              style={{ color: unit.visible ? '#2f6e4d' : '#6b7280', borderColor: unit.visible ? '#2f6e4d55' : '#6b728055' }}>
+              {unit.visible ? 'Visível' : 'Oculto'}
+            </span>
+            {unit.airbnbListed === false && (
+              <span title="A verificação diária detectou que este anúncio está 'não listado' no Airbnb, por isso ele não aparece no site. Volta automaticamente quando você reativar no Airbnb."
+                className="font-body text-[9px] uppercase tracking-[0.12em] text-red-600 border border-red-300 px-1.5 py-0.5">
+                Não listado no Airbnb
+              </span>
+            )}
+          </div>
+          {unit.updatedAt && (
+            <p className="font-body text-[9px] uppercase tracking-widest text-on-surface-variant/40 mt-1">
+              Atualizado em {new Date(unit.updatedAt).toLocaleDateString('pt-BR')}
+            </p>
+          )}
+        </div>
         <button type="button" onClick={() => save({ visible: !unit.visible })} aria-pressed={unit.visible}
-          className="flex items-center gap-2 font-body text-[10px] uppercase tracking-[0.15em] text-on-surface-variant">
-          <span>{unit.visible ? 'Visível' : 'Oculto'}</span>
+          className="flex items-center gap-2 font-body text-[10px] uppercase tracking-[0.15em] text-on-surface-variant shrink-0">
           <span className="relative inline-block w-9 h-5 transition-colors" style={{ background: unit.visible ? GOLD : '#c5c6cd' }}>
             <span className="absolute top-0.5 w-4 h-4 bg-white transition-all" style={{ left: unit.visible ? 18 : 2 }} />
           </span>
         </button>
+      </div>
+
+      {/* Quick actions */}
+      <div className="flex items-center gap-4 mb-4 pb-4 border-b border-outline-variant/20">
+        <Link to={`/admin/apartments/${unit.unitSlug}`} className="font-body text-[10px] uppercase tracking-[0.15em] hover:underline" style={{ color: GOLD }}>
+          Editar →
+        </Link>
+        <a href={unit.propertySlug ? `/properties/${unit.propertySlug}/${unit.unitSlug}` : `/property/${unit.unitSlug}`}
+          target="_blank" rel="noopener noreferrer"
+          className="font-body text-[10px] uppercase tracking-[0.15em] text-on-surface-variant hover:text-primary transition-colors">
+          Ver público →
+        </a>
       </div>
 
       {/* Featured on homepage */}
@@ -773,9 +785,73 @@ function PropertiesTab({ site, api, onChanged }: { site: SiteData; api: ReturnTy
                   cols={[{ key: 'item' as never, label: 'Amenidade', wide: true }]} />
                 <LE k={`property.${slug}.nearby`} title="Distâncias / Nearby" blank={{ location: '', time: '' } as Record<string,string>}
                   cols={[{ key: 'location', label: 'Local', wide: true }, { key: 'time', label: 'Tempo' }]} />
+                <UnitOrderEditor propertySlug={slug} api={api} />
                 <PropertyGalleryEditor slug={slug} api={api} />
               </div>
             )}
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function UnitOrderEditor({ propertySlug, api }: { propertySlug: string; api: ReturnType<typeof useApi> }) {
+  const [units, setUnits] = useState<{ unitSlug: string; unitName: string; displayTitle?: string | null; displayOrder: number }[]>([]);
+  const [status, setStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
+  const dragIdx = useRef<number | null>(null);
+
+  const load = useCallback(async () => {
+    const data = await api('/admin/units');
+    const all: Unit[] = data.units || [];
+    // Use the same sub-slug grouping as the collection page (e.g. 'chambers' → chambers-9, chambers-11)
+    const inventoryUnitSlugs = new Set(getInventoryForProperty(propertySlug).map((u) => u.unitSlug));
+    const filtered = all.filter((u) =>
+      u.propertySlug === propertySlug || inventoryUnitSlugs.has(u.unitSlug)
+    ).sort((a, b) => a.displayOrder - b.displayOrder);
+    setUnits(filtered);
+  }, [api, propertySlug]);
+
+  useEffect(() => { load(); }, [load]);
+
+  async function save(ordered: typeof units) {
+    setStatus('saving');
+    try {
+      await api('/admin/units/reorder', { method: 'POST', body: JSON.stringify({ orderedSlugs: ordered.map((u) => u.unitSlug) }) });
+      setStatus('saved'); setTimeout(() => setStatus('idle'), 1500);
+    } catch { setStatus('error'); }
+  }
+
+  function onDragStart(i: number) { dragIdx.current = i; }
+  function onDragOver(e: { preventDefault(): void }, i: number) {
+    e.preventDefault();
+    if (dragIdx.current === null || dragIdx.current === i) return;
+    const next = [...units];
+    const [moved] = next.splice(dragIdx.current, 1);
+    next.splice(i, 0, moved);
+    dragIdx.current = i;
+    setUnits(next);
+  }
+  function onDrop() { if (dragIdx.current !== null) { save(units); dragIdx.current = null; } }
+
+  if (units.length === 0) return null;
+  return (
+    <div>
+      <div className="flex items-center justify-between mb-2">
+        <label className={label}>Ordem dos apartamentos</label>
+        <Status s={status} />
+      </div>
+      <div className="space-y-1">
+        {units.map((u, i) => (
+          <div key={u.unitSlug} draggable
+            onDragStart={() => onDragStart(i)}
+            onDragOver={(e) => onDragOver(e, i)}
+            onDrop={onDrop}
+            className="flex items-center gap-3 px-3 py-2 cursor-grab select-none"
+            style={{ border: '1px solid rgba(0,0,0,0.08)', background: '#fafaf8' }}>
+            <span className="text-on-surface-variant/40 text-xs">⠿</span>
+            <span className="font-body text-sm text-on-surface">{u.displayTitle?.trim() || u.unitName}</span>
+            <span className="font-body text-[10px] text-on-surface-variant/50 ml-auto">{u.unitSlug}</span>
           </div>
         ))}
       </div>
@@ -961,6 +1037,244 @@ function ImportBox({ slug, api, onDone }: { slug: string; api: ReturnType<typeof
   );
 }
 
+// ── Reviews tab (global, cross-apartment manager — Phase 16) ────────
+// Review.propertySlug is used 1:1 as the owning unit's unitSlug in practice
+// (see Phase 6/8 findings — the column name is misleading but every row is
+// scoped to a single apartment, not a whole building), so "apartment filter"
+// below just filters on that column directly.
+function ReviewsTab({ units, api }: { units: Unit[]; api: ReturnType<typeof useApi> }) {
+  const [reviews, setReviews] = useState<ReviewRow[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [query, setQuery] = useState('');
+  const [unitFilter, setUnitFilter] = useState('all');
+  const [ratingFilter, setRatingFilter] = useState('all');
+  const [sourceFilter, setSourceFilter] = useState<'all' | 'airbnb' | 'manual'>('all');
+  const [visFilter, setVisFilter] = useState<'all' | 'published' | 'hidden'>('all');
+  const [sortBy, setSortBy] = useState<'date' | 'rating' | 'unit'>('date');
+  const [page, setPage] = useState(1);
+  const [selected, setSelected] = useState<Set<string>>(new Set());
+  const [expanded, setExpanded] = useState<Set<string>>(new Set());
+  // Confirm dialog state — replaces window.confirm() for both the
+  // single-row remove and bulk-delete flows so screen readers get a
+  // labelled, focus-trapped dialog instead of a blocking native prompt.
+  const [confirmTarget, setConfirmTarget] = useState<{ kind: 'single'; id: string } | { kind: 'bulk' } | null>(null);
+  const PAGE_SIZE = 20;
+
+  const load = useCallback(async () => {
+    setLoading(true);
+    try { const d = await api('/admin/reviews'); setReviews(Array.isArray(d) ? (d as ReviewRow[]) : []); }
+    finally { setLoading(false); }
+  }, [api]);
+
+  useEffect(() => { load(); }, [load]);
+
+  const unitName = (slug: string) => units.find((u) => u.unitSlug === slug)?.unitName || slug;
+
+  const filtered = reviews
+    .filter((r) => {
+      const q = query.toLowerCase();
+      return !q || (r.name || '').toLowerCase().includes(q) || (r.text || '').toLowerCase().includes(q);
+    })
+    .filter((r) => unitFilter === 'all' || r.propertySlug === unitFilter)
+    .filter((r) => ratingFilter === 'all' || r.rating >= Number(ratingFilter))
+    .filter((r) => sourceFilter === 'all' || (sourceFilter === 'airbnb' ? !!r.sourceReviewId : !r.sourceReviewId))
+    .filter((r) => visFilter === 'all' || (visFilter === 'published' ? r.published : !r.published))
+    .sort((a, b) => {
+      if (sortBy === 'rating') return b.rating - a.rating;
+      if (sortBy === 'unit') return unitName(a.propertySlug).localeCompare(unitName(b.propertySlug));
+      // Best-effort only: `date` is free text (e.g. "Julho 2024"), not a real
+      // timestamp, so this is a lexicographic sort, not a true chronological one.
+      return (b.date || '').localeCompare(a.date || '');
+    });
+
+  const pageCount = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
+  const pageSafe = Math.min(page, pageCount);
+  const pageReviews = filtered.slice((pageSafe - 1) * PAGE_SIZE, pageSafe * PAGE_SIZE);
+
+  async function update(id: string, patch: Partial<ReviewRow>) {
+    await api(`/admin/reviews/${id}`, { method: 'PATCH', body: JSON.stringify(patch) });
+    setReviews((prev) => prev.map((r) => (r.id === id ? { ...r, ...patch } : r)));
+  }
+
+  async function remove(id: string) {
+    await api(`/admin/reviews/${id}`, { method: 'DELETE' });
+    setReviews((prev) => prev.filter((r) => r.id !== id));
+    setSelected((prev) => { const next = new Set(prev); next.delete(id); return next; });
+  }
+
+  function toggleSelected(id: string) {
+    setSelected((prev) => { const next = new Set(prev); next.has(id) ? next.delete(id) : next.add(id); return next; });
+  }
+
+  async function bulkSetPublished(published: boolean) {
+    const ids = [...selected];
+    await Promise.all(ids.map((id) => update(id, { published })));
+    setSelected(new Set());
+  }
+
+  async function bulkDelete() {
+    if (selected.size === 0) return;
+    setConfirmTarget({ kind: 'bulk' });
+  }
+
+  async function confirmPendingDelete() {
+    if (!confirmTarget) return;
+    if (confirmTarget.kind === 'single') {
+      await remove(confirmTarget.id);
+    } else {
+      const ids = [...selected];
+      await Promise.all(ids.map((id) => api(`/admin/reviews/${id}`, { method: 'DELETE' })));
+      setReviews((prev) => prev.filter((r) => !ids.includes(r.id)));
+      setSelected(new Set());
+    }
+    setConfirmTarget(null);
+  }
+
+  const unitOptions: string[] = Array.from(new Set(reviews.map((r): string => r.propertySlug)));
+
+  return (
+    <div>
+      <div className="flex items-center justify-between mb-6">
+        <p className="font-display text-headline-sm text-primary">Reviews</p>
+        <span className="font-body text-xs text-on-surface-variant">
+          {loading ? 'carregando…' : `${filtered.length} de ${reviews.length} review${reviews.length !== 1 ? 's' : ''}`}
+        </span>
+      </div>
+
+      {/* Filters */}
+      <div className="flex flex-wrap items-end gap-4 mb-6">
+        <div className="flex-1 min-w-[200px] max-w-sm">
+          <label className={label}>Buscar</label>
+          <input value={query} onChange={(e) => { setQuery(e.target.value); setPage(1); }} placeholder="Nome ou texto do review…" className={field} />
+        </div>
+        <div>
+          <label className={label}>Apartamento</label>
+          <select value={unitFilter} onChange={(e) => { setUnitFilter(e.target.value); setPage(1); }} className={`${field} min-w-[160px]`}>
+            <option value="all">Todos</option>
+            {unitOptions.map((slug) => <option key={slug} value={slug}>{unitName(slug)}</option>)}
+          </select>
+        </div>
+        <div>
+          <label className={label}>Nota mínima</label>
+          <select value={ratingFilter} onChange={(e) => { setRatingFilter(e.target.value); setPage(1); }} className={field}>
+            <option value="all">Todas</option>
+            <option value="5">5</option>
+            <option value="4">4+</option>
+            <option value="3">3+</option>
+          </select>
+        </div>
+        <div>
+          <label className={label}>Origem</label>
+          <select value={sourceFilter} onChange={(e) => { setSourceFilter(e.target.value as typeof sourceFilter); setPage(1); }} className={field}>
+            <option value="all">Todas</option>
+            <option value="airbnb">Importado do Airbnb</option>
+            <option value="manual">Adicionado manualmente</option>
+          </select>
+        </div>
+        <div>
+          <label className={label}>Visibilidade</label>
+          <select value={visFilter} onChange={(e) => { setVisFilter(e.target.value as typeof visFilter); setPage(1); }} className={field}>
+            <option value="all">Todas</option>
+            <option value="published">Publicados</option>
+            <option value="hidden">Ocultos</option>
+          </select>
+        </div>
+        <div>
+          <label className={label}>Ordenar por</label>
+          <select value={sortBy} onChange={(e) => setSortBy(e.target.value as typeof sortBy)} className={field}>
+            <option value="date">Data (texto)</option>
+            <option value="rating">Nota</option>
+            <option value="unit">Apartamento</option>
+          </select>
+        </div>
+      </div>
+
+      {/* Bulk action bar */}
+      {selected.size > 0 && (
+        <div className="flex items-center gap-3 px-4 py-2.5 mb-4 rounded-lg border" style={{ borderColor: GOLD, background: 'rgba(197,160,89,0.08)' }}>
+          <span className="font-body text-xs text-on-surface">{selected.size} selecionado{selected.size !== 1 ? 's' : ''}</span>
+          <button onClick={() => bulkSetPublished(true)} className="font-body text-[10px] uppercase tracking-[0.15em] text-white px-3 py-1" style={{ background: '#3f7d5b' }}>Publicar</button>
+          <button onClick={() => bulkSetPublished(false)} className="font-body text-[10px] uppercase tracking-[0.15em] text-white px-3 py-1" style={{ background: '#6b7280' }}>Ocultar</button>
+          <button onClick={bulkDelete} className="font-body text-[10px] uppercase tracking-[0.15em] text-white px-3 py-1" style={{ background: '#ba1a1a' }}>Remover</button>
+          <button onClick={() => setSelected(new Set())} className="font-body text-[10px] uppercase tracking-widest text-on-surface-variant/60 hover:text-on-surface-variant ml-auto">Limpar seleção</button>
+        </div>
+      )}
+
+      {!loading && filtered.length === 0 && (
+        <div className="border border-dashed border-outline-variant/40 rounded-lg px-6 py-16 text-center">
+          <p className="font-body text-sm text-on-surface-variant/60">Nenhum review encontrado com estes filtros.</p>
+        </div>
+      )}
+
+      <div className="space-y-4">
+        {pageReviews.map((r) => {
+          const isLong = (r.text || '').length > 280;
+          const isExpanded = expanded.has(r.id);
+          return (
+            <div key={r.id} className="border border-outline-variant/30 rounded-lg p-4 grid gap-3" style={{ opacity: r.published ? 1 : 0.55 }}>
+              <div className="flex items-start gap-3">
+                <input type="checkbox" checked={selected.has(r.id)} onChange={() => toggleSelected(r.id)} className="mt-1.5 accent-[#C5A059]" aria-label="Selecionar review" />
+                {r.avatarUrl
+                  ? <img src={r.avatarUrl} alt={r.name || ''} className="w-9 h-9 rounded-full object-cover shrink-0" />
+                  : <div className="w-9 h-9 rounded-full bg-outline-variant/20 shrink-0" />}
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className="font-body text-sm text-on-surface font-medium">{r.name || 'Sem nome'}</span>
+                    <span className="font-body text-[10px] text-on-surface-variant/50">{r.date}</span>
+                    <span className="font-body text-[10px] uppercase tracking-widest px-1.5 py-0.5 rounded" style={{ background: '#f3f0e9', color: GOLD }}>★ {r.rating}</span>
+                    <span className="font-body text-[9px] uppercase tracking-widest text-on-surface-variant/40">{unitName(r.propertySlug)}</span>
+                    {r.sourceReviewId && <span className="font-body text-[9px] uppercase tracking-widest text-on-surface-variant/40">· Airbnb</span>}
+                  </div>
+                  {/* Prevent long review text from stretching the page: clamp with a "show more" toggle */}
+                  <p className={`font-body text-sm text-on-surface-variant mt-1.5 ${!isExpanded && isLong ? 'line-clamp-4' : ''}`}>
+                    {r.text}
+                  </p>
+                  {isLong && (
+                    <button
+                      onClick={() => setExpanded((prev) => { const next = new Set(prev); isExpanded ? next.delete(r.id) : next.add(r.id); return next; })}
+                      className="font-body text-[10px] uppercase tracking-widest mt-1"
+                      style={{ color: GOLD }}
+                    >
+                      {isExpanded ? 'Ver menos' : 'Ver mais'}
+                    </button>
+                  )}
+                </div>
+              </div>
+              <div className="flex items-center gap-4 pl-[52px]">
+                <button onClick={() => update(r.id, { published: !r.published })} className="font-body text-[10px] uppercase tracking-[0.12em] text-on-surface-variant/70">
+                  {r.published ? '● Publicado' : '○ Oculto'}
+                </button>
+                <button onClick={() => setConfirmTarget({ kind: 'single', id: r.id })} className="font-body text-[10px] uppercase tracking-[0.12em] text-red-500 ml-auto">Remover</button>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+
+      {pageCount > 1 && (
+        <div className="flex items-center justify-center gap-4 mt-8">
+          <button onClick={() => setPage((p) => Math.max(1, p - 1))} disabled={pageSafe === 1} className="font-body text-[11px] uppercase tracking-widest text-on-surface-variant/60 disabled:opacity-30">← Anterior</button>
+          <span className="font-body text-xs text-on-surface-variant/60">Página {pageSafe} de {pageCount}</span>
+          <button onClick={() => setPage((p) => Math.min(pageCount, p + 1))} disabled={pageSafe === pageCount} className="font-body text-[11px] uppercase tracking-widest text-on-surface-variant/60 disabled:opacity-30">Próxima →</button>
+        </div>
+      )}
+
+      <ConfirmDialog
+        open={confirmTarget !== null}
+        title={confirmTarget?.kind === 'bulk' ? 'Remover reviews' : 'Remover review'}
+        message={
+          confirmTarget?.kind === 'bulk'
+            ? `Remover ${selected.size} review${selected.size !== 1 ? 's' : ''}? Esta ação não pode ser desfeita.`
+            : 'Remover este review? Esta ação não pode ser desfeita.'
+        }
+        confirmLabel="Remover"
+        onConfirm={confirmPendingDelete}
+        onCancel={() => setConfirmTarget(null)}
+      />
+    </div>
+  );
+}
+
 // ── Leads tab ────────────────────────────────────────────────────────
 type Lead = { id: string; name: string; email: string; phone: string | null; propertyName: string; checkIn: string | null; checkOut: string | null; guests: number | null; message: string | null; status: string; createdAt: string; source: string | null };
 const STATUS_LABELS: Record<string, string> = { novo: 'Novo', lido: 'Lido', arquivado: 'Arquivado' };
@@ -1055,6 +1369,92 @@ function LeadsTab({ api }: { api: ReturnType<typeof useApi> }) {
 }
 
 // ── Photos tab — per-apartment photo manager ─────────────────────────
+// ── Dashboard ────────────────────────────────────────────────────────
+function DashCard({ title, value, tone, onClick }: { title: string; value: string | number; tone?: 'warn' | 'default'; onClick?: () => void }) {
+  const Tag = onClick ? 'button' : 'div';
+  return (
+    <Tag
+      onClick={onClick}
+      className={`border p-5 text-left w-full ${onClick ? 'cursor-pointer hover:bg-surface-container-low transition-colors' : ''}`}
+      style={{ borderColor: tone === 'warn' ? '#ba1a1a55' : 'rgba(0,0,0,0.1)' }}
+    >
+      <p className="font-body text-[10px] uppercase tracking-[0.15em] text-on-surface-variant mb-1.5">{title}</p>
+      <p className="font-display text-headline-md" style={{ color: tone === 'warn' ? '#ba1a1a' : GOLD }}>{value}</p>
+    </Tag>
+  );
+}
+
+function DashboardTab({ units, onGoToApartments, onGoToPhotos }: {
+  units: Unit[];
+  onGoToApartments: (query: string) => void;
+  onGoToPhotos: () => void;
+}) {
+  if (units.length === 0) {
+    return <p className="font-body text-on-surface-variant/60">Nenhum apartamento cadastrado ainda.</p>;
+  }
+
+  const propertyCount = new Set(units.map((u) => u.propertySlug)).size;
+  const visibleUnits = units.filter((u) => u.visible);
+  const hiddenUnits = units.filter((u) => !u.visible);
+  const noDescription = units.filter((u) => !u.description || !u.description.trim());
+  const noPhotos = units.filter((u) => u.photos.length === 0);
+  const uncategorisedPhotos = units.flatMap((u) => u.photos.filter((p) => !p.roomCategory));
+  const brokenPhotos = units.flatMap((u) => u.photos.filter((p) => !p.url || !p.url.trim()));
+  const recentlyUpdated = [...units]
+    .filter((u) => u.updatedAt)
+    .sort((a, b) => (b.updatedAt || '').localeCompare(a.updatedAt || ''))
+    .slice(0, 6);
+
+  return (
+    <div className="space-y-10">
+      <div className="grid gap-4" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))' }}>
+        <DashCard title="Propriedades" value={propertyCount} />
+        <DashCard title="Apartamentos" value={units.length} onClick={() => onGoToApartments('')} />
+        <DashCard title="Visíveis" value={visibleUnits.length} onClick={() => onGoToApartments('')} />
+        <DashCard title="Ocultos" value={hiddenUnits.length} tone={hiddenUnits.length > 0 ? 'warn' : 'default'} onClick={() => onGoToApartments('')} />
+      </div>
+
+      <div>
+        <h2 className="font-display text-headline-sm text-primary mb-4">Avisos</h2>
+        <div className="grid gap-4" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))' }}>
+          <DashCard title="Sem descrição" value={noDescription.length} tone={noDescription.length > 0 ? 'warn' : 'default'} onClick={() => onGoToApartments('')} />
+          <DashCard title="Sem fotos" value={noPhotos.length} tone={noPhotos.length > 0 ? 'warn' : 'default'} onClick={onGoToPhotos} />
+          <DashCard title="Fotos sem categoria" value={uncategorisedPhotos.length} tone={uncategorisedPhotos.length > 0 ? 'warn' : 'default'} onClick={onGoToPhotos} />
+          <DashCard title="Fotos com link quebrado" value={brokenPhotos.length} tone={brokenPhotos.length > 0 ? 'warn' : 'default'} onClick={onGoToPhotos} />
+        </div>
+        {noDescription.length > 0 && (
+          <p className="font-body text-xs text-on-surface-variant/70 mt-3">
+            Sem descrição: {noDescription.slice(0, 8).map((u) => u.unitName).join(', ')}{noDescription.length > 8 ? '…' : ''}
+          </p>
+        )}
+        {hiddenUnits.length > 0 && (
+          <p className="font-body text-xs text-on-surface-variant/70 mt-1">
+            Ocultos: {hiddenUnits.slice(0, 8).map((u) => u.unitName).join(', ')}{hiddenUnits.length > 8 ? '…' : ''}
+          </p>
+        )}
+      </div>
+
+      {recentlyUpdated.length > 0 && (
+        <div>
+          <h2 className="font-display text-headline-sm text-primary mb-4">Atualizados recentemente</h2>
+          <ul className="divide-y divide-outline-variant/20 border-t border-b border-outline-variant/20">
+            {recentlyUpdated.map((u) => (
+              <li key={u.unitSlug}>
+                <Link to={`/admin/apartments/${u.unitSlug}`} className="flex items-center justify-between py-3 hover:bg-surface-container-low transition-colors px-1">
+                  <span className="font-body text-sm text-on-surface">{u.unitName} <span className="text-on-surface-variant/60">— {u.propertyName}</span></span>
+                  <span className="font-body text-[10px] uppercase tracking-widest text-on-surface-variant/50">
+                    {u.updatedAt ? new Date(u.updatedAt).toLocaleDateString('pt-BR') : ''}
+                  </span>
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+    </div>
+  );
+}
+
 function PhotosTab({ units, api, onChanged }: { units: Unit[]; api: ReturnType<typeof useApi>; onChanged: () => void }) {
   const [selectedPropertySlug, setSelectedPropertySlug] = useState('');
   const [selectedUnitSlug, setSelectedUnitSlug] = useState('');
@@ -1410,15 +1810,20 @@ function CollectorTab() {
 }
 
 // ── Main ────────────────────────────────────────────────────────────
-type Tab = 'apartments' | 'photos' | 'images' | 'content' | 'properties' | 'leads' | 'availability' | 'collector';
+type Tab = 'dashboard' | 'apartments' | 'photos' | 'images' | 'content' | 'properties' | 'reviews' | 'leads' | 'availability' | 'collector';
 
 export default function Admin() {
   const [token, setToken] = useState<string | null>(() => localStorage.getItem(TOKEN_KEY));
-  const [tab, setTab] = useState<Tab>('apartments');
+  const [tab, setTab] = useState<Tab>('dashboard');
   const [units, setUnits] = useState<Unit[]>([]);
   const [site, setSite] = useState<SiteData>({ content: {}, images: {} });
   const [loading, setLoading] = useState(false);
   const [query, setQuery] = useState('');
+  const [propertyFilter, setPropertyFilter] = useState('all');
+  const [visibilityFilter, setVisibilityFilter] = useState<'all' | 'visible' | 'hidden'>('all');
+  const [sortBy, setSortBy] = useState<'name' | 'property' | 'updated'>('property');
+  const [page, setPage] = useState(1);
+  const PAGE_SIZE = 24;
 
   const logout = useCallback(() => { localStorage.removeItem(TOKEN_KEY); setToken(null); setUnits([]); }, []);
   const api = useApi(token, logout);
@@ -1438,12 +1843,32 @@ export default function Admin() {
 
   if (!token) return <Login onLogin={(t) => { localStorage.setItem(TOKEN_KEY, t); setToken(t); }} />;
 
-  const filtered = units.filter((u) => {
-    const q = query.toLowerCase();
-    return !q || u.unitName.toLowerCase().includes(q) || u.propertyName.toLowerCase().includes(q) || u.unitSlug.includes(q);
-  });
+  const propertyOptions = [...new Set(units.map((u) => u.propertySlug))]
+    .map((slug) => ({ slug, name: units.find((u) => u.propertySlug === slug)?.propertyName || slug }));
+
+  const filtered = units
+    .filter((u) => {
+      const q = query.toLowerCase();
+      return !q || u.unitName.toLowerCase().includes(q) || u.propertyName.toLowerCase().includes(q) || u.unitSlug.includes(q);
+    })
+    .filter((u) => propertyFilter === 'all' || u.propertySlug === propertyFilter)
+    .filter((u) => visibilityFilter === 'all' || (visibilityFilter === 'visible' ? u.visible : !u.visible))
+    .sort((a, b) => {
+      if (sortBy === 'name') return a.unitName.localeCompare(b.unitName);
+      if (sortBy === 'updated') return (b.updatedAt || '').localeCompare(a.updatedAt || '');
+      return a.propertyName.localeCompare(b.propertyName) || a.unitName.localeCompare(b.unitName);
+    });
+
+  // Client-side pagination: the full unit list is already fetched in one call
+  // by `load()` (small dataset, tens not thousands of rows) — a server-side
+  // paginated endpoint isn't warranted yet. Revisit if the unit count grows
+  // enough that `GET /admin/units` itself becomes slow.
+  const pageCount = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
+  const pageSafe = Math.min(page, pageCount);
+  const pageUnits = filtered.slice((pageSafe - 1) * PAGE_SIZE, pageSafe * PAGE_SIZE);
+
   const groups: Record<string, Unit[]> = {};
-  filtered.forEach((u) => { (groups[u.propertyName] ||= []).push(u); });
+  pageUnits.forEach((u) => { (groups[u.propertySlug] ||= []).push(u); });
   const visibleCount = units.filter((u) => u.visible).length;
   const featured = Array.isArray(site.content['home.featured']) ? (site.content['home.featured'] as string[]) : [];
   const saveFeatured = (next: string[]) =>
@@ -1457,48 +1882,35 @@ export default function Admin() {
   };
 
   const tabs: { id: Tab; label: string }[] = [
+    { id: 'dashboard', label: 'Painel' },
     { id: 'apartments', label: 'Apartamentos' },
     { id: 'photos', label: 'Fotos' },
     { id: 'images', label: 'Imagens' },
     { id: 'content', label: 'Conteúdo' },
     { id: 'properties', label: 'Propriedades' },
+    { id: 'reviews', label: 'Reviews' },
     { id: 'availability', label: 'Disponibilidade' },
     { id: 'leads', label: 'Leads' },
     { id: 'collector', label: 'Coletor' },
   ];
 
   return (
-    <div className="min-h-screen bg-surface">
-      {/* Header */}
-      <header className="sticky top-0 z-20 text-white" style={{ background: NAVY, borderBottom: `1px solid ${GOLD}66` }}>
-        <div className="max-w-[1280px] mx-auto px-6 md:px-10 flex items-center justify-between h-16">
-          <div className="flex items-center gap-8">
-            <span className="font-display text-2xl tracking-tight">MCRh</span>
-            <nav className="hidden md:flex gap-6">
-              {tabs.map((t) => (
-                <button key={t.id} onClick={() => setTab(t.id)}
-                  className="font-body text-[11px] uppercase tracking-[0.15em] py-1 transition-colors"
-                  style={{ color: tab === t.id ? GOLD : 'rgba(255,255,255,0.6)', borderBottom: tab === t.id ? `1px solid ${GOLD}` : '1px solid transparent' }}>
-                  {t.label}
-                </button>
-              ))}
-            </nav>
-          </div>
-          <div className="flex items-center gap-5">
-            <span className="font-body text-[10px] uppercase tracking-[0.12em] text-white/40">{visibleCount}/{units.length} visíveis</span>
-            <button onClick={logout} className="font-body text-[10px] uppercase tracking-[0.15em] text-white/70 border border-white/25 px-4 py-1.5 hover:bg-white/10 transition-colors">Sair</button>
-          </div>
-        </div>
-        {/* Mobile tabs */}
-        <nav className="md:hidden flex gap-5 px-6 pb-3">
-          {tabs.map((t) => (
-            <button key={t.id} onClick={() => setTab(t.id)} className="font-body text-[11px] uppercase tracking-[0.12em]" style={{ color: tab === t.id ? GOLD : 'rgba(255,255,255,0.6)' }}>{t.label}</button>
-          ))}
-        </nav>
-      </header>
-
-      <main className="max-w-[1280px] mx-auto px-6 md:px-10 py-10">
+    <AdminShell
+      navItems={tabs.map((t) => ({ id: t.id, label: t.label, onClick: () => setTab(t.id) }))}
+      activeId={tab}
+      breadcrumbs={[{ label: 'Admin' }]}
+      rightSlot={
+        <>
+          <span className="font-body text-[10px] uppercase tracking-[0.12em] text-white/40">{visibleCount}/{units.length} visíveis</span>
+          <button onClick={logout} className="font-body text-[10px] uppercase tracking-[0.15em] text-white/70 border border-white/25 px-4 py-1.5 hover:bg-white/10 transition-colors">Sair</button>
+        </>
+      }
+    >
         {loading && <p className="font-body text-on-surface-variant">Carregando…</p>}
+
+        {tab === 'dashboard' && !loading && (
+          <DashboardTab units={units} onGoToApartments={(q) => { setQuery(q); setTab('apartments'); }} onGoToPhotos={() => setTab('photos')} />
+        )}
 
         {tab === 'apartments' && !loading && (
           <>
@@ -1513,11 +1925,46 @@ export default function Admin() {
                 </span>
               )}
             </div>
-            <input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Buscar apartamento ou prédio…" className={`${field} max-w-sm mb-10`} />
-            {Object.entries(groups).map(([propertyName, groupUnits]) => (
-              <div key={propertyName} className="mb-12">
+            <div className="flex flex-wrap items-end gap-4 mb-10">
+              <div className="flex-1 min-w-[220px] max-w-sm">
+                <label className={label}>Buscar</label>
+                <input value={query} onChange={(e) => { setQuery(e.target.value); setPage(1); }} placeholder="Apartamento ou prédio…" className={field} />
+              </div>
+              <div>
+                <label className={label}>Propriedade</label>
+                <select value={propertyFilter} onChange={(e) => { setPropertyFilter(e.target.value); setPage(1); }} className={field}>
+                  <option value="all">Todas</option>
+                  {propertyOptions.map((p) => <option key={p.slug} value={p.slug}>{p.name}</option>)}
+                </select>
+              </div>
+              <div>
+                <label className={label}>Status</label>
+                <select value={visibilityFilter} onChange={(e) => { setVisibilityFilter(e.target.value as typeof visibilityFilter); setPage(1); }} className={field}>
+                  <option value="all">Todos</option>
+                  <option value="visible">Visíveis</option>
+                  <option value="hidden">Ocultos</option>
+                </select>
+              </div>
+              <div>
+                <label className={label}>Ordenar por</label>
+                <select value={sortBy} onChange={(e) => setSortBy(e.target.value as typeof sortBy)} className={field}>
+                  <option value="property">Propriedade</option>
+                  <option value="name">Nome</option>
+                  <option value="updated">Atualizado recentemente</option>
+                </select>
+              </div>
+              <span className="font-body text-[10px] uppercase tracking-widest text-on-surface-variant/50 pb-1.5">
+                {filtered.length} resultado(s)
+              </span>
+            </div>
+            {filtered.length === 0 && <p className="font-body text-on-surface-variant/60 mb-10">Nenhum apartamento encontrado.</p>}
+            {Object.entries(groups).map(([propertySlug, groupUnits]) => {
+              const propertyDisplayName = (site.content[`property.${propertySlug}.name`] as string | undefined)?.trim()
+                || groupUnits[0]?.propertyName || propertySlug;
+              return (
+              <div key={propertySlug} className="mb-12">
                 <div className="flex items-center gap-4 mb-5">
-                  <h2 className="font-display text-headline-md text-primary whitespace-nowrap">{propertyName}</h2>
+                  <h2 className="font-display text-headline-md text-primary whitespace-nowrap">{propertyDisplayName}</h2>
                   <div className="flex-1 h-px" style={{ background: `${GOLD}55` }} />
                   <span className="font-body text-[10px] uppercase tracking-widest text-on-surface-variant/60">{groupUnits.length} apê(s)</span>
                 </div>
@@ -1525,8 +1972,20 @@ export default function Admin() {
                   {groupUnits.map((u) => <div key={u.unitSlug} style={{ display: 'contents' }}><UnitCard unit={u} api={api} onChanged={load} featured={featured} onSaveFeatured={saveFeatured} displayTitles={displayTitles} onSaveDisplayTitle={saveDisplayTitle} /></div>)}
                 </div>
               </div>
-            ))}
-            {filtered.length === 0 && <p className="font-body text-on-surface-variant/60">Nenhum apartamento encontrado.</p>}
+            );})}
+            {pageCount > 1 && (
+              <div className="flex items-center justify-center gap-4 mt-6">
+                <button onClick={() => setPage((p) => Math.max(1, p - 1))} disabled={pageSafe <= 1}
+                  className="font-body text-[10px] uppercase tracking-[0.15em] disabled:opacity-30" style={{ color: GOLD }}>
+                  ← Anterior
+                </button>
+                <span className="font-body text-[10px] uppercase tracking-widest text-on-surface-variant/60">Página {pageSafe} de {pageCount}</span>
+                <button onClick={() => setPage((p) => Math.min(pageCount, p + 1))} disabled={pageSafe >= pageCount}
+                  className="font-body text-[10px] uppercase tracking-[0.15em] disabled:opacity-30" style={{ color: GOLD }}>
+                  Próxima →
+                </button>
+              </div>
+            )}
           </>
         )}
 
@@ -1534,10 +1993,10 @@ export default function Admin() {
         {tab === 'images' && !loading && <ImagesTab site={site} api={api} onChanged={load} />}
         {tab === 'content' && !loading && <ContentTab site={site} api={api} onChanged={load} />}
         {tab === 'properties' && !loading && <PropertiesTab site={site} api={api} onChanged={load} />}
+        {tab === 'reviews' && !loading && <ReviewsTab units={units} api={api} />}
         {tab === 'availability' && !loading && <AvailabilityTab api={api} />}
         {tab === 'leads' && !loading && <LeadsTab api={api} />}
         {tab === 'collector' && <CollectorTab />}
-      </main>
-    </div>
+    </AdminShell>
   );
 }

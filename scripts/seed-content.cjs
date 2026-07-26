@@ -1,8 +1,8 @@
 /* Seed SiteContent with the current hardcoded values so the admin starts with
    real content (nothing lost). Idempotent upsert on key.
    Run:  node scripts/seed-content.cjs                                        */
-const { createClient } = require('@supabase/supabase-js');
-const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_KEY);
+require('dotenv').config({ path: require('path').join(__dirname, '..', '.env') });
+const { supabase } = require('../server/db');
 
 const content = {
   // ── Home ──

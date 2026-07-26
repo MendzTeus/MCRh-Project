@@ -253,10 +253,19 @@ function scheduleIcalSync() {
 }
 
 const PORT = process.env.API_PORT || 3001;
-boot()
-  .catch((err) => console.error('[api] Boot failed, starting anyway:', err.message))
-  .finally(() => {
-    app.listen(PORT, () => console.log(`[api] Listening on :${PORT}`));
-    scheduleAirbnbCheck();
-    scheduleIcalSync();
-  });
+
+// Only boot the real Supabase connection + listener + schedulers when this file is
+// run directly (e.g. `node server/index.js`), not when it's imported (e.g. by
+// supertest in tests) — importers get the bare `app` with routes registered but
+// no side effects.
+if (require.main === module) {
+  boot()
+    .catch((err) => console.error('[api] Boot failed, starting anyway:', err.message))
+    .finally(() => {
+      app.listen(PORT, () => console.log(`[api] Listening on :${PORT}`));
+      scheduleAirbnbCheck();
+      scheduleIcalSync();
+    });
+}
+
+module.exports = app;

@@ -15,6 +15,7 @@ import { useReviews } from '../hooks/useReviews';
 import { useAvailability } from '../hooks/useAvailability';
 import { usePublicUnits } from '../hooks/usePublicUnits';
 import { usePropertyPhotos } from '../hooks/usePropertyPhotos';
+import { useSiteContent, text } from '../hooks/useSiteContent';
 import { Star } from 'lucide-react';
 const PropertyMap = lazy(() => import('../components/PropertyMap'));
 
@@ -56,6 +57,9 @@ export default function CollectionDetail() {
   const availability = useAvailability(property?.slug || '', checkIn, checkOut);
   const publicUnits = usePublicUnits();
   const propertyPhotos = usePropertyPhotos(property?.slug || '');
+  const site = useSiteContent();
+  const propertyDisplayName = text(site.content, `property.${id}.name`, property?.name || '');
+  const propertyDisplayArea = text(site.content, `property.${id}.area`, property?.area || '');
   const unitsRef = useRef<HTMLDivElement>(null);
   const reviewsCarouselRef = useRef<HTMLDivElement>(null);
   const [expandedReviews, setExpandedReviews] = useState<Set<number>>(new Set());
@@ -88,8 +92,8 @@ export default function CollectionDetail() {
         const o = publicUnits.overrides.get(unit.unitSlug);
         return {
           slug: unit.unitSlug,
-          title: o?.unitName || media?.title || unit.unitName,
-          label: o?.unitName || unit.unitName,
+          title: o?.displayTitle?.trim() || o?.unitName || media?.title || unit.unitName,
+          label: o?.displayTitle?.trim() || o?.unitName || unit.unitName,
           specs: o?.suppliedSpecs || unit.suppliedSpecs || 'Specs to confirm',
           path: `/properties/${property.slug}/${unit.unitSlug}`,
           imageSrc: o?.primaryImage || media?.primaryImage,
@@ -104,7 +108,14 @@ export default function CollectionDetail() {
         imageSrc: null,
       }));
 
-  const reviewSlugs = useMemo(() => collectionUnits.map((unit) => unit.slug), [collectionUnits]);
+  // Sort by admin-set displayOrder when available; fall back to static order.
+  const sortedCollectionUnits = [...collectionUnits].sort((a, b) => {
+    const oa = publicUnits.overrides.get(a.slug)?.displayOrder ?? 9999;
+    const ob = publicUnits.overrides.get(b.slug)?.displayOrder ?? 9999;
+    return oa - ob;
+  });
+
+  const reviewSlugs = useMemo(() => sortedCollectionUnits.map((unit) => unit.slug), [sortedCollectionUnits]);
   const dbReviews = useReviews(reviewSlugs);
   // Prefer the real, admin-managed Airbnb reviews once loaded. Keep the static
   // set as a loading/empty-state fallback, matching the individual unit page.
@@ -119,9 +130,9 @@ export default function CollectionDetail() {
   return (
     <div className="animate-in fade-in duration-500">
       <Helmet>
-        <title>{property.name} | MCRh Manchester</title>
+        <title>{propertyDisplayName} | MCRh Manchester</title>
         <meta name="description" content={`${property.headline} ${property.description}`} />
-        <meta property="og:title" content={`${property.name} | MCRh Manchester`} />
+        <meta property="og:title" content={`${propertyDisplayName} | MCRh Manchester`} />
         <meta property="og:description" content={property.headline} />
         {heroSrc && <meta property="og:image" content={heroSrc} />}
       </Helmet>
@@ -138,8 +149,8 @@ export default function CollectionDetail() {
             <div className="absolute inset-0 bg-gradient-to-t from-primary-container/80 to-transparent"></div>
           </div>
           <div className="relative z-10 max-w-[1280px] mx-auto w-full">
-            <span className="font-body text-label-caps text-secondary-container mb-4 block tracking-widest uppercase">{property.area}</span>
-            <h1 className="font-display text-display-lg-mobile md:text-display-lg text-white mb-6 max-w-3xl leading-tight">{property.name}</h1>
+            <span className="font-body text-label-caps text-secondary-container mb-4 block tracking-widest uppercase">{propertyDisplayArea}</span>
+            <h1 className="font-display text-display-lg-mobile md:text-display-lg text-white mb-6 max-w-3xl leading-tight">{propertyDisplayName}</h1>
             <p className="font-body text-body-lg text-white/80 max-w-2xl text-lg">{property.headline}</p>
           </div>
         </section>
@@ -148,14 +159,14 @@ export default function CollectionDetail() {
       {/* Title + specs when gallery is shown */}
       {hasGallery && (
         <section className="pt-8 pb-4 px-margin-mobile md:px-margin-desktop max-w-[1280px] mx-auto">
-          <span className="font-body text-label-caps text-secondary mb-2 block tracking-widest uppercase">{property.area}</span>
-          <h1 className="font-display text-display-lg-mobile md:text-display-lg text-primary mb-4 max-w-3xl leading-tight">{property.name}</h1>
+          <span className="font-body text-label-caps text-secondary mb-2 block tracking-widest uppercase">{propertyDisplayArea}</span>
+          <h1 className="font-display text-display-lg-mobile md:text-display-lg text-primary mb-4 max-w-3xl leading-tight">{propertyDisplayName}</h1>
           <p className="font-body text-body-lg text-on-surface-variant max-w-2xl">{property.headline}</p>
         </section>
       )}
 
       <AvailabilityWidget
-        propertyName={property.name}
+        propertyName={propertyDisplayName}
         maxGuests={property.maxGuests}
         floating={!hasGallery}
         mode="availability"
@@ -188,8 +199,8 @@ export default function CollectionDetail() {
       {/* Long Description & collection grid */}
       <section ref={unitsRef} className="py-section-gap px-margin-mobile md:px-margin-desktop max-w-[1280px] mx-auto border-t border-outline-variant/30">
         <div className="mb-12">
-          <span className="font-body text-label-caps text-secondary mb-2 block tracking-widest uppercase">{property.eyebrow}</span>
-          <h2 className="font-display text-headline-md md:text-display-lg text-primary">{property.name}</h2>
+          <span className="font-body text-label-caps text-secondary mb-2 block tracking-widest uppercase">{text(site.content, `property.${id}.eyebrow`, property.eyebrow)}</span>
+          <h2 className="font-display text-headline-md md:text-display-lg text-primary">{propertyDisplayName}</h2>
           <p className="mt-6 max-w-2xl font-body text-body-lg text-on-surface-variant">{property.description}</p>
         </div>
         
@@ -209,7 +220,7 @@ export default function CollectionDetail() {
             </span>
           </div>
         )}
-        {collectionUnits.length === 0 && (
+        {sortedCollectionUnits.length === 0 && (
           <div className="mt-12 rounded-lg border border-outline-variant/30 bg-surface-dim px-6 py-12 text-center">
             <p className="font-body text-body-lg text-on-surface-variant">
               No residences are available to book here right now. Please check back soon or get in touch.
@@ -217,7 +228,7 @@ export default function CollectionDetail() {
           </div>
         )}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-12 mt-12">
-          {collectionUnits.map((apt) => {
+          {sortedCollectionUnits.map((apt) => {
             const avUnit = availability.units.find((u) => u.unitSlug === apt.slug);
             const showBadge = availability.configured && checkIn && checkOut && !availability.loading;
             const isAvailable = avUnit?.available ?? true;

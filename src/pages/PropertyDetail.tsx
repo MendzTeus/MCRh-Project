@@ -95,10 +95,14 @@ export default function PropertyDetail() {
   const publicUnits = usePublicUnits();
   const adminUnit = publicUnits.overrides.get(inventoryUnit?.unitSlug || id || '');
   // Admin-uploaded photos override the scraped/static gallery when present.
-  const adminPhotos = adminUnit?.photos || [];
-  const unitGallery = adminPhotos.length > 0 ? adminPhotos.map((p) => p.url) : staticGallery;
+  const allAdminPhotos = adminUnit?.photos || [];
+  const hiddenUrlSet = new Set(allAdminPhotos.filter((p) => p.hidden).map((p) => p.url));
+  const adminPhotos = allAdminPhotos.filter((p) => !p.hidden);
+  const filteredStaticGallery = staticGallery.filter((url) => !hiddenUrlSet.has(url));
+  const filteredFullStaticGallery = fullStaticGallery.filter((url) => !hiddenUrlSet.has(url));
+  const unitGallery = adminPhotos.length > 0 ? adminPhotos.map((p) => p.url) : filteredStaticGallery;
   // Full gallery for Photo Tour (all photos, not capped at 8)
-  const fullGallery = adminPhotos.length > 0 ? adminPhotos.map((p) => p.url) : fullStaticGallery;
+  const fullGallery = adminPhotos.length > 0 ? adminPhotos.map((p) => p.url) : filteredFullStaticGallery;
   // Build TourPhoto[] for Photo Tour — admin photos carry roomCategory; Airbnb photos default to "Property"
   const tourPhotos: TourPhoto[] = fullGallery.map((src, i) => {
     const adminPhoto = adminPhotos.find((p) => p.url === src);
@@ -126,7 +130,7 @@ export default function PropertyDetail() {
     : [];
   const displayRating = dbRatings.length
     ? (dbRatings.reduce((sum, n) => sum + n, 0) / dbRatings.length).toFixed(2)
-    : listingMedia?.rating || '4.98';
+    : adminUnit?.avgRating || '4.98';
   const reviewsRef = useRef<HTMLDivElement>(null);
   const guestsDropdownRef = useRef<HTMLDivElement>(null);
   const contactRef = useRef<HTMLDivElement>(null);
@@ -162,10 +166,13 @@ export default function PropertyDetail() {
 
   if (!property || !unit) return null;
 
-  // Display title: the admin's custom title (SiteContent → unit.displayTitles) wins;
-  // otherwise the raw Airbnb title is auto-cleaned as a fallback.
+  // Display title: Unit.displayTitle (set in admin) wins; legacy SiteContent map is
+  // a secondary fallback; scraped Airbnb title is the last resort.
   const titleMap = (site.content['unit.displayTitles'] || {}) as Record<string, string>;
-  const displayTitle = titleMap[inventoryUnit?.unitSlug || id || '']?.trim() || cleanListingTitle(unit.title) || unit.title;
+  const displayTitle =
+    adminUnit?.displayTitle?.trim() ||
+    titleMap[inventoryUnit?.unitSlug || id || '']?.trim() ||
+    cleanListingTitle(unit.title) || unit.title;
 
   // Pre-filled enquiry message for the "Contact us directly" options.
   const hasDates = Boolean(checkIn && checkOut);

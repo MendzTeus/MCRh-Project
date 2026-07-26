@@ -2,14 +2,14 @@
    Supabase `Unit` table so the operational admin has real apartments to manage.
    Idempotent — upserts on unitSlug, sets visible=true only on first insert.
    Run:  node scripts/seed-units.cjs                                        */
+require('dotenv').config({ path: require('path').join(__dirname, '..', '.env') });
 const fs = require('fs');
 const path = require('path');
-const { createClient } = require('@supabase/supabase-js');
-
-const url = process.env.SUPABASE_URL;
-const key = process.env.SUPABASE_SERVICE_KEY;
-if (!url || !key) { console.error('Missing SUPABASE_URL / SUPABASE_SERVICE_KEY'); process.exit(1); }
-const supabase = createClient(url, key);
+if (!process.env.SUPABASE_URL || !process.env.SUPABASE_SERVICE_KEY) {
+  console.error('Missing SUPABASE_URL / SUPABASE_SERVICE_KEY');
+  process.exit(1);
+}
+const { supabase } = require('../server/db');
 
 // Extract the array literal from the TS source and evaluate it (our own file).
 const src = fs.readFileSync(path.join(__dirname, '..', 'src', 'data', 'airbnbInventory.ts'), 'utf8');

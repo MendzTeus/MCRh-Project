@@ -3,6 +3,7 @@ import { useState, useEffect } from 'react';
 export type PublicUnit = {
   unitSlug: string;
   unitName: string;
+  displayTitle: string | null;
   propertySlug: string;
   propertyName: string;
   suppliedSpecs: string | null;
@@ -10,7 +11,9 @@ export type PublicUnit = {
   airbnbUrl: string | null;
   description: string | null;
   primaryImage: string | null;
-  photos: { id: string; url: string; alt: string | null; isPrimary: boolean; displayOrder: number; roomCategory: string | null }[];
+  avgRating: string | null;
+  displayOrder: number | null;
+  photos: { id: string; url: string; alt: string | null; isPrimary: boolean; displayOrder: number; roomCategory: string | null; hidden?: boolean }[];
 };
 
 export type PublicUnitsState = {
