@@ -97,14 +97,14 @@ const DragTile: React.FC<DragTileProps> = ({
 }) => {
   const btn = 'flex-1 text-white/80 text-[11px] leading-none py-1 hover:text-[#C5A059] transition-colors disabled:opacity-25 disabled:hover:text-white/80';
   return (
-    <div className="flex flex-col gap-1" style={{ width: 180 }}>
+    <div className="flex flex-col gap-1 w-full">
       {/* Image (draggable) */}
       <div
         draggable
         onDragStart={(e) => { e.dataTransfer.setData('text/plain', url); e.dataTransfer.effectAllowed = 'move'; onDragStart(); }}
         onDragEnd={(e) => { e.dataTransfer.clearData(); onDragEnd(); }}
-        className={`relative shrink-0 overflow-hidden cursor-grab active:cursor-grabbing select-none transition-opacity ${isDragging ? 'opacity-30' : isSaving ? 'opacity-60' : isHidden ? 'opacity-40' : ''}`}
-        style={{ height: 135, border: `1px solid ${isSelected ? '#C5A059' : isHidden ? 'rgba(186,26,26,0.5)' : 'rgba(197,198,205,0.4)'}`, boxShadow: isSelected ? '0 0 0 2px rgba(197,160,89,0.5) inset' : undefined }}
+        className={`relative shrink-0 overflow-hidden rounded-xl shadow-md aspect-[4/3] cursor-grab active:cursor-grabbing select-none transition-opacity ${isDragging ? 'opacity-30' : isSaving ? 'opacity-60' : isHidden ? 'opacity-40' : ''}`}
+        style={{ border: `${isSelected || isPrimary ? 2 : 1}px solid ${isSelected ? '#C5A059' : isPrimary ? GOLD : isHidden ? 'rgba(186,26,26,0.5)' : 'rgba(197,198,205,0.4)'}`, boxShadow: isSelected ? '0 0 0 2px rgba(197,160,89,0.5) inset' : undefined }}
       >
         {selectable && (
           <label className="absolute top-1 left-1 z-20 flex items-center justify-center w-5 h-5 rounded bg-black/40 cursor-pointer">
@@ -481,6 +481,20 @@ function PhotosTabUnit({ unit, api, onChanged }: { unit: FullUnit; api: ReturnTy
     }
   }
 
+  const [uploading, setUploading] = useState(false);
+  async function uploadPhoto(file: File) {
+    setUploading(true);
+    try {
+      const { base64, type } = await fileToBase64(file);
+      await api(`/admin/units/${unit.unitSlug}/photos`, { method: 'POST', body: JSON.stringify({ dataBase64: base64, contentType: type, alt: unit.unitName }) });
+      onChanged();
+    } catch (e) {
+      setLastError(e instanceof Error ? e.message : 'Erro ao enviar foto');
+    } finally {
+      setUploading(false);
+    }
+  }
+
   function bulkMoveToCategory() {
     if (selected.size === 0 || !bulkTargetCat) return;
     const toCat = bulkTargetCat === '__uncat__' ? '' : bulkTargetCat;
@@ -757,7 +771,7 @@ function PhotosTabUnit({ unit, api, onChanged }: { unit: FullUnit; api: ReturnTy
                 )}
               </div>
 
-              <div className="flex flex-wrap gap-4 px-3 pb-4 min-h-[40px]">
+              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6 px-3 pb-4 min-h-[40px]">
                 {catPhotos.map((url, i) => (
                   <DragTile
                     key={url}
@@ -786,7 +800,7 @@ function PhotosTabUnit({ unit, api, onChanged }: { unit: FullUnit; api: ReturnTy
                 ))}
 
                 {catPhotos.length === 0 && (
-                  <div className={`flex-1 h-16 rounded-lg flex items-center justify-center border border-dashed transition-colors ${
+                  <div className={`col-span-full h-16 rounded-lg flex items-center justify-center border border-dashed transition-colors ${
                     isOver ? 'border-primary/50' : 'border-outline-variant/25'
                   }`}>
                     <span className="font-body text-xs" style={{ color: isOver ? GOLD : 'rgba(0,0,0,0.2)' }}>
@@ -794,6 +808,23 @@ function PhotosTabUnit({ unit, api, onChanged }: { unit: FullUnit; api: ReturnTy
                     </span>
                   </div>
                 )}
+
+                {/* Upload a new photo — lands uncategorized; drag it into a category afterwards */}
+                <label
+                  className={`aspect-[4/3] rounded-xl border-2 border-dashed border-outline-variant/40 flex flex-col items-center justify-center gap-1 cursor-pointer transition-colors hover:border-[#C5A059] ${uploading ? 'opacity-50 pointer-events-none' : ''}`}
+                  title="Adicionar foto"
+                >
+                  <span className="text-xl" style={{ color: GOLD }}>＋</span>
+                  <span className="font-body text-[9px] uppercase tracking-widest text-on-surface-variant/60">
+                    {uploading ? 'Enviando…' : 'Adicionar foto'}
+                  </span>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={(e) => { const f = e.target.files?.[0]; if (f) uploadPhoto(f); e.target.value = ''; }}
+                  />
+                </label>
               </div>
             </div>
           </div>

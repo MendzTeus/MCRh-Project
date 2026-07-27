@@ -1,5 +1,6 @@
-import { useState, useEffect, useCallback, useRef, useMemo, type FormEvent, type ReactNode, type ChangeEvent } from 'react';
+import { useState, useEffect, useCallback, useRef, useMemo, Fragment, type FormEvent, type ReactNode, type ChangeEvent } from 'react';
 import { Link } from 'react-router-dom';
+import { Star } from 'lucide-react';
 import { getListingMedia, cleanListingTitle } from '../data/listingMedia';
 import { getInventoryForProperty } from '../data/airbnbInventory';
 import { mapLocationDefaults } from '../data/locations';
@@ -1042,6 +1043,19 @@ function ImportBox({ slug, api, onDone }: { slug: string; api: ReturnType<typeof
 // (see Phase 6/8 findings — the column name is misleading but every row is
 // scoped to a single apartment, not a whole building), so "apartment filter"
 // below just filters on that column directly.
+// 5-star row matching the Stitch Reviews Management design: filled gold stars
+// up to the (rounded) rating, outline gold stars for the remainder.
+function StarRow({ rating, size = 14 }: { rating: number; size?: number }) {
+  const filled = Math.round(rating);
+  return (
+    <div className="flex text-gold" style={{ color: GOLD }} aria-label={`${rating} de 5 estrelas`}>
+      {[0, 1, 2, 3, 4].map((i) => (
+        <Star key={i} size={size} fill={i < filled ? GOLD : 'none'} stroke={GOLD} strokeWidth={1.75} />
+      ))}
+    </div>
+  );
+}
+
 function ReviewsTab({ units, api }: { units: Unit[]; api: ReturnType<typeof useApi> }) {
   const [reviews, setReviews] = useState<ReviewRow[]>([]);
   const [loading, setLoading] = useState(true);
@@ -1248,7 +1262,7 @@ function ReviewsTab({ units, api }: { units: Unit[]; api: ReturnType<typeof useA
                         </div>
                       </td>
                       <td className="py-4 px-4">
-                        <span className="text-xs font-bold px-1.5 py-0.5 rounded" style={{ background: 'rgba(197,160,89,0.1)', color: GOLD }}>★ {r.rating}</span>
+                        <StarRow rating={r.rating} />
                       </td>
                       <td className="py-4 px-4">
                         <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-navy/5 text-navy border border-navy/10">{unitName(r.propertySlug)}</span>
@@ -1323,6 +1337,7 @@ function LeadsTab({ api }: { api: ReturnType<typeof useApi> }) {
   const [leads, setLeads] = useState<Lead[]>([]);
   const [filter, setFilter] = useState('todos');
   const [loading, setLoading] = useState(true);
+  const [selectedId, setSelectedId] = useState<string | null>(null);
 
   async function load() {
     setLoading(true);
@@ -1342,12 +1357,15 @@ function LeadsTab({ api }: { api: ReturnType<typeof useApi> }) {
     if (!confirm('Remover este lead?')) return;
     await api(`/admin/leads/${id}`, { method: 'DELETE' });
     setLeads((prev) => prev.filter((l) => l.id !== id));
+    setSelectedId((cur) => (cur === id ? null : cur));
   }
 
   const filtered = filter === 'todos' ? leads : leads.filter((l) => l.status === filter);
+  const selected = filtered.find((l) => l.id === selectedId) || filtered[0] || null;
 
   return (
     <div>
+      {/* Header + status counters (real STATUS_LABELS counts, matches Stitch's 3 stat chips) */}
       <div className="flex justify-between items-end mb-8 flex-wrap gap-4">
         <div>
           <h2 className="font-display text-4xl font-bold text-navy">Leads</h2>
@@ -1364,6 +1382,7 @@ function LeadsTab({ api }: { api: ReturnType<typeof useApi> }) {
         </div>
       </div>
 
+      {/* Filters */}
       <div className="flex items-center gap-3 flex-wrap mb-6 bg-white p-3 rounded-xl shadow-sm border border-navy/5">
         {['todos', 'novo', 'lido', 'arquivado'].map((f) => (
           <button key={f} onClick={() => setFilter(f)}
@@ -1383,45 +1402,117 @@ function LeadsTab({ api }: { api: ReturnType<typeof useApi> }) {
           <p className="font-body text-sm text-navy/50">Nenhum lead encontrado.</p>
         </div>
       ) : (
-        <div className="space-y-3">
-          {filtered.map((lead) => (
-            <div key={lead.id} className="bg-white rounded-xl shadow-sm border border-navy/5 p-5 space-y-3">
-              <div className="flex items-start justify-between gap-4">
-                <div>
-                  <p className="font-display text-xl font-bold text-navy">{lead.name}</p>
-                  <p className="font-body text-sm text-navy/50 mt-0.5">{lead.email}{lead.phone ? ` · ${lead.phone}` : ''}</p>
-                </div>
-                <div className="flex items-center gap-2 shrink-0">
-                  <span className="font-body text-[10px] tracking-widest uppercase font-bold px-3 py-1 rounded-full text-white" style={{ background: STATUS_COLORS[lead.status] || '#6b7280' }}>
-                    {STATUS_LABELS[lead.status] || lead.status}
-                  </span>
-                </div>
-              </div>
-              <div className="flex flex-wrap gap-2 font-body text-xs text-navy/60">
-                <span className="bg-navy/5 px-2.5 py-1 rounded-full">{lead.propertyName}</span>
-                {lead.checkIn && <span className="bg-navy/5 px-2.5 py-1 rounded-full">{lead.checkIn} → {lead.checkOut}</span>}
-                {lead.guests && <span className="bg-navy/5 px-2.5 py-1 rounded-full">{lead.guests} hóspedes</span>}
-                {lead.source && <span className="bg-navy/5 px-2.5 py-1 rounded-full opacity-70">{lead.source}</span>}
-                <span className="ml-auto opacity-60 self-center">{new Date(lead.createdAt).toLocaleDateString('pt-BR', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })}</span>
-              </div>
-              {lead.message && (
-                <p className="font-body text-sm italic text-navy/70 border-t border-navy/5 pt-3 leading-relaxed bg-cream/40 -mx-5 -mb-3 px-5 pb-4 rounded-b-xl">
-                  “{lead.message}”
-                </p>
-              )}
-              <div className="flex gap-2 pt-1 flex-wrap">
-                {Object.keys(STATUS_LABELS).filter((s) => s !== lead.status).map((s) => (
-                  <button key={s} onClick={() => setStatus(lead.id, s)}
-                    className="font-body text-[10px] tracking-widest uppercase px-3 py-1.5 border border-navy/15 rounded-lg hover:border-[#C5A059] transition-colors text-navy/60 hover:text-[#C5A059]">
-                    Marcar {STATUS_LABELS[s]}
-                  </button>
-                ))}
-                <button onClick={() => deleteLead(lead.id)} className="ml-auto font-body text-[10px] tracking-widest uppercase px-3 py-1.5 border border-red-200 rounded-lg hover:bg-red-50 text-red-400 transition-colors">
-                  Remover
-                </button>
-              </div>
+        /* Split layout: table (left) + detail panel (right), matching Stitch's Leads Management screen */
+        <div className="flex gap-6 items-start flex-col lg:flex-row">
+          <div className="w-full lg:w-3/5 bg-white rounded-2xl shadow-sm border border-navy/5 overflow-hidden">
+            <div className="overflow-x-auto">
+              <table className="w-full text-left border-collapse">
+                <thead>
+                  <tr className="bg-cream/30 border-b border-navy/5">
+                    <th className="px-6 py-4 font-body text-xs font-bold text-navy/50 uppercase tracking-widest">Nome</th>
+                    <th className="px-6 py-4 font-body text-xs font-bold text-navy/50 uppercase tracking-widest">Datas</th>
+                    <th className="px-6 py-4 font-body text-xs font-bold text-navy/50 uppercase tracking-widest">Apartamento</th>
+                    <th className="px-6 py-4 font-body text-xs font-bold text-navy/50 uppercase tracking-widest text-center">Status</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-navy/5">
+                  {filtered.map((lead) => {
+                    const isSelected = selected?.id === lead.id;
+                    return (
+                      <tr key={lead.id} onClick={() => setSelectedId(lead.id)}
+                        className={`cursor-pointer transition-colors ${isSelected ? 'bg-gold/5 border-l-4' : 'border-l-4 border-l-transparent hover:bg-cream/20'}`}
+                        style={isSelected ? { borderLeftColor: GOLD, background: 'rgba(197,160,89,0.05)' } : undefined}>
+                        <td className="px-6 py-5">
+                          <div className="flex flex-col">
+                            <span className="font-bold text-navy">{lead.name}</span>
+                            <span className="text-xs text-navy/50">{lead.email}</span>
+                          </div>
+                        </td>
+                        <td className="px-6 py-5">
+                          {lead.checkIn ? (
+                            <>
+                              <div className="text-sm font-medium">{lead.checkIn} - {lead.checkOut}</div>
+                              {lead.guests != null && <div className="text-[10px] text-navy/50">{lead.guests} hóspedes</div>}
+                            </>
+                          ) : <span className="text-sm text-navy/30">—</span>}
+                        </td>
+                        <td className="px-6 py-5"><span className="text-sm">{lead.propertyName}</span></td>
+                        <td className="px-6 py-5 text-center">
+                          <span className="text-white px-3 py-1 rounded-full text-xs font-bold uppercase tracking-tighter"
+                            style={{ background: STATUS_COLORS[lead.status] || '#6b7280' }}>
+                            {STATUS_LABELS[lead.status] || lead.status}
+                          </span>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
             </div>
-          ))}
+          </div>
+
+          {/* Detail panel for the selected lead */}
+          <div className="w-full lg:w-2/5">
+            {selected ? (
+              <div className="bg-white rounded-2xl shadow-sm border border-navy/5 p-6">
+                <div className="flex items-center gap-4 mb-6">
+                  <div className="w-16 h-16 rounded-full flex items-center justify-center shrink-0" style={{ background: 'rgba(197,160,89,0.1)', color: GOLD }}>
+                    <span className="font-display text-2xl font-bold">{selected.name.slice(0, 2).toUpperCase()}</span>
+                  </div>
+                  <div className="min-w-0">
+                    <h3 className="font-display text-2xl font-bold text-navy leading-tight truncate">{selected.name}</h3>
+                    <p className="text-navy/50 text-sm">Criado em {new Date(selected.createdAt).toLocaleDateString('pt-BR', { day: '2-digit', month: 'short', year: 'numeric' })}</p>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-y-6 gap-x-4 mb-8">
+                  <div>
+                    <p className="text-[10px] text-navy/50 uppercase tracking-widest font-bold mb-1">Email</p>
+                    <p className="text-sm font-semibold break-all">{selected.email}</p>
+                  </div>
+                  <div>
+                    <p className="text-[10px] text-navy/50 uppercase tracking-widest font-bold mb-1">Telefone</p>
+                    <p className="text-sm font-semibold">{selected.phone || '—'}</p>
+                  </div>
+                  <div>
+                    <p className="text-[10px] text-navy/50 uppercase tracking-widest font-bold mb-1">Apartamento</p>
+                    <p className="text-sm font-semibold" style={{ color: GOLD }}>{selected.propertyName}</p>
+                  </div>
+                  <div>
+                    <p className="text-[10px] text-navy/50 uppercase tracking-widest font-bold mb-1">Datas da estadia</p>
+                    <p className="text-sm font-semibold">{selected.checkIn ? `${selected.checkIn} — ${selected.checkOut}` : '—'}</p>
+                  </div>
+                </div>
+
+                {selected.message && (
+                  <div className="mb-6">
+                    <label className="block text-[10px] text-navy/50 uppercase tracking-widest font-bold mb-2">Mensagem / Notas do hóspede</label>
+                    <div className="bg-cream/50 p-4 rounded-xl text-sm italic text-navy/80 border border-navy/5 leading-relaxed">
+                      “{selected.message}”
+                    </div>
+                  </div>
+                )}
+
+                <div className="flex flex-col gap-4">
+                  <div>
+                    <label className="block text-[10px] text-navy/50 uppercase tracking-widest font-bold mb-2">Alterar status</label>
+                    <select value={selected.status} onChange={(e) => setStatus(selected.id, e.target.value)}
+                      className="w-full bg-white border border-navy/10 rounded-lg py-3 px-4 text-sm font-semibold focus:ring-1 focus:ring-gold appearance-none" style={{ ['--tw-ring-color' as string]: GOLD }}>
+                      {Object.keys(STATUS_LABELS).map((s) => <option key={s} value={s}>{STATUS_LABELS[s]}</option>)}
+                    </select>
+                  </div>
+                  <button onClick={() => deleteLead(selected.id)}
+                    className="w-full border border-red-200 text-red-500 font-bold py-3 rounded-lg hover:bg-red-50 transition-all flex items-center justify-center gap-2">
+                    Remover lead
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <div className="bg-white border border-dashed border-navy/10 rounded-xl px-6 py-12 text-center">
+                <p className="font-body text-sm text-navy/50">Selecione um lead na tabela.</p>
+              </div>
+            )}
+          </div>
         </div>
       )}
     </div>
@@ -1903,6 +1994,8 @@ export default function Admin() {
   const [visibilityFilter, setVisibilityFilter] = useState<'all' | 'visible' | 'hidden'>('all');
   const [sortBy, setSortBy] = useState<'name' | 'property' | 'updated'>('property');
   const [page, setPage] = useState(1);
+  const [expandedSlug, setExpandedSlug] = useState<string | null>(null);
+  const [selectedSlugs, setSelectedSlugs] = useState<string[]>([]);
   const PAGE_SIZE = 24;
 
   const logout = useCallback(() => { localStorage.removeItem(TOKEN_KEY); setToken(null); setUnits([]); }, []);
@@ -1947,8 +2040,6 @@ export default function Admin() {
   const pageSafe = Math.min(page, pageCount);
   const pageUnits = filtered.slice((pageSafe - 1) * PAGE_SIZE, pageSafe * PAGE_SIZE);
 
-  const groups: Record<string, Unit[]> = {};
-  pageUnits.forEach((u) => { (groups[u.propertySlug] ||= []).push(u); });
   const visibleCount = units.filter((u) => u.visible).length;
   const featured = Array.isArray(site.content['home.featured']) ? (site.content['home.featured'] as string[]) : [];
   const saveFeatured = (next: string[]) =>
@@ -2038,21 +2129,92 @@ export default function Admin() {
               </span>
             </div>
             {filtered.length === 0 && <p className="font-body text-on-surface-variant/60 mb-10">Nenhum apartamento encontrado.</p>}
-            {Object.entries(groups).map(([propertySlug, groupUnits]) => {
-              const propertyDisplayName = (site.content[`property.${propertySlug}.name`] as string | undefined)?.trim()
-                || groupUnits[0]?.propertyName || propertySlug;
-              return (
-              <div key={propertySlug} className="mb-12">
-                <div className="flex items-center gap-4 mb-5">
-                  <h2 className="font-display text-headline-md text-primary whitespace-nowrap">{propertyDisplayName}</h2>
-                  <div className="flex-1 h-px" style={{ background: `${GOLD}55` }} />
-                  <span className="font-body text-[10px] uppercase tracking-widest text-on-surface-variant/60">{groupUnits.length} apê(s)</span>
-                </div>
-                <div className="grid gap-5" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))' }}>
-                  {groupUnits.map((u) => <div key={u.unitSlug} style={{ display: 'contents' }}><UnitCard unit={u} api={api} onChanged={load} featured={featured} onSaveFeatured={saveFeatured} displayTitles={displayTitles} onSaveDisplayTitle={saveDisplayTitle} /></div>)}
-                </div>
+            {pageUnits.length > 0 && (
+              <div className="bg-surface-container-lowest border border-outline-variant/40 rounded-2xl overflow-hidden shadow-sm mb-6">
+                <table className="w-full text-left border-collapse">
+                  <thead>
+                    <tr className="border-b border-outline-variant/30">
+                      <th className="w-10 py-3 px-4"><span className="sr-only">Selecionar</span></th>
+                      <th className="w-16 py-3 px-4"><span className="sr-only">Foto</span></th>
+                      <th className="py-3 px-4 font-body text-[10px] uppercase tracking-[0.15em] text-on-surface-variant/70">Nome</th>
+                      <th className="py-3 px-4 font-body text-[10px] uppercase tracking-[0.15em] text-on-surface-variant/70">Grupo</th>
+                      <th className="py-3 px-4 font-body text-[10px] uppercase tracking-[0.15em] text-on-surface-variant/70 text-center">Visibilidade</th>
+                      <th className="py-3 px-4 font-body text-[10px] uppercase tracking-[0.15em] text-on-surface-variant/70 text-right">Ações</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {pageUnits.map((u) => {
+                      const cover = u.photos.find((p) => p.isPrimary) || u.photos[0];
+                      const isFeatured = featured.includes(u.unitSlug);
+                      const isExpanded = expandedSlug === u.unitSlug;
+                      return (
+                        <Fragment key={u.unitSlug}>
+                          <tr className="border-b border-outline-variant/15 last:border-b-0" style={{ opacity: u.visible ? 1 : 0.55 }}>
+                            <td className="py-3 px-4">
+                              <input type="checkbox" checked={selectedSlugs.includes(u.unitSlug)}
+                                onChange={(e) => setSelectedSlugs((prev) => e.target.checked ? [...prev, u.unitSlug] : prev.filter((s) => s !== u.unitSlug))}
+                                aria-label={`Selecionar ${u.unitName}`} className="w-4 h-4" />
+                            </td>
+                            <td className="py-3 px-4">
+                              {cover ? (
+                                <img src={cover.url} alt="" className="w-12 h-12 rounded-lg object-cover" />
+                              ) : (
+                                <div className="w-12 h-12 rounded-lg border border-dashed border-outline-variant/50" />
+                              )}
+                            </td>
+                            <td className="py-3 px-4">
+                              <div className="flex items-center gap-2 flex-wrap">
+                                <span className="font-body font-semibold text-sm text-on-surface">{u.unitName}</span>
+                                {isFeatured && <span title="Em destaque na home" style={{ color: GOLD }}>★</span>}
+                                {u.airbnbListed === false && (
+                                  <span title="A verificação diária detectou que este anúncio está 'não listado' no Airbnb, por isso ele não aparece no site. Volta automaticamente quando você reativar no Airbnb."
+                                    className="font-body text-[9px] uppercase tracking-[0.12em] text-red-600 border border-red-300 px-1.5 py-0.5 rounded">
+                                    Não listado no Airbnb
+                                  </span>
+                                )}
+                              </div>
+                            </td>
+                            <td className="py-3 px-4 font-body text-sm text-on-surface-variant/70">{u.propertyName}</td>
+                            <td className="py-3 px-4 text-center">
+                              <button type="button" onClick={() => api(`/admin/units/${u.unitSlug}`, { method: 'PATCH', body: JSON.stringify({ visible: !u.visible }) }).then(load).catch(() => {})}
+                                aria-pressed={u.visible} aria-label={u.visible ? 'Ocultar apartamento' : 'Tornar apartamento visível'}
+                                className="relative inline-block w-9 h-5 rounded-full transition-colors align-middle" style={{ background: u.visible ? GOLD : '#c5c6cd' }}>
+                                <span className="absolute top-0.5 w-4 h-4 rounded-full bg-white transition-all" style={{ left: u.visible ? 18 : 2 }} />
+                              </button>
+                            </td>
+                            <td className="py-3 px-4">
+                              <div className="flex items-center justify-end gap-3">
+                                <a href={u.propertySlug ? `/properties/${u.propertySlug}/${u.unitSlug}` : `/property/${u.unitSlug}`}
+                                  target="_blank" rel="noopener noreferrer" title="Ver público"
+                                  className="font-body text-[10px] uppercase tracking-[0.15em] text-on-surface-variant/70 hover:text-[#C5A059] transition-colors">
+                                  Ver
+                                </a>
+                                <Link to={`/admin/apartments/${u.unitSlug}`} title="Editar"
+                                  className="font-body text-[10px] uppercase tracking-[0.15em] hover:text-[#C5A059] transition-colors" style={{ color: GOLD }}>
+                                  Editar
+                                </Link>
+                                <button type="button" onClick={() => setExpandedSlug(isExpanded ? null : u.unitSlug)}
+                                  aria-expanded={isExpanded} title={isExpanded ? 'Recolher' : 'Gerenciar (destaque, fotos, reviews)'}
+                                  className="font-body text-[10px] uppercase tracking-[0.15em] text-on-surface-variant/70 hover:text-[#C5A059] transition-colors">
+                                  {isExpanded ? '▲' : '▼'}
+                                </button>
+                              </div>
+                            </td>
+                          </tr>
+                          {isExpanded && (
+                            <tr className="border-b border-outline-variant/15 last:border-b-0">
+                              <td colSpan={6} className="p-5 bg-surface-container-low/40">
+                                <UnitCard unit={u} api={api} onChanged={load} featured={featured} onSaveFeatured={saveFeatured} displayTitles={displayTitles} onSaveDisplayTitle={saveDisplayTitle} />
+                              </td>
+                            </tr>
+                          )}
+                        </Fragment>
+                      );
+                    })}
+                  </tbody>
+                </table>
               </div>
-            );})}
+            )}
             {pageCount > 1 && (
               <div className="flex items-center justify-center gap-4 mt-6">
                 <button onClick={() => setPage((p) => Math.max(1, p - 1))} disabled={pageSafe <= 1}
