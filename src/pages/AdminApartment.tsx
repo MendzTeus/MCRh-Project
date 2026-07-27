@@ -264,10 +264,11 @@ function ContentTab({ unit, api, onChanged }: { unit: FullUnit; api: ReturnType<
   return (
     <div className="max-w-2xl space-y-6">
       <div className="flex items-center gap-4">
-        <p className="font-display text-headline-sm text-primary">Conteúdo</p>
+        <h2 className="font-display text-2xl font-bold text-navy">Conteúdo</h2>
         <SaveStatus s={status} error={lastError} />
       </div>
 
+      <div className="bg-white p-6 rounded-xl shadow-sm border border-navy/5 space-y-6">
       <div>
         <label className={lbl}>Nome interno do apartamento</label>
         <input value={name} onChange={(e) => setName(e.target.value)}
@@ -311,6 +312,7 @@ function ContentTab({ unit, api, onChanged }: { unit: FullUnit; api: ReturnType<
             <p className="font-body text-[10px] mt-1" style={{ color: '#ba1a1a' }}>A área não pode ser negativa.</p>
           )}
         </div>
+      </div>
       </div>
     </div>
   );
@@ -590,7 +592,7 @@ function PhotosTabUnit({ unit, api, onChanged }: { unit: FullUnit; api: ReturnTy
       {/* Header */}
       <div className="flex items-start justify-between gap-4 flex-wrap">
         <div>
-          <p className="font-display text-headline-sm text-primary">Fotos</p>
+          <h2 className="font-display text-2xl font-bold text-navy">Fotos</h2>
           <p className="font-body text-xs text-on-surface-variant mt-0.5">
             {totalPhotos} foto{totalPhotos !== 1 ? 's' : ''} · arraste ou use o seletor em cada foto
           </p>

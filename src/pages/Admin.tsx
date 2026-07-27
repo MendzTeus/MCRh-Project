@@ -1134,15 +1134,17 @@ function ReviewsTab({ units, api }: { units: Unit[]; api: ReturnType<typeof useA
 
   return (
     <div>
-      <div className="flex items-center justify-between mb-6">
-        <p className="font-display text-headline-sm text-primary">Reviews</p>
-        <span className="font-body text-xs text-on-surface-variant">
-          {loading ? 'carregando…' : `${filtered.length} de ${reviews.length} review${reviews.length !== 1 ? 's' : ''}`}
-        </span>
+      <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-8">
+        <div>
+          <h2 className="font-display text-4xl font-bold text-navy mb-1">Reviews</h2>
+          <p className="text-navy/60 font-body font-medium">
+            {loading ? 'carregando…' : `${filtered.length} de ${reviews.length} review${reviews.length !== 1 ? 's' : ''}`}
+          </p>
+        </div>
       </div>
 
       {/* Filters */}
-      <div className="flex flex-wrap items-end gap-4 mb-6">
+      <div className="bg-white p-4 rounded-xl shadow-sm border border-navy/5 flex flex-wrap items-end gap-4 mb-6">
         <div className="flex-1 min-w-[200px] max-w-sm">
           <label className={label}>Buscar</label>
           <input value={query} onChange={(e) => { setQuery(e.target.value); setPage(1); }} placeholder="Nome ou texto do review…" className={field} />
@@ -1191,71 +1193,108 @@ function ReviewsTab({ units, api }: { units: Unit[]; api: ReturnType<typeof useA
 
       {/* Bulk action bar */}
       {selected.size > 0 && (
-        <div className="flex items-center gap-3 px-4 py-2.5 mb-4 rounded-lg border" style={{ borderColor: GOLD, background: 'rgba(197,160,89,0.08)' }}>
-          <span className="font-body text-xs text-on-surface">{selected.size} selecionado{selected.size !== 1 ? 's' : ''}</span>
-          <button onClick={() => bulkSetPublished(true)} className="font-body text-[10px] uppercase tracking-[0.15em] text-white px-3 py-1" style={{ background: '#3f7d5b' }}>Publicar</button>
-          <button onClick={() => bulkSetPublished(false)} className="font-body text-[10px] uppercase tracking-[0.15em] text-white px-3 py-1" style={{ background: '#6b7280' }}>Ocultar</button>
-          <button onClick={bulkDelete} className="font-body text-[10px] uppercase tracking-[0.15em] text-white px-3 py-1" style={{ background: '#ba1a1a' }}>Remover</button>
-          <button onClick={() => setSelected(new Set())} className="font-body text-[10px] uppercase tracking-widest text-on-surface-variant/60 hover:text-on-surface-variant ml-auto">Limpar seleção</button>
+        <div className="bg-navy text-white rounded-xl py-3 px-6 shadow-xl flex items-center justify-between mb-6">
+          <div className="flex items-center gap-3">
+            <span className="text-navy font-bold w-6 h-6 flex items-center justify-center rounded-full text-xs" style={{ background: GOLD }}>{selected.size}</span>
+            <span className="font-body text-sm">selecionado{selected.size !== 1 ? 's' : ''}</span>
+          </div>
+          <div className="flex items-center gap-3">
+            <button onClick={() => bulkSetPublished(true)} className="font-body text-xs font-bold px-4 py-1.5 rounded-lg" style={{ background: GOLD, color: NAVY }}>Publicar</button>
+            <button onClick={() => bulkSetPublished(false)} className="font-body text-xs font-medium px-4 py-1.5 rounded-lg border border-white/30 hover:bg-white/10">Ocultar</button>
+            <button onClick={bulkDelete} className="font-body text-xs font-medium px-4 py-1.5 rounded-lg text-red-400 hover:bg-red-500/20">Remover</button>
+            <button onClick={() => setSelected(new Set())} className="font-body text-[10px] uppercase tracking-widest text-white/50 hover:text-white ml-2">Limpar</button>
+          </div>
         </div>
       )}
 
       {!loading && filtered.length === 0 && (
-        <div className="border border-dashed border-outline-variant/40 rounded-xl px-6 py-16 text-center">
-          <p className="font-body text-sm text-on-surface-variant/60">Nenhum review encontrado com estes filtros.</p>
+        <div className="bg-white border border-dashed border-navy/10 rounded-xl px-6 py-16 text-center">
+          <p className="font-body text-sm text-navy/50">Nenhum review encontrado com estes filtros.</p>
         </div>
       )}
 
-      <div className="space-y-4">
-        {pageReviews.map((r) => {
-          const isLong = (r.text || '').length > 280;
-          const isExpanded = expanded.has(r.id);
-          return (
-            <div key={r.id} className="border border-outline-variant/30 rounded-xl shadow-sm p-4 grid gap-3" style={{ opacity: r.published ? 1 : 0.55 }}>
-              <div className="flex items-start gap-3">
-                <input type="checkbox" checked={selected.has(r.id)} onChange={() => toggleSelected(r.id)} className="mt-1.5 accent-[#C5A059]" aria-label="Selecionar review" />
-                {r.avatarUrl
-                  ? <img src={r.avatarUrl} alt={r.name || ''} className="w-9 h-9 rounded-full object-cover shrink-0" />
-                  : <div className="w-9 h-9 rounded-full bg-outline-variant/20 shrink-0" />}
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <span className="font-body text-sm text-on-surface font-medium">{r.name || 'Sem nome'}</span>
-                    <span className="font-body text-[10px] text-on-surface-variant/50">{r.date}</span>
-                    <span className="font-body text-[10px] uppercase tracking-widest px-1.5 py-0.5 rounded" style={{ background: '#f3f0e9', color: GOLD }}>★ {r.rating}</span>
-                    <span className="font-body text-[9px] uppercase tracking-widest text-on-surface-variant/40">{unitName(r.propertySlug)}</span>
-                    {r.sourceReviewId && <span className="font-body text-[9px] uppercase tracking-widest text-on-surface-variant/40">· Airbnb</span>}
-                  </div>
-                  {/* Prevent long review text from stretching the page: clamp with a "show more" toggle */}
-                  <p className={`font-body text-sm text-on-surface-variant mt-1.5 ${!isExpanded && isLong ? 'line-clamp-4' : ''}`}>
-                    {r.text}
-                  </p>
-                  {isLong && (
-                    <button
-                      onClick={() => setExpanded((prev) => { const next = new Set(prev); isExpanded ? next.delete(r.id) : next.add(r.id); return next; })}
-                      className="font-body text-[10px] uppercase tracking-widest mt-1"
-                      style={{ color: GOLD }}
-                    >
-                      {isExpanded ? 'Ver menos' : 'Ver mais'}
-                    </button>
-                  )}
-                </div>
-              </div>
-              <div className="flex items-center gap-4 pl-[52px]">
-                <button onClick={() => update(r.id, { published: !r.published })} className="font-body text-[10px] uppercase tracking-[0.12em] text-on-surface-variant/70">
-                  {r.published ? '● Publicado' : '○ Oculto'}
-                </button>
-                <button onClick={() => setConfirmTarget({ kind: 'single', id: r.id })} className="font-body text-[10px] uppercase tracking-[0.12em] text-red-500 ml-auto">Remover</button>
-              </div>
-            </div>
-          );
-        })}
-      </div>
+      {pageReviews.length > 0 && (
+        <div className="bg-white rounded-xl shadow-sm border border-navy/5 overflow-hidden">
+          <div className="overflow-x-auto">
+            <table className="w-full text-left border-collapse">
+              <thead>
+                <tr className="bg-navy/5 text-navy/40 uppercase text-[10px] tracking-widest font-bold">
+                  <th className="py-4 px-4 w-10 text-center"><span className="sr-only">Selecionar</span></th>
+                  <th className="py-4 px-4 min-w-[180px]">Hóspede</th>
+                  <th className="py-4 px-4">Nota</th>
+                  <th className="py-4 px-4 min-w-[130px]">Apartamento</th>
+                  <th className="py-4 px-4 min-w-[280px]">Trecho</th>
+                  <th className="py-4 px-4">Origem</th>
+                  <th className="py-4 px-4">Data</th>
+                  <th className="py-4 px-4">Visibilidade</th>
+                  <th className="py-4 px-4 text-right">Ações</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-navy/5">
+                {pageReviews.map((r) => {
+                  const isLong = (r.text || '').length > 280;
+                  const isExpanded = expanded.has(r.id);
+                  return (
+                    <tr key={r.id} className={`hover:bg-cream/30 transition-colors group ${!r.published ? 'bg-navy/[0.02]' : ''}`}>
+                      <td className="py-4 px-4 text-center">
+                        <input type="checkbox" checked={selected.has(r.id)} onChange={() => toggleSelected(r.id)} className="rounded border-navy/20 accent-[#C5A059]" aria-label="Selecionar review" />
+                      </td>
+                      <td className="py-4 px-4">
+                        <div className="flex items-center gap-3">
+                          {r.avatarUrl
+                            ? <img src={r.avatarUrl} alt={r.name || ''} className="w-9 h-9 rounded-full object-cover shrink-0" />
+                            : <div className="w-9 h-9 rounded-full bg-navy/5 flex items-center justify-center text-[10px] font-bold text-navy shrink-0">{(r.name || '?').slice(0, 2).toUpperCase()}</div>}
+                          <span className="font-semibold text-sm text-navy">{r.name || 'Sem nome'}</span>
+                        </div>
+                      </td>
+                      <td className="py-4 px-4">
+                        <span className="text-xs font-bold px-1.5 py-0.5 rounded" style={{ background: 'rgba(197,160,89,0.1)', color: GOLD }}>★ {r.rating}</span>
+                      </td>
+                      <td className="py-4 px-4">
+                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-navy/5 text-navy border border-navy/10">{unitName(r.propertySlug)}</span>
+                      </td>
+                      <td className="py-4 px-4 max-w-sm">
+                        <p className={`text-sm text-navy/80 italic leading-relaxed ${!isExpanded && isLong ? 'line-clamp-2' : ''}`}>{r.text}</p>
+                        {isLong && (
+                          <button
+                            onClick={() => setExpanded((prev) => { const next = new Set(prev); isExpanded ? next.delete(r.id) : next.add(r.id); return next; })}
+                            className="font-body text-[10px] uppercase tracking-widest mt-1"
+                            style={{ color: GOLD }}
+                          >
+                            {isExpanded ? 'Ver menos' : 'Ver mais'}
+                          </button>
+                        )}
+                      </td>
+                      <td className="py-4 px-4">
+                        <span className="text-xs font-medium text-navy/70">{r.sourceReviewId ? 'Airbnb' : 'Manual'}</span>
+                      </td>
+                      <td className="py-4 px-4"><span className="text-xs text-navy/60 font-medium">{r.date}</span></td>
+                      <td className="py-4 px-4">
+                        <label className="relative inline-flex items-center cursor-pointer">
+                          <input type="checkbox" checked={r.published} onChange={() => update(r.id, { published: !r.published })} className="sr-only peer" aria-label="Publicado" />
+                          <div className="w-9 h-5 bg-navy/10 rounded-full peer peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all" style={r.published ? { background: GOLD } : undefined} />
+                          <span className="ml-2 text-[10px] font-bold uppercase" style={{ color: r.published ? GOLD : undefined }}>{r.published ? 'Publicado' : 'Oculto'}</span>
+                        </label>
+                      </td>
+                      <td className="py-4 px-4 text-right">
+                        <button onClick={() => setConfirmTarget({ kind: 'single', id: r.id })} className="p-2 text-navy/40 hover:text-red-500 rounded-lg transition-colors" aria-label="Remover review">
+                          <span className="font-body text-[10px] uppercase tracking-[0.12em]">Remover</span>
+                        </button>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
 
       {pageCount > 1 && (
         <div className="flex items-center justify-center gap-4 mt-8">
-          <button onClick={() => setPage((p) => Math.max(1, p - 1))} disabled={pageSafe === 1} className="font-body text-[11px] uppercase tracking-widest text-on-surface-variant/60 disabled:opacity-30">← Anterior</button>
-          <span className="font-body text-xs text-on-surface-variant/60">Página {pageSafe} de {pageCount}</span>
-          <button onClick={() => setPage((p) => Math.min(pageCount, p + 1))} disabled={pageSafe === pageCount} className="font-body text-[11px] uppercase tracking-widest text-on-surface-variant/60 disabled:opacity-30">Próxima →</button>
+          <button onClick={() => setPage((p) => Math.max(1, p - 1))} disabled={pageSafe === 1} className="font-body text-[11px] uppercase tracking-widest text-navy/50 disabled:opacity-30">← Anterior</button>
+          <span className="font-body text-xs text-navy/50">Página {pageSafe} de {pageCount}</span>
+          <button onClick={() => setPage((p) => Math.min(pageCount, p + 1))} disabled={pageSafe === pageCount} className="font-body text-[11px] uppercase tracking-widest text-navy/50 disabled:opacity-30">Próxima →</button>
         </div>
       )}
 
@@ -1308,55 +1347,76 @@ function LeadsTab({ api }: { api: ReturnType<typeof useApi> }) {
   const filtered = filter === 'todos' ? leads : leads.filter((l) => l.status === filter);
 
   return (
-    <div className="max-w-4xl space-y-6">
-      <div className="flex items-center gap-3 flex-wrap">
+    <div>
+      <div className="flex justify-between items-end mb-8 flex-wrap gap-4">
+        <div>
+          <h2 className="font-display text-4xl font-bold text-navy">Leads</h2>
+          <p className="font-body text-navy/60 mt-1">Acompanhe e responda às solicitações de hóspedes</p>
+        </div>
+        <div className="flex gap-4 flex-wrap">
+          {Object.keys(STATUS_LABELS).map((s) => (
+            <div key={s} className="bg-white px-5 py-3 rounded-xl shadow-sm border border-navy/5 flex items-center gap-3">
+              <span className="w-2 h-2 rounded-full" style={{ background: STATUS_COLORS[s] }} />
+              <span className="font-display text-2xl font-bold text-navy">{leads.filter((l) => l.status === s).length}</span>
+              <span className="font-body text-xs text-navy/50 uppercase tracking-wider">{STATUS_LABELS[s]}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      <div className="flex items-center gap-3 flex-wrap mb-6 bg-white p-3 rounded-xl shadow-sm border border-navy/5">
         {['todos', 'novo', 'lido', 'arquivado'].map((f) => (
           <button key={f} onClick={() => setFilter(f)}
-            className={`px-4 py-1.5 rounded-full font-body text-label-caps tracking-widest uppercase text-xs border transition-colors ${filter === f ? 'bg-primary text-white border-primary' : 'border-outline-variant/40 text-on-surface-variant hover:border-primary'}`}>
+            className="px-4 py-1.5 rounded-full font-body tracking-widest uppercase text-xs border transition-colors"
+            style={filter === f ? { background: GOLD, color: '#fff', borderColor: GOLD } : { borderColor: 'rgba(16,28,45,0.15)', color: 'rgba(16,28,45,0.6)' }}>
             {f === 'todos' ? 'Todos' : STATUS_LABELS[f]}
-            {f !== 'todos' && <span className="ml-1.5 opacity-60">{leads.filter((l) => l.status === f).length}</span>}
+            {f !== 'todos' && <span className="ml-1.5 opacity-70">{leads.filter((l) => l.status === f).length}</span>}
           </button>
         ))}
-        <span className="ml-auto font-body text-xs text-on-surface-variant">{filtered.length} {filtered.length === 1 ? 'lead' : 'leads'}</span>
+        <span className="ml-auto font-body text-xs text-navy/50">{filtered.length} {filtered.length === 1 ? 'lead' : 'leads'}</span>
       </div>
 
       {loading ? (
-        <p className="font-body text-sm text-on-surface-variant">Carregando…</p>
+        <p className="font-body text-sm text-navy/60">Carregando…</p>
       ) : filtered.length === 0 ? (
-        <div className="border border-outline-variant/30 rounded-xl px-6 py-12 text-center">
-          <p className="font-body text-sm text-on-surface-variant">Nenhum lead encontrado.</p>
+        <div className="bg-white border border-dashed border-navy/10 rounded-xl px-6 py-12 text-center">
+          <p className="font-body text-sm text-navy/50">Nenhum lead encontrado.</p>
         </div>
       ) : (
         <div className="space-y-3">
           {filtered.map((lead) => (
-            <div key={lead.id} className="border border-outline-variant/30 rounded-xl shadow-sm p-5 bg-surface-container-lowest space-y-3">
+            <div key={lead.id} className="bg-white rounded-xl shadow-sm border border-navy/5 p-5 space-y-3">
               <div className="flex items-start justify-between gap-4">
                 <div>
-                  <p className="font-display text-headline-sm text-primary">{lead.name}</p>
-                  <p className="font-body text-sm text-on-surface-variant mt-0.5">{lead.email}{lead.phone ? ` · ${lead.phone}` : ''}</p>
+                  <p className="font-display text-xl font-bold text-navy">{lead.name}</p>
+                  <p className="font-body text-sm text-navy/50 mt-0.5">{lead.email}{lead.phone ? ` · ${lead.phone}` : ''}</p>
                 </div>
                 <div className="flex items-center gap-2 shrink-0">
-                  <span className="font-body text-[10px] tracking-widest uppercase font-semibold px-2 py-0.5 rounded-full text-white" style={{ background: STATUS_COLORS[lead.status] || '#6b7280' }}>
+                  <span className="font-body text-[10px] tracking-widest uppercase font-bold px-3 py-1 rounded-full text-white" style={{ background: STATUS_COLORS[lead.status] || '#6b7280' }}>
                     {STATUS_LABELS[lead.status] || lead.status}
                   </span>
                 </div>
               </div>
-              <div className="flex flex-wrap gap-3 font-body text-xs text-on-surface-variant">
-                <span className="bg-surface-dim px-2 py-0.5 rounded">{lead.propertyName}</span>
-                {lead.checkIn && <span className="bg-surface-dim px-2 py-0.5 rounded">{lead.checkIn} → {lead.checkOut}</span>}
-                {lead.guests && <span className="bg-surface-dim px-2 py-0.5 rounded">{lead.guests} hóspedes</span>}
-                {lead.source && <span className="bg-surface-dim px-2 py-0.5 rounded opacity-60">{lead.source}</span>}
-                <span className="ml-auto opacity-50">{new Date(lead.createdAt).toLocaleDateString('pt-BR', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })}</span>
+              <div className="flex flex-wrap gap-2 font-body text-xs text-navy/60">
+                <span className="bg-navy/5 px-2.5 py-1 rounded-full">{lead.propertyName}</span>
+                {lead.checkIn && <span className="bg-navy/5 px-2.5 py-1 rounded-full">{lead.checkIn} → {lead.checkOut}</span>}
+                {lead.guests && <span className="bg-navy/5 px-2.5 py-1 rounded-full">{lead.guests} hóspedes</span>}
+                {lead.source && <span className="bg-navy/5 px-2.5 py-1 rounded-full opacity-70">{lead.source}</span>}
+                <span className="ml-auto opacity-60 self-center">{new Date(lead.createdAt).toLocaleDateString('pt-BR', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })}</span>
               </div>
-              {lead.message && <p className="font-body text-sm text-on-surface-variant border-t border-outline-variant/20 pt-3 leading-relaxed">{lead.message}</p>}
-              <div className="flex gap-2 pt-1">
+              {lead.message && (
+                <p className="font-body text-sm italic text-navy/70 border-t border-navy/5 pt-3 leading-relaxed bg-cream/40 -mx-5 -mb-3 px-5 pb-4 rounded-b-xl">
+                  “{lead.message}”
+                </p>
+              )}
+              <div className="flex gap-2 pt-1 flex-wrap">
                 {Object.keys(STATUS_LABELS).filter((s) => s !== lead.status).map((s) => (
                   <button key={s} onClick={() => setStatus(lead.id, s)}
-                    className="font-body text-[10px] tracking-widest uppercase px-3 py-1 border border-outline-variant/40 rounded hover:border-primary transition-colors text-on-surface-variant hover:text-primary">
+                    className="font-body text-[10px] tracking-widest uppercase px-3 py-1.5 border border-navy/15 rounded-lg hover:border-[#C5A059] transition-colors text-navy/60 hover:text-[#C5A059]">
                     Marcar {STATUS_LABELS[s]}
                   </button>
                 ))}
-                <button onClick={() => deleteLead(lead.id)} className="ml-auto font-body text-[10px] tracking-widest uppercase px-3 py-1 border border-red-200 rounded hover:bg-red-50 text-red-400 transition-colors">
+                <button onClick={() => deleteLead(lead.id)} className="ml-auto font-body text-[10px] tracking-widest uppercase px-3 py-1.5 border border-red-200 rounded-lg hover:bg-red-50 text-red-400 transition-colors">
                   Remover
                 </button>
               </div>
@@ -1375,11 +1435,10 @@ function DashCard({ title, value, tone, onClick }: { title: string; value: strin
   return (
     <Tag
       onClick={onClick}
-      className={`border p-5 text-left w-full ${onClick ? 'cursor-pointer hover:bg-surface-container-low transition-colors' : ''}`}
-      style={{ borderColor: tone === 'warn' ? '#ba1a1a55' : 'rgba(0,0,0,0.1)' }}
+      className={`bg-white p-6 rounded-xl shadow-sm border border-navy/5 text-left w-full transition-all ${onClick ? 'cursor-pointer hover:shadow-md' : ''}`}
     >
-      <p className="font-body text-[10px] uppercase tracking-[0.15em] text-on-surface-variant mb-1.5">{title}</p>
-      <p className="font-display text-headline-md" style={{ color: tone === 'warn' ? '#ba1a1a' : GOLD }}>{value}</p>
+      <p className="text-navy/60 text-xs font-semibold uppercase tracking-widest mb-1.5 font-body">{title}</p>
+      <h3 className="font-display text-4xl font-bold" style={{ color: tone === 'warn' && Number(value) > 0 ? '#ba1a1a' : NAVY }}>{value}</h3>
     </Tag>
   );
 }
@@ -1406,49 +1465,70 @@ function DashboardTab({ units, onGoToApartments, onGoToPhotos }: {
     .slice(0, 6);
 
   return (
-    <div className="space-y-10">
-      <div className="grid gap-4" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))' }}>
+    <div>
+      <div className="flex justify-between items-end mb-8">
+        <div>
+          <h2 className="font-display text-4xl font-bold text-navy">Dashboard</h2>
+          <p className="text-navy/50 mt-1 font-body font-medium">Visão geral dos seus apartamentos e propriedades.</p>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-10">
         <DashCard title="Propriedades" value={propertyCount} />
         <DashCard title="Apartamentos" value={units.length} onClick={() => onGoToApartments('')} />
         <DashCard title="Visíveis" value={visibleUnits.length} onClick={() => onGoToApartments('')} />
         <DashCard title="Ocultos" value={hiddenUnits.length} tone={hiddenUnits.length > 0 ? 'warn' : 'default'} onClick={() => onGoToApartments('')} />
       </div>
 
-      <div>
-        <h2 className="font-display text-headline-sm text-primary mb-4">Avisos</h2>
-        <div className="grid gap-4" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))' }}>
+      <div className="mb-10">
+        <h3 className="font-display text-xl font-bold text-navy mb-4">Avisos</h3>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
           <DashCard title="Sem descrição" value={noDescription.length} tone={noDescription.length > 0 ? 'warn' : 'default'} onClick={() => onGoToApartments('')} />
           <DashCard title="Sem fotos" value={noPhotos.length} tone={noPhotos.length > 0 ? 'warn' : 'default'} onClick={onGoToPhotos} />
           <DashCard title="Fotos sem categoria" value={uncategorisedPhotos.length} tone={uncategorisedPhotos.length > 0 ? 'warn' : 'default'} onClick={onGoToPhotos} />
           <DashCard title="Fotos com link quebrado" value={brokenPhotos.length} tone={brokenPhotos.length > 0 ? 'warn' : 'default'} onClick={onGoToPhotos} />
         </div>
         {noDescription.length > 0 && (
-          <p className="font-body text-xs text-on-surface-variant/70 mt-3">
+          <p className="font-body text-xs text-navy/50 mt-3">
             Sem descrição: {noDescription.slice(0, 8).map((u) => u.unitName).join(', ')}{noDescription.length > 8 ? '…' : ''}
           </p>
         )}
         {hiddenUnits.length > 0 && (
-          <p className="font-body text-xs text-on-surface-variant/70 mt-1">
+          <p className="font-body text-xs text-navy/50 mt-1">
             Ocultos: {hiddenUnits.slice(0, 8).map((u) => u.unitName).join(', ')}{hiddenUnits.length > 8 ? '…' : ''}
           </p>
         )}
       </div>
 
       {recentlyUpdated.length > 0 && (
-        <div>
-          <h2 className="font-display text-headline-sm text-primary mb-4">Atualizados recentemente</h2>
-          <ul className="divide-y divide-outline-variant/20 border-t border-b border-outline-variant/20">
-            {recentlyUpdated.map((u) => (
-              <li key={u.unitSlug}>
-                <Link to={`/admin/apartments/${u.unitSlug}`} className="flex items-center justify-between py-3 hover:bg-surface-container-low transition-colors px-1">
-                  <span className="font-body text-sm text-on-surface">{u.unitName} <span className="text-on-surface-variant/60">— {u.propertyName}</span></span>
-                  <span className="font-body text-[10px] uppercase tracking-widest text-on-surface-variant/50">
-                    {u.updatedAt ? new Date(u.updatedAt).toLocaleDateString('pt-BR') : ''}
-                  </span>
-                </Link>
-              </li>
-            ))}
-          </ul>
+        <div className="bg-white rounded-xl shadow-sm border border-navy/5 overflow-hidden">
+          <div className="p-6 border-b border-navy/5">
+            <h3 className="font-display text-xl font-bold text-navy">Atualizados recentemente</h3>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="w-full text-left">
+              <thead>
+                <tr className="bg-navy/5">
+                  <th className="px-6 py-4 text-[10px] font-bold uppercase tracking-widest text-navy/40">Apartamento</th>
+                  <th className="px-6 py-4 text-[10px] font-bold uppercase tracking-widest text-navy/40">Propriedade</th>
+                  <th className="px-6 py-4 text-[10px] font-bold uppercase tracking-widest text-navy/40">Atualizado em</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-navy/5">
+                {recentlyUpdated.map((u) => (
+                  <tr key={u.unitSlug} className="hover:bg-cream/30 transition-colors">
+                    <td className="px-6 py-4">
+                      <Link to={`/admin/apartments/${u.unitSlug}`} className="text-sm font-semibold text-navy hover:underline">{u.unitName}</Link>
+                    </td>
+                    <td className="px-6 py-4 text-sm text-navy/70">{u.propertyName}</td>
+                    <td className="px-6 py-4 text-xs font-medium text-navy/40">
+                      {u.updatedAt ? new Date(u.updatedAt).toLocaleDateString('pt-BR') : ''}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </div>
       )}
     </div>
