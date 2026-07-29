@@ -196,6 +196,8 @@ function LeadsPage() {
   // Filters
   const [search, setSearch] = useState('');
   const [filterStatus, setFilterStatus] = useState<'' | LeadStatus>('');
+  const [page, setPage] = useState(1);
+  const PAGE_SIZE = 20;
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -226,6 +228,10 @@ function LeadsPage() {
       return true;
     });
   }, [leads, search, filterStatus]);
+
+  const pageCount = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
+  const pageSafe = Math.min(page, pageCount);
+  const pageLeads = filtered.slice((pageSafe - 1) * PAGE_SIZE, pageSafe * PAGE_SIZE);
 
   async function changeStatus(id: string, status: LeadStatus) {
     setLeads((prev) => prev.map((l) => l.id === id ? { ...l, status } : l));
@@ -276,18 +282,18 @@ function LeadsPage() {
           <div className="flex flex-wrap gap-3 mb-5 items-center">
             <div className="relative flex-1 min-w-[200px]">
               <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" style={{ color: `${NAVY}50` }} />
-              <input value={search} onChange={(e) => setSearch(e.target.value)}
+              <input value={search} onChange={(e) => { setSearch(e.target.value); setPage(1); }}
                 placeholder="Search name, email, apartment…"
                 className={`${selCls} pl-9 w-full`} />
             </div>
-            <select value={filterStatus} onChange={(e) => setFilterStatus(e.target.value as '' | LeadStatus)} className={selCls}>
+            <select value={filterStatus} onChange={(e) => { setFilterStatus(e.target.value as '' | LeadStatus); setPage(1); }} className={selCls}>
               <option value="">All Statuses</option>
               <option value="new">New</option>
               <option value="contacted">Contacted</option>
               <option value="closed">Closed</option>
             </select>
             {(search || filterStatus) && (
-              <button onClick={() => { setSearch(''); setFilterStatus(''); }}
+              <button onClick={() => { setSearch(''); setFilterStatus(''); setPage(1); }}
                 className="flex items-center gap-1.5 font-body text-xs px-3 py-2.5 rounded-lg border transition-colors hover:bg-red-50"
                 style={{ borderColor: `${NAVY}20`, color: `${NAVY}70` }}>
                 <X size={12} /> Clear
@@ -327,7 +333,7 @@ function LeadsPage() {
                 </div>
 
                 <div className="divide-y" style={{ borderColor: `${NAVY}06` }}>
-                  {filtered.map((l) => {
+                  {pageLeads.map((l) => {
                     const nights = l.nights ?? (l.checkIn && l.checkOut
                       ? Math.round((new Date(l.checkOut).getTime() - new Date(l.checkIn).getTime()) / 86400000)
                       : null);
@@ -358,7 +364,7 @@ function LeadsPage() {
                   })}
 
                   {/* Mobile */}
-                  {filtered.map((l) => (
+                  {pageLeads.map((l) => (
                     <button key={`m-${l.id}`} onClick={() => setSelected(l)}
                       className="md:hidden w-full px-4 py-4 text-left flex items-start justify-between gap-3">
                       <div className="min-w-0">
@@ -376,6 +382,20 @@ function LeadsPage() {
               </>
             )}
           </div>
+
+          {pageCount > 1 && (
+            <div className="flex items-center justify-center gap-4 mt-5">
+              <button onClick={() => setPage((p) => Math.max(1, p - 1))} disabled={pageSafe === 1}
+                className="font-body text-[11px] uppercase tracking-widest disabled:opacity-30" style={{ color: `${NAVY}50` }}>
+                ← Previous
+              </button>
+              <span className="font-body text-xs" style={{ color: `${NAVY}50` }}>Page {pageSafe} of {pageCount}</span>
+              <button onClick={() => setPage((p) => Math.min(pageCount, p + 1))} disabled={pageSafe === pageCount}
+                className="font-body text-[11px] uppercase tracking-widest disabled:opacity-30" style={{ color: `${NAVY}50` }}>
+                Next →
+              </button>
+            </div>
+          )}
         </>
       )}
     </AdminShell>

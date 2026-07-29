@@ -214,29 +214,33 @@ router.patch('/units/:unitSlug', async (req, res) => {
 });
 
 // ── Upload a photo (base64 JSON body — no multipart dep) ────────────
-router.post('/units/:unitSlug/photos', async (req, res) => {
-  const { unitSlug } = req.params;
-  const { dataBase64, contentType, alt } = req.body || {};
-  if (!dataBase64 || !contentType) return res.status(400).json({ error: 'dataBase64 and contentType required' });
+// Shared by unit and property photo uploads: same Storage-upload + first-photo
+// -is-primary + insert logic, differing only in the MediaAsset ownerType/path prefix.
+async function uploadMediaAsset({ ownerType, ownerSlug, dataBase64, contentType, alt, res }) {
+  if (!dataBase64 || !contentType) {
+    res.status(400).json({ error: 'dataBase64 and contentType required' });
+    return;
+  }
 
   const buffer = Buffer.from(dataBase64, 'base64');
   if (!validatePhotoUpload(contentType, buffer, res)) return;
 
   const ext = (contentType.split('/')[1] || 'jpg').replace('jpeg', 'jpg');
-  const path = `units/${unitSlug}/${Date.now()}-${crypto.randomBytes(4).toString('hex')}.${ext}`;
+  const pathPrefix = ownerType === 'unit' ? 'units' : 'properties';
+  const path = `${pathPrefix}/${ownerSlug}/${Date.now()}-${crypto.randomBytes(4).toString('hex')}.${ext}`;
 
   const { error: upErr } = await supabase.storage.from(BUCKET).upload(path, buffer, { contentType, upsert: false });
   if (upErr) return res.status(500).json({ error: upErr.message });
 
   const { data: pub } = supabase.storage.from(BUCKET).getPublicUrl(path);
 
-  // New photo goes to the end; if the unit has no photos yet, make it primary.
+  // New photo goes to the end; if the owner has no photos yet, make it primary.
   const { count } = await supabase.from('MediaAsset').select('*', { count: 'exact', head: true })
-    .eq('ownerType', 'unit').eq('ownerSlug', unitSlug);
+    .eq('ownerType', ownerType).eq('ownerSlug', ownerSlug);
   const now = new Date().toISOString();
   const row = {
     id: crypto.randomUUID(),
-    ownerType: 'unit', ownerSlug: unitSlug,
+    ownerType, ownerSlug,
     url: pub.publicUrl, storagePath: path, alt: alt || null,
     isPrimary: (count || 0) === 0, displayOrder: count || 0,
     createdAt: now, updatedAt: now,
@@ -244,6 +248,12 @@ router.post('/units/:unitSlug/photos', async (req, res) => {
   const { data, error } = await supabase.from('MediaAsset').insert(row).select().single();
   if (error) return res.status(500).json({ error: error.message });
   res.json({ photo: data });
+}
+
+router.post('/units/:unitSlug/photos', async (req, res) => {
+  const { unitSlug } = req.params;
+  const { dataBase64, contentType, alt } = req.body || {};
+  await uploadMediaAsset({ ownerType: 'unit', ownerSlug: unitSlug, dataBase64, contentType, alt, res });
 });
 
 // ── Edit a photo's metadata / primary flag ──────────────────────────
@@ -272,9 +282,11 @@ router.post('/units/reorder', async (req, res) => {
   const { orderedSlugs } = req.body || {};
   if (!Array.isArray(orderedSlugs)) return res.status(400).json({ error: 'orderedSlugs required' });
   const now = new Date().toISOString();
-  for (let i = 0; i < orderedSlugs.length; i++) {
-    await supabase.from('Unit').update({ displayOrder: i + 1, updatedAt: now }).eq('unitSlug', orderedSlugs[i]);
-  }
+  const results = await Promise.all(orderedSlugs.map((unitSlug, i) =>
+    supabase.from('Unit').update({ displayOrder: i + 1, updatedAt: now }).eq('unitSlug', unitSlug)
+  ));
+  const err = results.find((r) => r.error)?.error;
+  if (err) return res.status(500).json({ error: err.message });
   res.json({ ok: true });
 });
 
@@ -283,9 +295,11 @@ router.post('/units/:unitSlug/photos/reorder', async (req, res) => {
   const { orderedIds } = req.body || {};
   if (!Array.isArray(orderedIds)) return res.status(400).json({ error: 'orderedIds array required' });
   const now = new Date().toISOString();
-  for (let i = 0; i < orderedIds.length; i++) {
-    await supabase.from('MediaAsset').update({ displayOrder: i, updatedAt: now }).eq('id', orderedIds[i]);
-  }
+  const results = await Promise.all(orderedIds.map((id, i) =>
+    supabase.from('MediaAsset').update({ displayOrder: i, updatedAt: now }).eq('id', id)
+  ));
+  const err = results.find((r) => r.error)?.error;
+  if (err) return res.status(500).json({ error: err.message });
   res.json({ ok: true });
 });
 
@@ -353,23 +367,7 @@ router.delete('/photos/:id', async (req, res) => {
 router.post('/properties/:slug/photos', async (req, res) => {
   const { slug } = req.params;
   const { dataBase64, contentType, alt } = req.body || {};
-  if (!dataBase64 || !contentType) return res.status(400).json({ error: 'dataBase64 and contentType required' });
-
-  const buffer = Buffer.from(dataBase64, 'base64');
-  if (!validatePhotoUpload(contentType, buffer, res)) return;
-
-  const ext = (contentType.split('/')[1] || 'jpg').replace('jpeg', 'jpg');
-  const path = `properties/${slug}/${Date.now()}-${crypto.randomBytes(4).toString('hex')}.${ext}`;
-  const { error: upErr } = await supabase.storage.from(BUCKET).upload(path, buffer, { contentType, upsert: false });
-  if (upErr) return res.status(500).json({ error: upErr.message });
-
-  const { data: pub } = supabase.storage.from(BUCKET).getPublicUrl(path);
-  const { count } = await supabase.from('MediaAsset').select('*', { count: 'exact', head: true }).eq('ownerType', 'property').eq('ownerSlug', slug);
-  const now = new Date().toISOString();
-  const row = { id: crypto.randomUUID(), ownerType: 'property', ownerSlug: slug, url: pub.publicUrl, storagePath: path, alt: alt || null, isPrimary: (count || 0) === 0, displayOrder: count || 0, createdAt: now, updatedAt: now };
-  const { data, error } = await supabase.from('MediaAsset').insert(row).select().single();
-  if (error) return res.status(500).json({ error: error.message });
-  res.json({ photo: data });
+  await uploadMediaAsset({ ownerType: 'property', ownerSlug: slug, dataBase64, contentType, alt, res });
 });
 
 router.get('/properties/:slug/photos', async (req, res) => {
@@ -382,9 +380,11 @@ router.post('/properties/:slug/photos/reorder', async (req, res) => {
   const { orderedIds } = req.body || {};
   if (!Array.isArray(orderedIds)) return res.status(400).json({ error: 'orderedIds array required' });
   const now = new Date().toISOString();
-  for (let i = 0; i < orderedIds.length; i++) {
-    await supabase.from('MediaAsset').update({ displayOrder: i, updatedAt: now }).eq('id', orderedIds[i]);
-  }
+  const results = await Promise.all(orderedIds.map((id, i) =>
+    supabase.from('MediaAsset').update({ displayOrder: i, updatedAt: now }).eq('id', id)
+  ));
+  const err = results.find((r) => r.error)?.error;
+  if (err) return res.status(500).json({ error: err.message });
   res.json({ ok: true });
 });
 
