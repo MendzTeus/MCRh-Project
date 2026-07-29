@@ -138,10 +138,52 @@ router.get('/reviews', async (req, res) => {
   res.json(data || []);
 });
 
+// ── Enquiry rate-limit ──────────────────────────────────────────────
+// Public, unauthenticated form — throttle per IP to curb spam/flood, same
+// sliding-window approach as the admin login throttle.
+const ENQUIRY_WINDOW_MS = 60 * 60 * 1000;
+const ENQUIRY_MAX_SUBMISSIONS = 5;
+const enquiryAttempts = new Map(); // ip -> number[] (timestamps)
+
+function enquiryThrottle(req, res, next) {
+  const ip = req.headers['x-real-ip'] || req.socket?.remoteAddress || 'unknown';
+  const now = Date.now();
+  const recent = (enquiryAttempts.get(ip) || []).filter((t) => now - t < ENQUIRY_WINDOW_MS);
+  if (recent.length >= ENQUIRY_MAX_SUBMISSIONS) {
+    res.set('Retry-After', String(Math.ceil(ENQUIRY_WINDOW_MS / 1000)));
+    return res.status(429).json({ error: 'Too many submissions. Please try again later.' });
+  }
+  recent.push(now);
+  enquiryAttempts.set(ip, recent);
+  next();
+}
+
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const MAX_TEXT_LEN = 200;
+const MAX_MESSAGE_LEN = 2000;
+
 // Public enquiry submission.
-router.post('/enquiries', async (req, res) => {
+router.post('/enquiries', enquiryThrottle, async (req, res) => {
   const { name, email, phone, message, propertyName, checkIn, checkOut, guests, unitSlug, source } = req.body || {};
+
   if (!name || !email) return res.status(400).json({ error: 'name and email required' });
+  if (typeof name !== 'string' || typeof email !== 'string') {
+    return res.status(400).json({ error: 'invalid input' });
+  }
+  if (name.length > MAX_TEXT_LEN || email.length > MAX_TEXT_LEN) {
+    return res.status(400).json({ error: 'input too long' });
+  }
+  if (!EMAIL_RE.test(email)) return res.status(400).json({ error: 'invalid email' });
+  if (phone != null && (typeof phone !== 'string' || phone.length > MAX_TEXT_LEN)) {
+    return res.status(400).json({ error: 'invalid phone' });
+  }
+  if (message != null && (typeof message !== 'string' || message.length > MAX_MESSAGE_LEN)) {
+    return res.status(400).json({ error: 'message too long' });
+  }
+  if (propertyName != null && (typeof propertyName !== 'string' || propertyName.length > MAX_TEXT_LEN)) {
+    return res.status(400).json({ error: 'invalid propertyName' });
+  }
+
   const row = {
     id: require('crypto').randomUUID(),
     name, email,
