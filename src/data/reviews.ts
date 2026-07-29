@@ -61,7 +61,7 @@ export const reviewsByProperty: Record<string, Review[]> = {
     {
       name: 'Tom H.',
       date: 'January 2025',
-      text: 'A polished and practical apartment in a great spot. Lift access, fast Wi-Fi and a spotlessly clean space. Couldn\'t ask for more.',
+      text: 'A polished and practical apartment in a great spot. Fast Wi-Fi and a spotlessly clean space. Couldn\'t ask for more.',
       property: 'Wood Street',
     },
     {
