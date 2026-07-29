@@ -210,12 +210,18 @@ export default function PropertyDetail() {
 
   // Pre-filled enquiry message for the "Contact us directly" options.
   const hasDates = Boolean(checkIn && checkOut);
-  const fmtDate = (d: string) => (d ? new Date(`${d}T00:00`).toLocaleDateString('pt-BR') : '');
+  const fmtDate = (d: string) => (d
+    ? new Date(`${d}T00:00`).toLocaleDateString('en-GB', {
+        day: 'numeric',
+        month: 'long',
+        year: 'numeric',
+      })
+    : '');
   const enquiryText = hasDates
-    ? `Olá! Gostaria de reservar o apartamento ${displayTitle} de ${fmtDate(checkIn)} a ${fmtDate(checkOut)} para ${guests} ${guests === 1 ? 'hóspede' : 'hóspedes'}.`
-    : `Olá! Gostaria de saber mais sobre o apartamento ${displayTitle}.`;
+    ? `Hello! I would like to book the apartment ${displayTitle} from ${fmtDate(checkIn)} to ${fmtDate(checkOut)} for ${guests} ${guests === 1 ? 'guest' : 'guests'}.`
+    : `Hello! I would like to know more about the apartment ${displayTitle}.`;
   const whatsappHref = `https://wa.me/${whatsappNumber}?text=${encodeURIComponent(enquiryText)}`;
-  const emailHref = `mailto:${contactEmail}?subject=${encodeURIComponent(`Reserva - ${displayTitle}`)}&body=${encodeURIComponent(enquiryText)}`;
+  const emailHref = `mailto:${contactEmail}?subject=${encodeURIComponent(`Booking enquiry — ${displayTitle}`)}&body=${encodeURIComponent(enquiryText)}`;
 
   // Booking deep-links carrying the selected dates + guests. Airbnb prefers the
   // resolved rooms/<id> URL (query params survive there; /h/ short links can drop
