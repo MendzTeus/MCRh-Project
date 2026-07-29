@@ -368,15 +368,23 @@ function ContentTab({ site, api, onChanged }: { site: SiteData; api: ReturnType<
           <StringField k="about.hero.eyebrow" title="Sobretítulo (eyebrow)" />
           <StringField k="about.hero.title" title="Título" />
         </Group>
-        <Group title="The Philosophy">
+        <Group title="Who We Are">
           <StringField k="about.philosophy.title" title="Título" />
           <StringField k="about.philosophy.p1" title="Parágrafo 1 (destaque)" textarea />
           <StringField k="about.philosophy.p2" title="Parágrafo 2" textarea />
           <StringField k="about.philosophy.p3" title="Parágrafo 3" textarea />
         </Group>
-        <Group title="Citação">
-          <StringField k="about.quote.text" title="Citação" textarea />
-          <StringField k="about.quote.signature" title="Assinatura" />
+        <Group title="Exquisite short-stay apartments">
+          <StringField k="about.stays.title" title="Título" />
+          <StringField k="about.stays.p1" title="Parágrafo 1" textarea />
+          <StringField k="about.stays.p2" title="Parágrafo 2" textarea />
+          <StringField k="about.stays.p3" title="Parágrafo 3" textarea />
+        </Group>
+        <Group title="Experts in property management">
+          <StringField k="about.management.title" title="Título" />
+          <StringField k="about.management.intro" title="Introdução" textarea />
+          <ListEditor k="about.management.services" title="Serviços" blank={{ item: '' }} cols={[{ key: 'item', label: 'Serviço', wide: true }]} />
+          <StringField k="about.management.closing" title="Parágrafo final" textarea />
         </Group>
       </Section>
 
