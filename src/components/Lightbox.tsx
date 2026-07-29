@@ -89,6 +89,7 @@ export default function Lightbox({ images, startIndex = 0, alt = 'Photo', onClos
                 alt={`${alt} ${i + 1}`}
                 referrerPolicy="no-referrer"
                 draggable={false}
+                loading="lazy"
                 className="max-w-full max-h-full object-contain select-none rounded-lg shadow-2xl"
               />
             </div>
@@ -127,7 +128,7 @@ export default function Lightbox({ images, startIndex = 0, alt = 'Photo', onClos
                 i === index ? 'border-white opacity-100' : 'border-transparent opacity-50 hover:opacity-80'
               }`}
             >
-              <img src={src} alt="" referrerPolicy="no-referrer" className="h-full w-full object-cover" />
+              <img src={src} alt="" referrerPolicy="no-referrer" loading="lazy" className="h-full w-full object-cover" />
             </button>
           ))}
         </div>

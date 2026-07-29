@@ -516,7 +516,7 @@ export default function Properties() {
                       >
                         <div style={{ height: 180, position: 'relative', overflow: 'hidden', background: '#e6e2dc' }}>
                           {heroImg && (
-                            <img src={heroImg} alt={`${group.propertyName} ${unit.unitName}`} referrerPolicy="no-referrer"
+                            <img src={heroImg} alt={`${group.propertyName} ${unit.unitName}`} referrerPolicy="no-referrer" loading="lazy"
                               style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
                             />
                           )}

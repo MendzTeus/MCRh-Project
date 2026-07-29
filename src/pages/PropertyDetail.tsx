@@ -528,14 +528,14 @@ export default function PropertyDetail() {
           <div className="grid grid-cols-2 md:grid-cols-4 gap-2 md:gap-3 auto-rows-[130px] sm:auto-rows-[180px] md:auto-rows-fr md:grid-rows-2 md:h-[480px]">
             {/* Main large image — spans 2 cols + 2 rows */}
             <div className="col-span-2 row-span-2 rounded-xl overflow-hidden cursor-pointer" onClick={() => { setGalleryIndex(0); setGalleryOpen(true); }}>
-              <img src={unitGallery[0]} alt={`${unit.title} main`} className="w-full h-full object-cover hover:scale-[1.02] transition-transform duration-500" />
+              <img src={unitGallery[0]} alt={`${unit.title} main`} loading="lazy" className="w-full h-full object-cover hover:scale-[1.02] transition-transform duration-500" />
             </div>
             {/* 4 thumbnails — each 1 col × 1 row */}
             {[1, 2, 3, 4].map((i) => (
               unitGallery[i] ? (
                 <div key={i} className={`overflow-hidden rounded-lg md:rounded-none cursor-pointer ${i === 2 ? 'md:rounded-tr-xl' : ''} ${i === 4 ? 'md:rounded-br-xl' : ''}`}
                   onClick={() => { setGalleryIndex(i); setGalleryOpen(true); }}>
-                  <img src={unitGallery[i]} alt={`${unit.title} photo ${i + 1}`} className="w-full h-full object-cover hover:scale-[1.04] transition-transform duration-500" />
+                  <img src={unitGallery[i]} alt={`${unit.title} photo ${i + 1}`} loading="lazy" className="w-full h-full object-cover hover:scale-[1.04] transition-transform duration-500" />
                 </div>
               ) : <div key={i} className="bg-surface-dim rounded-lg" />
             ))}

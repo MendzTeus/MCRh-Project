@@ -40,7 +40,7 @@ export default function PhotoGallery({ images, alt = 'Property photo' }: PhotoGa
                 onClick={() => setLightboxIndex(i + 1)}
                 className="aspect-square overflow-hidden rounded-xl cursor-pointer group relative"
               >
-                <img src={src} alt={`${alt} ${i + 2}`} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" />
+                <img src={src} alt={`${alt} ${i + 2}`} loading="lazy" className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" />
                 {i === 3 && images.length > 5 && (
                   <div className="absolute inset-0 bg-primary/50 flex items-center justify-center rounded-xl">
                     <span className="font-body text-white text-sm font-semibold tracking-widest">+{images.length - 5} photos</span>
@@ -70,7 +70,7 @@ export default function PhotoGallery({ images, alt = 'Property photo' }: PhotoGa
             onClick={() => setLightboxIndex(i + 1)}
             className={`overflow-hidden cursor-pointer group relative ${i === 3 ? 'rounded-br-xl' : ''} ${i === 1 ? 'rounded-tr-xl' : ''}`}
           >
-            <img src={src} alt={`${alt} ${i + 2}`} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" />
+            <img src={src} alt={`${alt} ${i + 2}`} loading="lazy" className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" />
             {i === 3 && images.length > 5 && (
               <div className="absolute inset-0 bg-primary/50 flex items-center justify-center">
                 <span className="font-body text-white text-sm font-semibold tracking-widest">+{images.length - 5} photos</span>
