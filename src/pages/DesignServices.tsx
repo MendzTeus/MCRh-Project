@@ -1,8 +1,12 @@
-import { ArrowRight, SlidersHorizontal, Check, ShieldCheck } from 'lucide-react';
+import { Check } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { Helmet } from 'react-helmet-async';
+import BeforeAfterSlider from '../components/BeforeAfterSlider';
 import MediaImage from '../components/MediaImage';
 import { useSiteContent, text, list } from '../hooks/useSiteContent';
+
+const DESIGN_BEFORE_FALLBACK = 'https://stohldealawpbimkgpeb.supabase.co/storage/v1/object/public/property-media/site/design.before/before.jpeg';
+const DESIGN_AFTER_FALLBACK = 'https://stohldealawpbimkgpeb.supabase.co/storage/v1/object/public/property-media/site/design.after/after.jpeg';
 
 export default function DesignServices() {
   const site = useSiteContent();
@@ -61,27 +65,23 @@ export default function DesignServices() {
 
       <section className="bg-surface-container-lowest border-y border-outline-variant/30 py-section-gap">
         <div className="max-w-[1280px] mx-auto px-margin-mobile md:px-margin-desktop">
-          <div className="text-center mb-16">
-            <h2 className="font-display text-headline-md text-primary mb-4">{text(site.content, 'design.disciplines.title', 'Core Disciplines')}</h2>
-            <p className="font-body text-on-surface-variant max-w-2xl mx-auto">{text(site.content, 'design.disciplines.subtitle', 'From initial concept to final installation, we handle every layer of the design process.')}</p>
+          <div className="text-center mb-12 md:mb-16">
+            <h2 className="font-body text-label-caps text-secondary mb-5 tracking-widest uppercase">
+              {text(site.content, 'design.comparison.eyebrow', 'Our Design Services')}
+            </h2>
+            <p className="font-display text-headline-md text-primary max-w-3xl mx-auto leading-tight">
+              {text(site.content, 'design.comparison.paragraph', 'We create thoughtfully designed interiors for apartments and short-stay properties, combining style, comfort and functionality.')}
+            </p>
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {[SlidersHorizontal, ShieldCheck, ArrowRight].map((Icon, i) => {
-              const cards = list<{title:string;desc:string}>(site.content, 'design.disciplines.cards', [
-                { title: 'Spatial Planning', desc: 'Optimizing layouts for guest flow, luggage storage, and multi-functional use.' },
-                { title: 'Material Selection', desc: 'Sourcing surfaces and fabrics that balance premium feel with extreme durability.' },
-                { title: 'FF&E Procurement', desc: 'Managing the end-to-end supply chain of Furniture, Fixtures, and Equipment.' }
-              ]);
-              const discipline = cards[i] || { title: '', desc: '' };
-              return { icon: Icon, ...discipline };
-            }).map((discipline, i) => (
-              <div key={i} className="p-8 bg-surface rounded-xl border border-outline-variant/30 hover:border-primary transition-colors group">
-                <discipline.icon className="w-8 h-8 text-secondary mb-6 group-hover:scale-110 transition-transform" />
-                <h3 className="font-display text-headline-sm text-primary mb-4">{discipline.title}</h3>
-                <p className="font-body text-on-surface-variant leading-relaxed">{discipline.desc as string}</p>
-              </div>
-            ))}
-          </div>
+          <BeforeAfterSlider
+            beforeSrc={site.images['design.before']?.url || DESIGN_BEFORE_FALLBACK}
+            beforeAlt={site.images['design.before']?.alt || 'Apartment interior before the MCRh design transformation'}
+            afterSrc={site.images['design.after']?.url || DESIGN_AFTER_FALLBACK}
+            afterAlt={site.images['design.after']?.alt || 'Apartment interior after the MCRh design transformation'}
+          />
+          <p className="mt-5 text-center font-body text-xs uppercase tracking-[0.18em] text-on-surface-variant">
+            Drag to reveal the transformation
+          </p>
         </div>
       </section>
 

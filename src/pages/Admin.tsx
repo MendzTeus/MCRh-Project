@@ -52,6 +52,8 @@ const IMAGE_SLOTS: { slot: string; label: string; page: string }[] = [
   { slot: 'home.block.the-collective', label: 'Bloco The Collective', page: 'Home' },
   { slot: 'design.hero', label: 'Hero', page: 'Design Services' },
   { slot: 'design.approach', label: 'Seção "Our Approach"', page: 'Design Services' },
+  { slot: 'design.before', label: 'Comparação — antes', page: 'Design Services' },
+  { slot: 'design.after', label: 'Comparação — depois', page: 'Design Services' },
   { slot: 'management.hero', label: 'Hero', page: 'Management Services' },
   { slot: 'about.hero', label: 'Hero', page: 'About' },
 ];
@@ -335,10 +337,9 @@ function ContentTab({ site, api, onChanged }: { site: SiteData; api: ReturnType<
           <StringField k="design.approach.p2" title="Parágrafo 2" textarea />
           <ListEditor k="design.approach.bullets" title="Bullets" blank={{ item: '' }} cols={[{ key: 'item', label: 'Bullet', wide: true }]} />
         </Group>
-        <Group title="Core Disciplines">
-          <StringField k="design.disciplines.title" title="Título" />
-          <StringField k="design.disciplines.subtitle" title="Subtítulo" textarea />
-          <ListEditor k="design.disciplines.cards" title="Cards (3)" blank={{ title: '', desc: '' }} cols={[{ key: 'title', label: 'Título' }, { key: 'desc', label: 'Descrição', wide: true }]} />
+        <Group title="Our Design Services">
+          <StringField k="design.comparison.eyebrow" title="Sobretítulo" />
+          <StringField k="design.comparison.paragraph" title="Parágrafo" textarea />
         </Group>
         <Group title="CTA final">
           <StringField k="design.cta.title" title="Título" />
