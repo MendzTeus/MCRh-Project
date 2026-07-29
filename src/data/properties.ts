@@ -83,7 +83,7 @@ export const properties: Property[] = [
     eyebrow: "Featured Property",
     headline: "Character apartments in the centre of Manchester.",
     description:
-      "Chapel Walks Chambers offers a collection of city-centre apartments with original character, lift access and fully equipped kitchens for short stays and longer visits.",
+      "Chapel Walks Chambers offers a collection of city-centre apartments with original character and fully equipped kitchens for short stays and longer visits.",
     quote: "Heritage architecture with a composed city-centre calm.",
     maxGuests: 6,
     bedrooms: 3,

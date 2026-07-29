@@ -207,6 +207,12 @@ export default function PropertyDetail() {
   const displayTitle =
     adminUnit?.displayTitle?.trim() ||
     cleanListingTitle(unit.title) || unit.title;
+  // 11 Chapel Walks has no lift. The static "chambers" presentation is shared
+  // with building 9, so filter the shared amenity only for building 11 routes.
+  const isChambersEleven = inventoryUnit?.propertySlug === 'chambers-11';
+  const displayedAmenities = isChambersEleven
+    ? property.amenities.filter((amenity) => !/\blift\b/i.test(amenity))
+    : property.amenities;
 
   // Pre-filled enquiry message for the "Contact us directly" options.
   const hasDates = Boolean(checkIn && checkOut);
@@ -485,10 +491,10 @@ export default function PropertyDetail() {
               {[
                 { icon: BedDouble, label: plural(specBedrooms, 'Bedroom') },
                 { icon: Bath, label: plural(specBaths, 'Bathroom') },
-                { icon: Wifi, label: property.amenities[0] || "Wi-Fi" },
-                { icon: ChefHat, label: property.amenities[1] || "Fully equipped kitchen" },
-                { icon: Coffee, label: property.amenities[2] || "Smart TV" },
-                { icon: Snowflake, label: property.amenities[3] || "Climate Control" }
+                { icon: Wifi, label: displayedAmenities[0] || "Wi-Fi" },
+                { icon: ChefHat, label: displayedAmenities[1] || "Fully equipped kitchen" },
+                { icon: Coffee, label: displayedAmenities[2] || "Smart TV" },
+                { icon: Snowflake, label: displayedAmenities[3] || "Climate Control" }
               ].map((amenity, i) => (
                 <div key={i} className="flex items-center gap-4">
                   <amenity.icon className="w-8 h-8 text-on-surface-variant font-light" strokeWidth={1} />
@@ -657,7 +663,7 @@ export default function PropertyDetail() {
               {[
                 { icon: BedDouble, label: plural(specBedrooms, 'Bedroom') },
                 { icon: Bath, label: plural(specBaths, 'Bathroom') },
-                ...property.amenities.map((a) => ({ icon: Snowflake, label: a })),
+                ...displayedAmenities.map((a) => ({ icon: Snowflake, label: a })),
               ].map((item, i) => (
                 <div key={i} className="flex items-center gap-4 border-b border-outline-variant/20 pb-4">
                   <item.icon className="w-6 h-6 text-on-surface-variant shrink-0" strokeWidth={1.5} />
