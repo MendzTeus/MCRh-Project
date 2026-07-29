@@ -207,12 +207,16 @@ export default function PropertyDetail() {
   const displayTitle =
     adminUnit?.displayTitle?.trim() ||
     cleanListingTitle(unit.title) || unit.title;
+  // Grouped collection routes (notably /properties/ancoats/:unit) still need
+  // the amenities of the unit's actual building, not the parent collection.
+  const inventoryProperty = getPropertyBySlug(inventoryUnit?.propertySlug);
+  const propertyAmenities = inventoryProperty?.amenities || property.amenities;
   // 11 Chapel Walks has no lift. The static "chambers" presentation is shared
   // with building 9, so filter the shared amenity only for building 11 routes.
   const isChambersEleven = inventoryUnit?.propertySlug === 'chambers-11';
   const displayedAmenities = isChambersEleven
-    ? property.amenities.filter((amenity) => !/\blift\b/i.test(amenity))
-    : property.amenities;
+    ? propertyAmenities.filter((amenity) => !/\blift\b/i.test(amenity))
+    : propertyAmenities;
 
   // Pre-filled enquiry message for the "Contact us directly" options.
   const hasDates = Boolean(checkIn && checkOut);
