@@ -14,16 +14,22 @@ export type AvailabilityResult = {
   error: string | null;
 };
 
-export function useAvailability(property: string, checkIn: string, checkOut: string): AvailabilityResult {
+export function useAvailability(
+  property: string,
+  checkIn: string,
+  checkOut: string,
+  unitSlugs?: string[],
+): AvailabilityResult {
   const [result, setResult] = useState<AvailabilityResult>({
     units: [],
     configured: false,
     loading: false,
     error: null,
   });
+  const unitSlugsKey = unitSlugs?.join(',') ?? null;
 
   useEffect(() => {
-    if (!checkIn || !checkOut) {
+    if (!checkIn || !checkOut || (unitSlugsKey !== null && !unitSlugsKey)) {
       setResult({ units: [], configured: false, loading: false, error: null });
       return;
     }
@@ -31,11 +37,34 @@ export function useAvailability(property: string, checkIn: string, checkOut: str
     let cancelled = false;
     setResult((r) => ({ ...r, loading: true, error: null }));
 
-    fetch(`/api/availability?property=${property}&checkIn=${checkIn}&checkOut=${checkOut}`)
-      .then((r) => r.json())
+    const params = new URLSearchParams({ checkIn, checkOut });
+    const endpoint = unitSlugsKey !== null
+      ? (() => {
+          params.set('unitSlugs', unitSlugsKey);
+          return '/api/availability/units';
+        })()
+      : (() => {
+          params.set('property', property);
+          return '/api/availability';
+        })();
+
+    fetch(`${endpoint}?${params.toString()}`)
+      .then(async (response) => {
+        const data = await response.json();
+        if (!response.ok) throw new Error(data.error || 'Could not check availability');
+        return data;
+      })
       .then((data) => {
         if (cancelled) return;
-        setResult({ units: data.units || [], configured: data.configured ?? false, loading: false, error: null });
+        const units: UnitAvailability[] = Array.isArray(data.units)
+          ? data.units
+          : Object.entries(data.units || {}).map(([unitSlug, available]) => ({
+              unitSlug,
+              unitName: unitSlug,
+              available: Boolean(available),
+              hasIcal: true,
+            }));
+        setResult({ units, configured: data.configured ?? false, loading: false, error: null });
       })
       .catch((err) => {
         if (cancelled) return;
@@ -45,7 +74,7 @@ export function useAvailability(property: string, checkIn: string, checkOut: str
     // Ignore this request's result if the inputs change before it resolves,
     // so a slow earlier response can't overwrite a newer selection.
     return () => { cancelled = true; };
-  }, [property, checkIn, checkOut]);
+  }, [property, checkIn, checkOut, unitSlugsKey]);
 
   return result;
 }

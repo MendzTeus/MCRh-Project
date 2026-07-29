@@ -8,11 +8,12 @@ type AvailabilityWidgetProps = {
   maxGuests?: number;
   floating?: boolean;
   onDatesChange?: (checkIn: string, checkOut: string) => void;
+  onGuestsChange?: (guests: number) => void;
   mode?: 'enquiry' | 'availability';
   onCheckAvailability?: () => void;
 };
 
-export default function AvailabilityWidget({ propertyName, maxGuests = 8, floating = true, onDatesChange, mode = 'enquiry', onCheckAvailability }: AvailabilityWidgetProps) {
+export default function AvailabilityWidget({ propertyName, maxGuests = 8, floating = true, onDatesChange, onGuestsChange, mode = 'enquiry', onCheckAvailability }: AvailabilityWidgetProps) {
   const [datesOpen, setDatesOpen] = useState(false);
   const [guestsOpen, setGuestsOpen] = useState(false);
   const datesRef = useRef<HTMLDivElement>(null);
@@ -89,7 +90,11 @@ export default function AvailabilityWidget({ propertyName, maxGuests = 8, floati
                 <div className="flex items-center gap-3">
                   <button
                     type="button"
-                    onClick={() => setGuests((value) => Math.max(1, value - 1))}
+                    onClick={() => setGuests((value) => {
+                      const next = Math.max(1, value - 1);
+                      onGuestsChange?.(next);
+                      return next;
+                    })}
                     className="h-9 w-9 rounded-full border border-outline-variant/50 text-primary"
                   >
                     -
@@ -97,7 +102,11 @@ export default function AvailabilityWidget({ propertyName, maxGuests = 8, floati
                   <span className="min-w-6 text-center font-body text-body-md">{guests}</span>
                   <button
                     type="button"
-                    onClick={() => setGuests((value) => Math.min(maxGuests, value + 1))}
+                    onClick={() => setGuests((value) => {
+                      const next = Math.min(maxGuests, value + 1);
+                      onGuestsChange?.(next);
+                      return next;
+                    })}
                     className="h-9 w-9 rounded-full border border-outline-variant/50 text-primary"
                   >
                     +

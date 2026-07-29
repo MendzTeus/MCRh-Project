@@ -18,6 +18,7 @@ import { useClickOutside } from '../hooks/useClickOutside';
 import { useUnitBlockedDates } from '../hooks/useUnitBlockedDates';
 import { useSiteContent, text } from '../hooks/useSiteContent';
 import { usePublicUnits } from '../hooks/usePublicUnits';
+import { usePublicProperties } from '../hooks/usePublicProperties';
 
 function normalizeSpecs(raw: string): string {
   const wordMap: Record<string, string> = {
@@ -59,9 +60,41 @@ function withBookingParams(base: string, params: Record<string, string | number>
   }
 }
 
+function validBookingDate(value: string | null): string {
+  if (!value || !/^\d{4}-\d{2}-\d{2}$/.test(value)) return '';
+  const [year, month, day] = value.split('-').map(Number);
+  const date = new Date(Date.UTC(year, month - 1, day));
+  if (
+    date.getUTCFullYear() !== year ||
+    date.getUTCMonth() !== month - 1 ||
+    date.getUTCDate() !== day
+  ) return '';
+  return value;
+}
+
+function bookingParams(searchParams: URLSearchParams) {
+  const requestedCheckIn = validBookingDate(searchParams.get('checkIn'));
+  const requestedCheckOut = validBookingDate(searchParams.get('checkOut'));
+  const hasValidRange = Boolean(
+    requestedCheckIn &&
+    requestedCheckOut &&
+    requestedCheckOut > requestedCheckIn,
+  );
+  const requestedGuests = Number(searchParams.get('guests'));
+
+  return {
+    checkIn: hasValidRange ? requestedCheckIn : '',
+    checkOut: hasValidRange ? requestedCheckOut : '',
+    guests: Number.isInteger(requestedGuests) && requestedGuests > 0
+      ? Math.min(requestedGuests, 16)
+      : 2,
+  };
+}
+
 export default function PropertyDetail() {
   const { propertySlug, id } = useParams();
   const [searchParams, setSearchParams] = useSearchParams();
+  const initialBookingParams = useRef(bookingParams(searchParams)).current;
   const photoTourOpen = searchParams.get('modal') === 'photo-tour';
   const openPhotoTour = () => setSearchParams((p) => { const n = new URLSearchParams(p); n.set('modal', 'photo-tour'); return n; });
   const closePhotoTour = () => setSearchParams((p) => { const n = new URLSearchParams(p); n.delete('modal'); return n; });
@@ -93,6 +126,8 @@ export default function PropertyDetail() {
   // option only shows once a number is configured; e-mail always works.
   const site = useSiteContent();
   const publicUnits = usePublicUnits();
+  const publicProperties = usePublicProperties();
+  const canonicalProperty = publicProperties.bySlug.get(property?.slug || '');
   const adminUnit = publicUnits.overrides.get(inventoryUnit?.unitSlug || id || '');
   // Admin-uploaded photos override the scraped/static gallery when present.
   const allAdminPhotos = adminUnit?.photos || [];
@@ -160,18 +195,17 @@ export default function PropertyDetail() {
   }, [amenitiesOpen]);
   const [guestsOpen, setGuestsOpen] = useState(false);
   useClickOutside(guestsDropdownRef, () => setGuestsOpen(false), guestsOpen);
-  const [checkIn, setCheckIn] = useState('');
-  const [checkOut, setCheckOut] = useState('');
-  const [guests, setGuests] = useState(2);
+  const [checkIn, setCheckIn] = useState(initialBookingParams.checkIn);
+  const [checkOut, setCheckOut] = useState(initialBookingParams.checkOut);
+  const [guests, setGuests] = useState(initialBookingParams.guests);
 
   if (!property || !unit) return null;
 
-  // Display title: Unit.displayTitle (set in admin) wins; legacy SiteContent map is
-  // a secondary fallback; scraped Airbnb title is the last resort.
-  const titleMap = (site.content['unit.displayTitles'] || {}) as Record<string, string>;
+  // Unit.displayTitle is canonical; scraped Airbnb content remains the fallback
+  // for units that have no explicit public title.
+  // TODO: Remove the inert legacy SiteContent display-title entry after this is stable in production.
   const displayTitle =
     adminUnit?.displayTitle?.trim() ||
-    titleMap[inventoryUnit?.unitSlug || id || '']?.trim() ||
     cleanListingTitle(unit.title) || unit.title;
 
   // Pre-filled enquiry message for the "Contact us directly" options.
@@ -205,7 +239,10 @@ export default function PropertyDetail() {
   const specBeds = scrapedSpecs?.beds ?? property.beds;
   const specBaths = scrapedSpecs?.baths ?? property.bathrooms;
   // Admin description overrides the auto-generated fallback.
-  const unitDescription = adminUnit?.description || inventoryBackedUnit?.description || unit?.description || '';
+  const inventoryDescription = inventoryUnit
+    ? `${canonicalProperty?.name || inventoryUnit.propertyName}, ${inventoryUnit.postcode}.`
+    : '';
+  const unitDescription = adminUnit?.description || inventoryDescription || unit?.description || '';
   // Admin suppliedSpecs (Supabase) overrides both the static inventory and the Airbnb scrape.
   const adminSpecs = adminUnit?.suppliedSpecs || null;
   const reviewsCount = scrapedSpecs?.reviewsCount ?? null;
@@ -232,11 +269,13 @@ export default function PropertyDetail() {
     return center ? getNearestPois(center, 5) : [];
   }, [neighborhoodLocations]);
 
+  if (!publicProperties.loaded || !canonicalProperty) return null;
+
   return (
     <div className="animate-in fade-in duration-500">
       <Helmet>
-        <title>{displayTitle} — {property.name} | MCRh Manchester</title>
-        <meta name="description" content={`${unitDescription} ${unit.specs}. Located in ${property.area}, Manchester.`} />
+        <title>{displayTitle} — {canonicalProperty.name} | MCRh Manchester</title>
+        <meta name="description" content={`${unitDescription} ${unit.specs}. Located in ${canonicalProperty.area || ''}, Manchester.`} />
         <meta property="og:title" content={`${displayTitle} | MCRh Manchester`} />
         <meta property="og:description" content={unitDescription} />
         {unitGallery[0] && <meta property="og:image" content={unitGallery[0]} />}
@@ -429,7 +468,7 @@ export default function PropertyDetail() {
             <h2 className="font-display text-headline-md text-primary mb-6">The Space</h2>
             <div className="font-body text-on-surface-variant text-body-lg space-y-6">
               <p>{unitDescription}</p>
-              <p>{property.description}</p>
+              <p>{canonicalProperty.description}</p>
               <p>{normalizeSpecs(adminSpecs || unit.specs)}{unit.squareFeet ? ` / ${unit.squareFeet}` : ''}</p>
             </div>
           </div>

@@ -67,6 +67,19 @@ router.get('/site', async (_req, res) => {
   res.json({ content: contentMap, images: imageMap });
 });
 
+// Canonical public building content. The five editable fields live only on
+// Property; static properties.ts data remains responsible for media, amenities,
+// specs and other non-canonical presentation data.
+router.get('/properties', async (_req, res) => {
+  const { data, error } = await supabase
+    .from('Property')
+    .select('slug, name, area, eyebrow, neighborhoodTitle, description')
+    .order('displayOrder')
+    .order('name');
+  if (error) return res.status(500).json({ error: error.message });
+  res.json(data || []);
+});
+
 // Public property gallery photos.
 router.get('/properties/:slug/photos', async (req, res) => {
   const { data, error } = await supabase.from('MediaAsset').select('id, url, alt, isPrimary, displayOrder').eq('ownerType', 'property').eq('ownerSlug', req.params.slug).order('displayOrder');
@@ -76,7 +89,24 @@ router.get('/properties/:slug/photos', async (req, res) => {
 
 // Public reviews — only published, ordered by displayOrder.
 router.get('/reviews', async (req, res) => {
-  const q = supabase.from('Review').select('id, propertySlug, name, date, text, rating, avatarUrl').eq('published', true).order('displayOrder');
+  const featuredHome = req.query.featured === 'home';
+  const q = supabase
+    .from('Review')
+    .select('id, propertySlug, name, date, text, rating, avatarUrl')
+    .eq('published', true);
+
+  if (featuredHome) {
+    q.not('sourceReviewId', 'is', null)
+      .not('avatarUrl', 'is', null)
+      .not('text', 'is', null)
+      .gte('rating', 4)
+      .order('rating', { ascending: false })
+      .order('displayOrder')
+      .limit(60);
+  } else {
+    q.order('displayOrder');
+  }
+
   if (req.query.property) {
     const slugs = String(req.query.property).split(',').map((slug) => slug.trim()).filter(Boolean);
     if (slugs.length === 1) q.eq('propertySlug', slugs[0]);
@@ -84,6 +114,27 @@ router.get('/reviews', async (req, res) => {
   }
   const { data, error } = await q;
   if (error) return res.status(500).json({ error: error.message });
+
+  if (featuredHome) {
+    const recent = [...(data || [])].sort((a, b) => {
+      const aDate = Date.parse(a.date || '') || 0;
+      const bDate = Date.parse(b.date || '') || 0;
+      return bDate - aDate;
+    });
+    const concise = recent.filter((review) => review.text.length >= 60 && review.text.length <= 320);
+    const conciseIds = new Set(concise.map((review) => review.id));
+    const candidates = [...concise, ...recent.filter((review) => !conciseIds.has(review.id))];
+    const selected = [];
+    const seenListings = new Set();
+    for (const review of candidates) {
+      if (seenListings.has(review.propertySlug)) continue;
+      seenListings.add(review.propertySlug);
+      selected.push(review);
+      if (selected.length === 3) break;
+    }
+    return res.json(selected);
+  }
+
   res.json(data || []);
 });
 

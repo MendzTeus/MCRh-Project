@@ -4,6 +4,18 @@ import { useCallback, useEffect } from 'react';
 // in both files (Phase 8 code-quality cleanup).
 export const ADMIN_TOKEN_KEY = 'mcrh_admin_token';
 
+export function readAdminToken(): string | null {
+  return localStorage.getItem(ADMIN_TOKEN_KEY);
+}
+
+export function writeAdminToken(token: string): void {
+  localStorage.setItem(ADMIN_TOKEN_KEY, token);
+}
+
+export function clearAdminToken(): void {
+  localStorage.removeItem(ADMIN_TOKEN_KEY);
+}
+
 export function useApi(token: string | null, onUnauthorized: () => void) {
   return useCallback(async (path: string, opts: RequestInit = {}) => {
     const res = await fetch(`/api${path}`, {

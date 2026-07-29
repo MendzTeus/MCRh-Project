@@ -17,6 +17,16 @@ function fixLeafletIcons(L: typeof import('leaflet')) {
   });
 }
 
+function escapeMapText(value: string) {
+  return value.replace(/[&<>"']/g, (character) => ({
+    '&': '&amp;',
+    '<': '&lt;',
+    '>': '&gt;',
+    '"': '&quot;',
+    "'": '&#039;',
+  })[character] || character);
+}
+
 /** Walking time in minutes between two coords assuming 5 km/h pace. */
 function walkingMins(from: { lat: number; lng: number }, to: { lat: number; lng: number }): number {
   const R = 6371000;
@@ -72,11 +82,12 @@ export default function PropertyMap({
     if (!containerRef.current || mapRef.current) return;
 
     let map: LeafletMap | undefined;
+    let cancelled = false;
 
     import('leaflet').then((L) => {
       // Re-check after the async import: under StrictMode the effect can run twice
       // before this resolves, and we must not initialize the container twice.
-      if (!containerRef.current || mapRef.current) return;
+      if (cancelled || !containerRef.current || mapRef.current) return;
       fixLeafletIcons(L);
 
       map = L.map(containerRef.current!, {
@@ -160,9 +171,9 @@ export default function PropertyMap({
           .addTo(map!)
           .bindPopup(
             `<div style="font-family:sans-serif;min-width:140px">
-              <div style="font-weight:600;font-size:14px;margin-bottom:2px">${loc.name}</div>
-              <div style="font-size:12px;color:#666;margin-bottom:8px">${loc.area} · ${loc.postcode}</div>
-              <a href="/properties/${loc.collectionSlug}" style="font-size:11px;letter-spacing:0.08em;text-transform:uppercase;color:#000;border-bottom:1px solid #000;text-decoration:none">View →</a>
+              <div style="font-weight:600;font-size:14px;margin-bottom:2px">${escapeMapText(loc.name)}</div>
+              <div style="font-size:12px;color:#666;margin-bottom:8px">${escapeMapText(loc.area)} · ${escapeMapText(loc.postcode)}</div>
+              <a href="/properties/${encodeURIComponent(loc.collectionSlug)}" style="font-size:11px;letter-spacing:0.08em;text-transform:uppercase;color:#000;border-bottom:1px solid #000;text-decoration:none">View →</a>
             </div>`,
             { closeButton: false, offset: [0, -6] }
           );
@@ -242,8 +253,10 @@ export default function PropertyMap({
     });
 
     return () => {
+      cancelled = true;
       const created = mapRef.current ?? map;
       if (created) {
+        created.stop();
         created.remove();
         mapRef.current = null;
         markersRef.current = [];

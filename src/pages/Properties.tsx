@@ -3,11 +3,13 @@ import { Link } from 'react-router-dom';
 import { Helmet } from 'react-helmet-async';
 import { useState, useRef, useEffect, useMemo } from 'react';
 import { Calendar, User, SlidersHorizontal, ArrowUpDown, Heart, Bed, Bath, Plus, Minus, X } from 'lucide-react';
-import { mapLocations } from '../data/locations';
+import type { MapLocation } from '../data/locations';
 import { pois } from '../data/pois';
 import { airbnbInventory, inventoryRegions, getRegionForProperty, type AirbnbInventoryUnit } from '../data/airbnbInventory';
 import { getListingMedia, getPropertyMedia } from '../data/listingMedia';
 import { usePublicUnits } from '../hooks/usePublicUnits';
+import { usePublicProperties } from '../hooks/usePublicProperties';
+import { useMapLocations } from '../hooks/useMapLocations';
 import { useSiteContent, text } from '../hooks/useSiteContent';
 import { useClickOutside } from '../hooks/useClickOutside';
 import DateRangePicker from '../components/DateRangePicker';
@@ -19,23 +21,35 @@ function specsToNumbers(specs?: string) {
   return { beds: bedMatch ? parseInt(bedMatch[1]) : 1, baths: bathMatch ? parseInt(bathMatch[1]) : 1 };
 }
 
+function escapeMapText(value: string) {
+  return value.replace(/[&<>"']/g, (character) => ({
+    '&': '&amp;',
+    '<': '&lt;',
+    '>': '&gt;',
+    '"': '&quot;',
+    "'": '&#039;',
+  })[character] || character);
+}
+
 function groupByProperty(units: AirbnbInventoryUnit[]) {
   const groups: { propertyName: string; propertySlug: string; units: AirbnbInventoryUnit[] }[] = [];
   const seen: Record<string, number> = {};
   units.forEach((unit) => {
-    if (seen[unit.propertyName] === undefined) {
-      seen[unit.propertyName] = groups.length;
+    if (seen[unit.propertySlug] === undefined) {
+      seen[unit.propertySlug] = groups.length;
       groups.push({ propertyName: unit.propertyName, propertySlug: unit.propertySlug, units: [] });
     }
-    groups[seen[unit.propertyName]].units.push(unit);
+    groups[seen[unit.propertySlug]].units.push(unit);
   });
   return groups;
 }
 
 function PropertiesMap({
+  locations,
   focusedPropertySlug,
   onMarkerClick,
 }: {
+  locations: MapLocation[];
   focusedPropertySlug: string | null;
   onMarkerClick?: (collectionSlug: string) => void;
 }) {
@@ -48,10 +62,11 @@ function PropertiesMap({
   useEffect(() => {
     if (!containerRef.current || mapRef.current) return;
     let map: any;
+    let cancelled = false;
     import('leaflet').then((L) => {
       // Re-check after the async import so StrictMode's double-run can't
       // initialize the same container twice.
-      if (!containerRef.current || mapRef.current) return;
+      if (cancelled || !containerRef.current || mapRef.current) return;
       // @ts-expect-error private
       delete L.Icon.Default.prototype._getIconUrl;
       map = L.map(containerRef.current, {
@@ -64,15 +79,15 @@ function PropertiesMap({
 
       const makeIcon = (name: string, active = false) => L.divIcon({
         className: '',
-        html: `<div style="background:${active ? '#C8A45C' : '#1c1c18'};color:#fff;font-size:11px;font-weight:600;padding:4px 9px;border-radius:4px;white-space:nowrap;box-shadow:0 2px 8px rgba(0,0,0,0.3);font-family:sans-serif;position:relative;cursor:pointer;">${name}<div style="position:absolute;bottom:-5px;left:50%;transform:translateX(-50%);width:0;height:0;border-left:5px solid transparent;border-right:5px solid transparent;border-top:5px solid ${active ? '#C8A45C' : '#1c1c18'};"></div></div>`,
+        html: `<div style="background:${active ? '#C8A45C' : '#1c1c18'};color:#fff;font-size:11px;font-weight:600;padding:4px 9px;border-radius:4px;white-space:nowrap;box-shadow:0 2px 8px rgba(0,0,0,0.3);font-family:sans-serif;position:relative;cursor:pointer;">${escapeMapText(name)}<div style="position:absolute;bottom:-5px;left:50%;transform:translateX(-50%);width:0;height:0;border-left:5px solid transparent;border-right:5px solid transparent;border-top:5px solid ${active ? '#C8A45C' : '#1c1c18'};"></div></div>`,
         iconSize: [100, 28], iconAnchor: [50, 33],
       });
 
-      mapLocations.forEach((loc) => {
+      locations.forEach((loc) => {
         const marker = L.marker([loc.coordinates.lat, loc.coordinates.lng], { icon: makeIcon(loc.name) })
           .addTo(map)
           .bindPopup(
-            `<div style="font-family:sans-serif;min-width:140px"><b style="font-size:14px">${loc.name}</b><br/><span style="font-size:12px;color:#666">${loc.area} · ${loc.postcode}</span></div>`,
+            `<div style="font-family:sans-serif;min-width:140px"><b style="font-size:14px">${escapeMapText(loc.name)}</b><br/><span style="font-size:12px;color:#666">${escapeMapText(loc.area)} · ${escapeMapText(loc.postcode)}</span></div>`,
             { closeButton: false, offset: [0, -6] }
           );
 
@@ -110,10 +125,11 @@ function PropertiesMap({
       mapRef.current = map;
     });
     return () => {
+      cancelled = true;
       const created = mapRef.current ?? map;
-      if (created) { created.remove(); mapRef.current = null; markersRef.current = {}; }
+      if (created) { created.stop(); created.remove(); mapRef.current = null; markersRef.current = {}; }
     };
-  }, []);
+  }, [locations]);
 
   useEffect(() => {
     if (!mapRef.current || !Object.keys(markersRef.current).length) return;
@@ -162,6 +178,8 @@ const SORT_OPTIONS = [
 export default function Properties() {
   const isMobile = useIsMobile();
   const publicUnits = usePublicUnits();
+  const publicProperties = usePublicProperties();
+  const mapLocations = useMapLocations();
   const site = useSiteContent();
   const [datesOpen, setDatesOpen] = useState(false);
   const [checkIn, setCheckIn] = useState('');
@@ -237,8 +255,11 @@ export default function Properties() {
         const o = publicUnits.overrides.get(u.unitSlug);
         return o ? { ...u, unitName: o.unitName || u.unitName, suppliedSpecs: o.suppliedSpecs || u.suppliedSpecs, airbnbUrl: o.airbnbUrl || u.airbnbUrl } : u;
       });
-    return groupByProperty(inv);
-  }, [publicUnits]);
+    return groupByProperty(inv).map((group) => ({
+      ...group,
+      propertyName: publicProperties.bySlug.get(group.propertySlug)?.name || group.propertyName,
+    }));
+  }, [publicUnits, publicProperties.bySlug]);
 
   // Apply filter then sort
   const displayedGroups = useMemo(() => {
@@ -439,7 +460,7 @@ export default function Properties() {
           {/* Mobile map */}
           {isMobile && showMobileMap && (
             <div style={{ height: 320, borderBottom: '1px solid rgba(197,198,205,0.3)' }}>
-              <PropertiesMap focusedPropertySlug={focusedPropertySlug} onMarkerClick={handleMarkerClick} />
+              <PropertiesMap locations={mapLocations} focusedPropertySlug={focusedPropertySlug} onMarkerClick={handleMarkerClick} />
             </div>
           )}
 
@@ -458,7 +479,7 @@ export default function Properties() {
               </div>
             )}
             {displayedGroups.map((group) => (
-              <div key={group.propertyName} ref={(el) => { groupRefs.current[group.propertySlug] = el; }}>
+              <div key={group.propertySlug} ref={(el) => { groupRefs.current[group.propertySlug] = el; }}>
                 {/* Group separator */}
                 <div style={{ display: 'flex', alignItems: 'center', gap: 16, padding: '28px 0 20px' }}>
                   <span className="font-body" style={{ fontSize: 11, letterSpacing: '0.14em', textTransform: 'uppercase', color: '#44474c', whiteSpace: 'nowrap', fontWeight: 600 }}>
@@ -495,7 +516,7 @@ export default function Properties() {
                       >
                         <div style={{ height: 180, position: 'relative', overflow: 'hidden', background: '#e6e2dc' }}>
                           {heroImg && (
-                            <img src={heroImg} alt={`${unit.propertyName} ${unit.unitName}`} referrerPolicy="no-referrer"
+                            <img src={heroImg} alt={`${group.propertyName} ${unit.unitName}`} referrerPolicy="no-referrer"
                               style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
                             />
                           )}
@@ -535,7 +556,7 @@ export default function Properties() {
         {/* ── Right: sticky map (desktop only) ── */}
         {!isMobile && (
           <div style={{ flex: 1, position: 'sticky', top: 80, height: 'calc(100vh - 80px)' }}>
-            <PropertiesMap focusedPropertySlug={focusedPropertySlug} onMarkerClick={handleMarkerClick} />
+            <PropertiesMap locations={mapLocations} focusedPropertySlug={focusedPropertySlug} onMarkerClick={handleMarkerClick} />
           </div>
         )}
       </div>

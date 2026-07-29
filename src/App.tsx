@@ -1,8 +1,12 @@
-import { Routes, Route, useLocation } from 'react-router-dom';
+import { Navigate, Routes, Route, useLocation, useSearchParams } from 'react-router-dom';
 import Navbar from './components/Navbar';
 import Footer from './components/Footer';
 import Admin from './pages/Admin';
 import AdminApartment from './pages/AdminApartment';
+import AdminApartmentsList from './pages/AdminApartmentsList';
+import AdminDashboard from './pages/AdminDashboard';
+import AdminReviews from './pages/AdminReviews';
+import AdminLeads from './pages/AdminLeads';
 import Home from './pages/Home';
 import Properties from './pages/Properties';
 import PropertyDetail from './pages/PropertyDetail';
@@ -12,6 +16,17 @@ import ManagementServices from './pages/ManagementServices';
 import About from './pages/About';
 import Contact from './pages/Contact';
 import NotFound from './pages/NotFound';
+import { getLegacyAdminTab } from './components/admin/adminNavigation';
+import { AdminAuthProvider } from './components/admin/AdminAuthContext';
+import { ProtectedAdminRoute } from './components/admin/ProtectedAdminRoute';
+
+function AdminEntry() {
+  const [searchParams] = useSearchParams();
+  if (!getLegacyAdminTab(searchParams.get('tab'))) {
+    return <Navigate to="/admin/dashboard" replace />;
+  }
+  return <Admin />;
+}
 
 export default function App() {
   const location = useLocation();
@@ -19,10 +34,19 @@ export default function App() {
   // The admin panel is a standalone app — no public navbar/footer.
   if (location.pathname.startsWith('/admin')) {
     return (
-      <Routes>
-        <Route path="/admin" element={<Admin />} />
-        <Route path="/admin/apartments/:unitSlug" element={<AdminApartment />} />
-      </Routes>
+      <AdminAuthProvider>
+        <ProtectedAdminRoute>
+          <Routes>
+            <Route path="/admin" element={<AdminEntry />} />
+            <Route path="/admin/dashboard" element={<AdminDashboard />} />
+            <Route path="/admin/apartments" element={<AdminApartmentsList />} />
+            <Route path="/admin/apartments/:unitSlug" element={<AdminApartment />} />
+            <Route path="/admin/reviews" element={<AdminReviews />} />
+            <Route path="/admin/leads" element={<AdminLeads />} />
+            <Route path="/admin/*" element={<Navigate to="/admin/dashboard" replace />} />
+          </Routes>
+        </ProtectedAdminRoute>
+      </AdminAuthProvider>
     );
   }
 

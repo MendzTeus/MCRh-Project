@@ -1,4 +1,4 @@
-import { BedDouble, Bath, PersonStanding, ArrowLeft, ArrowRight } from 'lucide-react';
+import { ArrowLeft, ArrowRight } from 'lucide-react';
 import { Link, useParams } from 'react-router-dom';
 import { Helmet } from 'react-helmet-async';
 import { lazy, Suspense, useState, useRef, useMemo } from 'react';
@@ -14,8 +14,8 @@ import { getReviewsForProperty } from '../data/reviews';
 import { useReviews } from '../hooks/useReviews';
 import { useAvailability } from '../hooks/useAvailability';
 import { usePublicUnits } from '../hooks/usePublicUnits';
+import { usePublicProperties } from '../hooks/usePublicProperties';
 import { usePropertyPhotos } from '../hooks/usePropertyPhotos';
-import { useSiteContent, text } from '../hooks/useSiteContent';
 import { Star } from 'lucide-react';
 const PropertyMap = lazy(() => import('../components/PropertyMap'));
 
@@ -54,12 +54,27 @@ export default function CollectionDetail() {
   const property = getPropertyBySlug(id) || getPropertyBySlug('chambers');
   const [checkIn, setCheckIn] = useState('');
   const [checkOut, setCheckOut] = useState('');
-  const availability = useAvailability(property?.slug || '', checkIn, checkOut);
+  const [guests, setGuests] = useState(2);
   const publicUnits = usePublicUnits();
+  const wiredInventory = useMemo(
+    () => getInventoryForProperty(property?.slug || ''),
+    [property?.slug],
+  );
+  const availabilityUnitSlugs = useMemo(
+    () => wiredInventory
+      .filter((unit) => !publicUnits.hidden.has(unit.unitSlug))
+      .map((unit) => unit.unitSlug),
+    [wiredInventory, publicUnits.hidden],
+  );
+  const availability = useAvailability(
+    property?.slug || '',
+    checkIn,
+    checkOut,
+    availabilityUnitSlugs,
+  );
+  const publicProperties = usePublicProperties();
+  const canonicalProperty = publicProperties.bySlug.get(property?.slug || '');
   const propertyPhotos = usePropertyPhotos(property?.slug || '');
-  const site = useSiteContent();
-  const propertyDisplayName = text(site.content, `property.${id}.name`, property?.name || '');
-  const propertyDisplayArea = text(site.content, `property.${id}.area`, property?.area || '');
   const unitsRef = useRef<HTMLDivElement>(null);
   const reviewsCarouselRef = useRef<HTMLDivElement>(null);
   const [expandedReviews, setExpandedReviews] = useState<Set<number>>(new Set());
@@ -84,7 +99,6 @@ export default function CollectionDetail() {
   // if the admin has hidden them all (e.g. every listing paused), show none rather
   // than falling back to static cards. The static fallback is only for properties
   // that were never wired to Airbnb inventory at all.
-  const wiredInventory = getInventoryForProperty(property.slug);
   const inventoryUnits = wiredInventory.filter((unit) => !publicUnits.hidden.has(unit.unitSlug));
   const collectionUnits = wiredInventory.length
     ? inventoryUnits.map((unit) => {
@@ -114,9 +128,30 @@ export default function CollectionDetail() {
     const ob = publicUnits.overrides.get(b.slug)?.displayOrder ?? 9999;
     return oa - ob;
   });
+  const showingAvailability = Boolean(
+    availability.configured && checkIn && checkOut && !availability.loading,
+  );
+  const availabilityBySlug = new Map(
+    availability.units.map((unit) => [unit.unitSlug, unit.available]),
+  );
+  const displayedCollectionUnits = showingAvailability
+    ? [...sortedCollectionUnits].sort((a, b) => {
+        const aAvailable = availabilityBySlug.get(a.slug) ?? true;
+        const bAvailable = availabilityBySlug.get(b.slug) ?? true;
+        return Number(bAvailable) - Number(aAvailable);
+      })
+    : sortedCollectionUnits;
 
   const reviewSlugs = useMemo(() => sortedCollectionUnits.map((unit) => unit.slug), [sortedCollectionUnits]);
   const dbReviews = useReviews(reviewSlugs);
+
+  if (!publicProperties.loaded || !canonicalProperty) return null;
+
+  const propertyDisplayName = canonicalProperty.name;
+  const propertyDisplayArea = canonicalProperty.area || '';
+  const propertyEyebrow = canonicalProperty.eyebrow || '';
+  const propertyNeighborhoodTitle = canonicalProperty.neighborhoodTitle || '';
+  const propertyDescription = canonicalProperty.description;
   // Prefer the real, admin-managed Airbnb reviews once loaded. Keep the static
   // set as a loading/empty-state fallback, matching the individual unit page.
   const reviews = dbReviews.loaded && dbReviews.reviews.length > 0
@@ -131,7 +166,7 @@ export default function CollectionDetail() {
     <div className="animate-in fade-in duration-500">
       <Helmet>
         <title>{propertyDisplayName} | MCRh Manchester</title>
-        <meta name="description" content={`${property.headline} ${property.description}`} />
+        <meta name="description" content={`${property.headline} ${propertyDescription}`} />
         <meta property="og:title" content={`${propertyDisplayName} | MCRh Manchester`} />
         <meta property="og:description" content={property.headline} />
         {heroSrc && <meta property="og:image" content={heroSrc} />}
@@ -171,37 +206,16 @@ export default function CollectionDetail() {
         floating={!hasGallery}
         mode="availability"
         onDatesChange={(ci, co) => { setCheckIn(ci); setCheckOut(co); }}
+        onGuestsChange={setGuests}
         onCheckAvailability={() => unitsRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })}
       />
-
-      {/* Specs Row */}
-      <section className="border-b border-outline-variant/30 py-6 mt-12 md:mt-16">
-        <div className="max-w-[1280px] mx-auto px-margin-mobile md:px-margin-desktop flex flex-wrap gap-8 md:gap-16 justify-center md:justify-start">
-          <div className="flex items-center gap-3">
-            <PersonStanding className="w-5 h-5 text-on-surface-variant" />
-            <span className="font-body text-xs font-semibold text-on-surface-variant tracking-[0.15em]">{property.maxGuests} {property.maxGuests === 1 ? 'Guest' : 'Guests'}</span>
-          </div>
-          <div className="flex items-center gap-3">
-            <BedDouble className="w-5 h-5 text-on-surface-variant" />
-            <span className="font-body text-xs font-semibold text-on-surface-variant tracking-[0.15em]">{property.bedrooms} {property.bedrooms === 1 ? 'Bedroom' : 'Bedrooms'}</span>
-          </div>
-          <div className="flex items-center gap-3">
-            <BedDouble className="w-5 h-5 text-on-surface-variant" />
-            <span className="font-body text-xs font-semibold text-on-surface-variant tracking-[0.15em]">{property.beds} {property.beds === 1 ? 'Bed' : 'Beds'}</span>
-          </div>
-          <div className="flex items-center gap-3">
-            <Bath className="w-5 h-5 text-on-surface-variant" />
-            <span className="font-body text-xs font-semibold text-on-surface-variant tracking-[0.15em]">{property.bathrooms} {property.bathrooms === 1 ? 'Bathroom' : 'Bathrooms'}</span>
-          </div>
-        </div>
-      </section>
 
       {/* Long Description & collection grid */}
       <section ref={unitsRef} className="py-section-gap px-margin-mobile md:px-margin-desktop max-w-[1280px] mx-auto border-t border-outline-variant/30">
         <div className="mb-12">
-          <span className="font-body text-label-caps text-secondary mb-2 block tracking-widest uppercase">{text(site.content, `property.${id}.eyebrow`, property.eyebrow)}</span>
+          <span className="font-body text-label-caps text-secondary mb-2 block tracking-widest uppercase">{propertyEyebrow}</span>
           <h2 className="font-display text-headline-md md:text-display-lg text-primary">{propertyDisplayName}</h2>
-          <p className="mt-6 max-w-2xl font-body text-body-lg text-on-surface-variant">{property.description}</p>
+          <p className="mt-6 max-w-2xl font-body text-body-lg text-on-surface-variant">{propertyDescription}</p>
         </div>
         
         {availability.loading && checkIn && checkOut && (
@@ -210,7 +224,7 @@ export default function CollectionDetail() {
             Checking availability…
           </div>
         )}
-        {availability.configured && checkIn && checkOut && !availability.loading && (
+        {showingAvailability && (
           <div className="mt-6 flex items-center gap-3">
             <span className="font-body text-label-caps text-secondary tracking-widest uppercase text-xs">
               Showing availability for selected dates
@@ -228,10 +242,17 @@ export default function CollectionDetail() {
           </div>
         )}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-12 mt-12">
-          {sortedCollectionUnits.map((apt) => {
+          {displayedCollectionUnits.map((apt) => {
             const avUnit = availability.units.find((u) => u.unitSlug === apt.slug);
-            const showBadge = availability.configured && checkIn && checkOut && !availability.loading;
+            const showBadge = showingAvailability;
             const isAvailable = avUnit?.available ?? true;
+            const detailPath = checkIn && checkOut
+              ? `${apt.path}?${new URLSearchParams({
+                  checkIn,
+                  checkOut,
+                  guests: String(guests),
+                }).toString()}`
+              : apt.path;
 
             const cardContent = (
               <>
@@ -263,7 +284,7 @@ export default function CollectionDetail() {
             );
 
             return (
-              <Link to={apt.path} key={apt.slug} className={`group cursor-pointer block ${showBadge && !isAvailable ? 'opacity-60' : ''}`}>
+              <Link to={detailPath} key={apt.slug} className={`group cursor-pointer block ${showBadge && !isAvailable ? 'opacity-60' : ''}`}>
                 {cardContent}
               </Link>
             );
@@ -283,7 +304,7 @@ export default function CollectionDetail() {
           </div>
           <div className="md:col-span-5">
             <span className="font-body text-label-caps text-secondary mb-2 block tracking-widest uppercase">The Neighborhood</span>
-            <h2 className="font-display text-headline-md md:text-display-lg text-primary mb-8">{property.neighborhoodTitle}</h2>
+            <h2 className="font-display text-headline-md md:text-display-lg text-primary mb-8">{propertyNeighborhoodTitle}</h2>
 
             <div className="space-y-6">
               {property.distances.map((item, i) => (

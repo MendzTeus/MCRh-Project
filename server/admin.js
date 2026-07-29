@@ -101,6 +101,48 @@ router.post('/login', loginThrottle, (req, res) => {
 // Everything below requires a valid admin token.
 router.use(requireAdmin);
 
+const EDITABLE_PROPERTY_FIELDS = ['name', 'area', 'eyebrow', 'neighborhoodTitle', 'description'];
+const PROPERTY_SELECT = 'slug, name, area, eyebrow, neighborhoodTitle, description, displayOrder, updatedAt';
+
+// ── Canonical building content ──────────────────────────────────────
+router.get('/properties', async (_req, res) => {
+  const { data, error } = await supabase
+    .from('Property')
+    .select(PROPERTY_SELECT)
+    .order('displayOrder')
+    .order('name');
+  if (error) return res.status(500).json({ error: error.message });
+  res.json({ properties: data || [] });
+});
+
+router.patch('/properties/:slug', async (req, res) => {
+  const patch = {};
+  for (const field of EDITABLE_PROPERTY_FIELDS) {
+    if (field in (req.body || {})) patch[field] = req.body[field];
+  }
+  if (!Object.keys(patch).length) return res.status(400).json({ error: 'No editable fields' });
+
+  for (const [field, value] of Object.entries(patch)) {
+    if (typeof value !== 'string') {
+      return res.status(400).json({ error: `${field} must be a string` });
+    }
+  }
+  if (!patch.name?.trim() && 'name' in patch) {
+    return res.status(400).json({ error: 'name cannot be empty' });
+  }
+
+  patch.updatedAt = new Date().toISOString();
+  const { data, error } = await supabase
+    .from('Property')
+    .update(patch)
+    .eq('slug', req.params.slug)
+    .select(PROPERTY_SELECT)
+    .maybeSingle();
+  if (error) return res.status(500).json({ error: error.message });
+  if (!data) return res.status(404).json({ error: 'Property not found' });
+  res.json({ property: data });
+});
+
 // ── List all units (including hidden) with their photos ─────────────
 router.get('/units', async (_req, res) => {
   const { data: units, error } = await supabase
@@ -204,12 +246,13 @@ router.post('/units/:unitSlug/photos', async (req, res) => {
   res.json({ photo: data });
 });
 
-// ── Edit a photo's alt / primary flag ───────────────────────────────
+// ── Edit a photo's metadata / primary flag ──────────────────────────
 router.patch('/photos/:id', async (req, res) => {
   const { id } = req.params;
   const patch = { updatedAt: new Date().toISOString() };
   if ('alt' in (req.body || {})) patch.alt = req.body.alt;
   if ('roomCategory' in (req.body || {})) patch.roomCategory = req.body.roomCategory || null;
+  if ('hidden' in (req.body || {})) patch.hidden = req.body.hidden === true;
 
   if (req.body && req.body.isPrimary === true) {
     // Only one primary per owner: clear the others first.

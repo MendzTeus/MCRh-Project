@@ -1,15 +1,27 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
-import { useParams, useSearchParams, useNavigate } from 'react-router-dom';
+import { Link, useParams, useSearchParams, useNavigate } from 'react-router-dom';
 import { ROOM_CATEGORIES } from '../components/PhotoTour';
-import { getListingMedia } from '../data/listingMedia';
-import { useApi, fileToBase64, useUnsavedChangesGuard, ADMIN_TOKEN_KEY as TOKEN_KEY } from '../hooks/useAdminApi';
+import { cleanListingTitle, getListingMedia } from '../data/listingMedia';
+import { useApi, fileToBase64, useUnsavedChangesGuard } from '../hooks/useAdminApi';
 import { AdminShell } from '../components/admin/AdminShell';
+import { ADMIN_NAV_ITEMS } from '../components/admin/adminNavigation';
+import { useAdminAuth } from '../components/admin/AdminAuthContext';
+import { UnitMediaWorkspace, UnitPhotoTourPreview } from '../components/admin/media';
 
 // ── Design tokens (must match Admin.tsx) ───────────────────────────
 const GOLD = '#C5A059';
 const NAVY = '#101c2d';
 const lbl = 'font-body text-[10px] uppercase tracking-[0.15em] text-on-surface-variant block mb-1.5';
 const fld = 'w-full bg-transparent border-b border-outline-variant/50 py-1.5 font-body text-sm text-on-surface focus:outline-none focus:border-[#C5A059] transition-colors';
+
+function moveFeaturedSlug(slugs: string[], unitSlug: string, toIndex: number): string[] {
+  const fromIndex = slugs.indexOf(unitSlug);
+  if (fromIndex === -1) return slugs;
+  const next = [...slugs];
+  next.splice(fromIndex, 1);
+  next.splice(Math.max(0, Math.min(next.length, toIndex)), 0, unitSlug);
+  return next;
+}
 
 // ── Types ───────────────────────────────────────────────────────────
 type Photo = {
@@ -29,6 +41,7 @@ type FullUnit = {
   floor: number | null; hasLift: boolean | null;
   displayTitle: string | null; seoTitle: string | null; metaDescription: string | null;
   internalNotes: string | null; latitude: number | null; longitude: number | null;
+  updatedAt?: string;
   // Joined
   photos: Photo[]; reviewsCount: number; avgRating: number | null;
 };
@@ -54,7 +67,12 @@ function useAutosave(api: ReturnType<typeof useApi>, unitSlug: string) {
       await api(`/admin/units/${unitSlug}`, { method: 'PATCH', body: JSON.stringify(patch) });
       setStatus('saved');
       setTimeout(() => setStatus('idle'), 1500);
-    } catch (e) { setStatus('error'); setLastError(e instanceof Error ? e.message : String(e)); }
+      return true;
+    } catch (e) {
+      setStatus('error');
+      setLastError(e instanceof Error ? e.message : String(e));
+      return false;
+    }
   }, [api, unitSlug]);
   return { save, status, lastError };
 }
@@ -242,8 +260,10 @@ function OverviewTab({ unit }: { unit: FullUnit }) {
 // ══════════════════════════════════════════════════════════════════
 function ContentTab({ unit, api, onChanged }: { unit: FullUnit; api: ReturnType<typeof useApi>; onChanged: () => void }) {
   const { save, status, lastError } = useAutosave(api, unit.unitSlug);
+  const originalAirbnbTitle = getListingMedia(unit.unitSlug)?.title || unit.unitName;
   const [name, setName] = useState(unit.unitName);
   const [displayTitle, setDisplayTitle] = useState(unit.displayTitle || '');
+  const [suppliedSpecs, setSuppliedSpecs] = useState(unit.suppliedSpecs || '');
   const [description, setDescription] = useState(unit.description || '');
   const [postcode, setPostcode] = useState(unit.postcode || '');
   const [squareFeet, setSquareFeet] = useState(unit.squareFeet != null ? String(unit.squareFeet) : '');
@@ -251,69 +271,112 @@ function ContentTab({ unit, api, onChanged }: { unit: FullUnit; api: ReturnType<
   useEffect(() => {
     setName(unit.unitName);
     setDisplayTitle(unit.displayTitle || '');
+    setSuppliedSpecs(unit.suppliedSpecs || '');
     setDescription(unit.description || '');
     setPostcode(unit.postcode || '');
     setSquareFeet(unit.squareFeet != null ? String(unit.squareFeet) : '');
   }, [unit.unitSlug]);
 
   useUnsavedChangesGuard(
-    name !== unit.unitName || displayTitle !== (unit.displayTitle || '') || description !== (unit.description || '')
+    name !== unit.unitName || displayTitle !== (unit.displayTitle || '') || suppliedSpecs !== (unit.suppliedSpecs || '')
+    || description !== (unit.description || '')
     || postcode !== (unit.postcode || '') || squareFeet !== (unit.squareFeet != null ? String(unit.squareFeet) : '')
   );
 
+  const stFld = 'w-full bg-[#f9f7f2] border border-navy/10 rounded-lg px-4 py-3 font-body text-sm text-navy focus:outline-none focus:border-[#C5A059] focus:ring-1 focus:ring-[#C5A059]/20 transition-all';
+  const stLbl = 'block font-label text-[10px] font-bold text-navy/60 uppercase tracking-widest mb-2';
+  const effectivePublicTitle = unit.displayTitle?.trim() || cleanListingTitle(originalAirbnbTitle) || originalAirbnbTitle;
+  const displayTitleDirty = displayTitle !== (unit.displayTitle || '');
+
   return (
-    <div className="max-w-2xl space-y-6">
-      <div className="flex items-center gap-4">
-        <h2 className="font-display text-2xl font-bold text-navy">Conteúdo</h2>
-        <SaveStatus s={status} error={lastError} />
-      </div>
+    <div className="max-w-3xl">
+      <section className="bg-white rounded-xl shadow-sm border border-navy/5 p-8 md:p-10">
+        <header className="mb-8 pb-6 border-b border-navy/5 flex items-center justify-between">
+          <div>
+            <h3 className="font-display text-2xl font-semibold" style={{ color: NAVY }}>Property Details</h3>
+            <p className="font-body text-sm mt-1" style={{ color: 'rgba(16,28,45,0.5)' }}>Refine the public presentation of the residence.</p>
+          </div>
+          <SaveStatus s={status} error={lastError} />
+        </header>
 
-      <div className="bg-white p-6 rounded-xl shadow-sm border border-navy/5 space-y-6">
-      <div>
-        <label className={lbl}>Nome interno do apartamento</label>
-        <input value={name} onChange={(e) => setName(e.target.value)}
-          onBlur={() => name !== unit.unitName && save({ unitName: name })}
-          className={fld} placeholder="Apartment 11.2" />
-        <p className="font-body text-[10px] text-on-surface-variant/50 mt-1">Usado internamente e como fallback de título público.</p>
-      </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-x-10 gap-y-7">
+          {/* Internal name */}
+          <div className="md:col-span-2">
+            <label className={stLbl}>Internal Name</label>
+            <input value={name} onChange={(e) => setName(e.target.value)}
+              onBlur={() => name !== unit.unitName && save({ unitName: name })}
+              className={stFld} placeholder="Apartment 11.2" />
+            <p className="font-body text-[10px] mt-1.5" style={{ color: 'rgba(16,28,45,0.35)' }}>Used internally and as public title fallback.</p>
+          </div>
 
-      <div>
-        <label className={lbl}>Título público (sobrescreve o nome automático)</label>
-        <input value={displayTitle} onChange={(e) => setDisplayTitle(e.target.value)}
-          onBlur={() => displayTitle !== (unit.displayTitle || '') && save({ displayTitle: displayTitle || null })}
-          className={fld} placeholder="Deixe vazio para usar o nome automático" />
-      </div>
+          {/* Display title */}
+          <div className="md:col-span-2">
+            <label className={stLbl}>Public Title</label>
+            <input value={displayTitle} onChange={(e) => setDisplayTitle(e.target.value)}
+              onBlur={() => displayTitleDirty && save({ displayTitle: displayTitle || null }).then((saved) => saved && onChanged())}
+              className={stFld} placeholder="Leave empty to use automatic name" />
+            <div className="mt-2 rounded-lg border border-navy/5 bg-[#f9f7f2] px-4 py-3 font-body text-xs leading-relaxed" aria-live="polite">
+              <p style={{ color: 'rgba(16,28,45,0.55)' }}>
+                Public title now: <span className="font-semibold" style={{ color: GOLD }}>{effectivePublicTitle}</span>
+              </p>
+              <p className="mt-1" style={{ color: 'rgba(16,28,45,0.4)' }}>
+                Original Airbnb title: <span style={{ color: 'rgba(16,28,45,0.65)' }}>{originalAirbnbTitle}</span>
+              </p>
+              {displayTitleDirty && (
+                <p className="mt-1" style={{ color: '#8a641f' }}>Unsaved title change — leave the field to save.</p>
+              )}
+            </div>
+          </div>
 
-      <div>
-        <label className={lbl}>Descrição completa</label>
-        <textarea value={description} onChange={(e) => setDescription(e.target.value)}
-          onBlur={() => description !== (unit.description || '') && save({ description: description || null })}
-          className={`${fld} resize-none`} rows={7}
-          placeholder="Descrição detalhada do apartamento, espaço, localização…" />
-        <p className="font-body text-[10px] text-on-surface-variant/50 mt-1">{description.length} caracteres</p>
-      </div>
+          {/* Supplied specifications */}
+          <div className="md:col-span-2">
+            <label className={stLbl}>Specs</label>
+            <input
+              value={suppliedSpecs}
+              onChange={(event) => setSuppliedSpecs(event.target.value)}
+              onBlur={() => suppliedSpecs !== (unit.suppliedSpecs || '')
+                && save({ suppliedSpecs: suppliedSpecs || null }).then((saved) => saved && onChanged())}
+              className={stFld}
+              placeholder="2BED 2BATH"
+            />
+          </div>
 
-      <div className="grid grid-cols-2 gap-4">
-        <div>
-          <label className={lbl}>Código postal</label>
-          <input value={postcode} onChange={(e) => setPostcode(e.target.value)}
-            onBlur={() => postcode !== (unit.postcode || '') && save({ postcode: postcode || null })}
-            className={fld} placeholder="M2 1HN" />
+          {/* Description */}
+          <div className="md:col-span-2">
+            <label className={stLbl}>Marketing Description</label>
+            <textarea value={description} onChange={(e) => setDescription(e.target.value)}
+              onBlur={() => description !== (unit.description || '') && save({ description: description || null })}
+              className={`${stFld} resize-none leading-relaxed`} rows={6}
+              placeholder="Detailed description of the apartment, space, location…" />
+            <p className="font-body text-[10px] mt-1.5" style={{ color: 'rgba(16,28,45,0.35)' }}>{description.length} characters</p>
+          </div>
+
+          {/* Postcode */}
+          <div>
+            <label className={stLbl}>Postcode</label>
+            <input value={postcode} onChange={(e) => setPostcode(e.target.value)}
+              onBlur={() => postcode !== (unit.postcode || '') && save({ postcode: postcode || null })}
+              className={stFld} placeholder="M2 1HN" />
+          </div>
+
+          {/* Square footage */}
+          <div>
+            <label className={stLbl}>Area (sq ft)</label>
+            <div className="relative">
+              <input type="number" min={0} value={squareFeet} onChange={(e) => setSquareFeet(e.target.value)}
+                onBlur={() => {
+                  const v = squareFeet ? parseInt(squareFeet, 10) : null;
+                  if (v !== unit.squareFeet) save({ squareFeet: v });
+                }}
+                className={`${stFld} pr-12`} placeholder="800" />
+              <span className="absolute right-4 top-1/2 -translate-y-1/2 font-body text-sm font-semibold" style={{ color: 'rgba(16,28,45,0.35)' }}>ft²</span>
+            </div>
+            {squareFeet !== '' && parseInt(squareFeet, 10) < 0 && (
+              <p className="font-body text-[10px] mt-1" style={{ color: '#ba1a1a' }}>Area cannot be negative.</p>
+            )}
+          </div>
         </div>
-        <div>
-          <label className={lbl}>Área (sq ft)</label>
-          <input type="number" min={0} value={squareFeet} onChange={(e) => setSquareFeet(e.target.value)}
-            onBlur={() => {
-              const v = squareFeet ? parseInt(squareFeet, 10) : null;
-              if (v !== unit.squareFeet) save({ squareFeet: v });
-            }}
-            className={fld} placeholder="800" />
-          {squareFeet !== '' && parseInt(squareFeet, 10) < 0 && (
-            <p className="font-body text-[10px] mt-1" style={{ color: '#ba1a1a' }}>A área não pode ser negativa.</p>
-          )}
-        </div>
-      </div>
-      </div>
+      </section>
     </div>
   );
 }
@@ -1016,6 +1079,36 @@ function ReviewsTabUnit({ unit, api }: { unit: FullUnit; api: ReturnType<typeof 
   );
 }
 
+function ReviewsCanonicalLink({ unit }: { unit: FullUnit }) {
+  return (
+    <div className="max-w-3xl space-y-6">
+      <div>
+        <p className="font-display text-headline-sm text-primary">Reviews</p>
+        <p className="font-body text-sm text-on-surface-variant mt-1">
+          Review management is centralised in the Reviews workspace.
+        </p>
+      </div>
+      <div className="grid grid-cols-2 gap-4">
+        <div className="border border-outline-variant/20 rounded-xl shadow-sm p-5">
+          <p className="font-display text-3xl text-primary">{unit.reviewsCount}</p>
+          <p className="font-body text-[10px] uppercase tracking-widest text-on-surface-variant/60 mt-1">Published reviews</p>
+        </div>
+        <div className="border border-outline-variant/20 rounded-xl shadow-sm p-5">
+          <p className="font-display text-3xl text-primary">{unit.avgRating != null ? unit.avgRating.toFixed(2) : '—'}</p>
+          <p className="font-body text-[10px] uppercase tracking-widest text-on-surface-variant/60 mt-1">Average rating</p>
+        </div>
+      </div>
+      <Link
+        to={`/admin/reviews?unit=${encodeURIComponent(unit.unitSlug)}`}
+        className="inline-flex items-center px-5 py-2.5 font-body text-[11px] uppercase tracking-[0.15em] border transition-colors"
+        style={{ borderColor: GOLD, color: GOLD }}
+      >
+        Manage this apartment’s reviews →
+      </Link>
+    </div>
+  );
+}
+
 // ══════════════════════════════════════════════════════════════════
 // TAB: Booking
 // ══════════════════════════════════════════════════════════════════
@@ -1073,6 +1166,10 @@ function BookingTab({ unit, api }: { unit: FullUnit; api: ReturnType<typeof useA
 function SettingsTab({ unit, api, onChanged }: { unit: FullUnit; api: ReturnType<typeof useApi>; onChanged: () => void }) {
   const { save, status, lastError } = useAutosave(api, unit.unitSlug);
   const [visible, setVisible] = useState(unit.visible);
+  const [featured, setFeatured] = useState<string[]>([]);
+  const [featuredLoading, setFeaturedLoading] = useState(true);
+  const [featuredStatus, setFeaturedStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
+  const [featuredError, setFeaturedError] = useState('');
   const [displayOrder, setDisplayOrder] = useState(String(unit.displayOrder));
   const [seoTitle, setSeoTitle] = useState(unit.seoTitle || '');
   const [metaDesc, setMetaDesc] = useState(unit.metaDescription || '');
@@ -1089,6 +1186,45 @@ function SettingsTab({ unit, api, onChanged }: { unit: FullUnit; api: ReturnType
     setLat(unit.latitude != null ? String(unit.latitude) : '');
     setLng(unit.longitude != null ? String(unit.longitude) : '');
   }, [unit.unitSlug]);
+
+  const loadFeatured = useCallback(async () => {
+    setFeaturedLoading(true);
+    setFeaturedError('');
+    try {
+      const site = await api('/admin/site');
+      const value = site?.content?.['home.featured'];
+      setFeatured(Array.isArray(value) ? value.filter((slug): slug is string => typeof slug === 'string') : []);
+    } catch (loadError) {
+      setFeaturedError(loadError instanceof Error ? loadError.message : 'Erro ao carregar destaques');
+      setFeaturedStatus('error');
+    } finally {
+      setFeaturedLoading(false);
+    }
+  }, [api]);
+
+  useEffect(() => { loadFeatured(); }, [loadFeatured]);
+
+  async function saveFeatured(next: string[]) {
+    const previous = featured;
+    setFeatured(next);
+    setFeaturedStatus('saving');
+    setFeaturedError('');
+    try {
+      await api('/admin/content/home.featured', {
+        method: 'PUT',
+        body: JSON.stringify({ value: next }),
+      });
+      setFeaturedStatus('saved');
+      setTimeout(() => setFeaturedStatus('idle'), 1500);
+    } catch (saveError) {
+      setFeatured(previous);
+      setFeaturedStatus('error');
+      setFeaturedError(saveError instanceof Error ? saveError.message : 'Erro ao guardar destaques');
+    }
+  }
+
+  const isFeatured = featured.includes(unit.unitSlug);
+  const featuredPosition = featured.indexOf(unit.unitSlug);
 
   useUnsavedChangesGuard(
     visible !== unit.visible || displayOrder !== String(unit.displayOrder) || seoTitle !== (unit.seoTitle || '')
@@ -1119,6 +1255,58 @@ function SettingsTab({ unit, api, onChanged }: { unit: FullUnit; api: ReturnType
         </label>
         <p className="font-body text-xs text-on-surface-variant/50">
           Ocultar remove o apartamento de todas as páginas públicas. Ele continua acessível e editável no admin.
+        </p>
+      </div>
+
+      {/* Homepage featured placement — intentionally remains SiteContent['home.featured']. */}
+      <div className="border border-outline-variant/20 rounded-xl shadow-sm p-5 space-y-4">
+        <div className="flex items-center gap-4">
+          <p className={lbl}>Featured on home</p>
+          <SaveStatus s={featuredStatus} error={featuredError} />
+        </div>
+        <div className="flex items-center justify-between gap-4 flex-wrap">
+          <button
+            type="button"
+            disabled={featuredLoading || featuredStatus === 'saving'}
+            onClick={() => saveFeatured(
+              isFeatured
+                ? featured.filter((slug) => slug !== unit.unitSlug)
+                : [...featured, unit.unitSlug],
+            )}
+            aria-pressed={isFeatured}
+            className="flex items-center gap-3 font-body text-sm text-on-surface disabled:opacity-50"
+          >
+            <span
+              className="relative inline-flex w-12 h-6 rounded-full transition-colors"
+              style={{ background: isFeatured ? GOLD : '#9ca3af' }}
+            >
+              <span className={`absolute top-0.5 w-5 h-5 rounded-full bg-white shadow transition-all ${isFeatured ? 'left-6' : 'left-0.5'}`} />
+            </span>
+            <span>{featuredLoading ? 'Carregando…' : isFeatured ? 'Em destaque na home' : 'Fora dos destaques da home'}</span>
+          </button>
+
+          {isFeatured && (
+            <label className="flex items-center gap-2 font-body text-[10px] uppercase tracking-[0.12em] text-on-surface-variant/70">
+              Ordem
+              <input
+                type="number"
+                min={1}
+                max={featured.length}
+                value={featuredPosition + 1}
+                disabled={featuredStatus === 'saving'}
+                onChange={(event) => {
+                  const position = Number(event.target.value);
+                  if (Number.isFinite(position)) {
+                    saveFeatured(moveFeaturedSlug(featured, unit.unitSlug, position - 1));
+                  }
+                }}
+                className="w-14 bg-transparent border-b border-outline-variant/50 py-1 text-center font-body text-sm text-on-surface focus:outline-none focus:border-[#C5A059] disabled:opacity-50"
+              />
+            </label>
+          )}
+        </div>
+        <p className="font-body text-xs text-on-surface-variant/50">
+          A ordem usa a mesma lista de destaques da página inicial; 1 aparece primeiro.
         </p>
       </div>
 
@@ -1212,11 +1400,8 @@ export default function AdminApartment() {
   const tab = (searchParams.get('tab') || 'overview') as ApartmentTab;
   const setTab = (t: ApartmentTab) => setSearchParams({ tab: t }, { replace: true });
 
-  const token = localStorage.getItem(TOKEN_KEY);
-  const api = useApi(token, () => {
-    localStorage.removeItem(TOKEN_KEY);
-    navigate('/admin');
-  });
+  const { token, logout } = useAdminAuth();
+  const api = useApi(token, logout);
 
   const [unit, setUnit] = useState<FullUnit | null>(null);
   const [loading, setLoading] = useState(true);
@@ -1234,10 +1419,7 @@ export default function AdminApartment() {
     } finally { setLoading(false); }
   }, [api, unitSlug]);
 
-  useEffect(() => {
-    if (!token) { navigate('/admin'); return; }
-    loadUnit();
-  }, [token, unitSlug]);
+  useEffect(() => { loadUnit(); }, [loadUnit]);
 
   const tabs: { id: ApartmentTab; label: string }[] = [
     { id: 'overview', label: 'Resumo' },
@@ -1256,10 +1438,10 @@ export default function AdminApartment() {
 
   return (
     <AdminShell
-      navItems={tabs.map((t) => ({ id: t.id, label: t.label, onClick: () => setTab(t.id) }))}
-      activeId={tab}
+      navItems={ADMIN_NAV_ITEMS}
+      activeId="apartments"
       breadcrumbs={[
-        { label: 'Admin', onClick: () => navigate('/admin') },
+        { label: 'Apartments', onClick: () => navigate('/admin/apartments') },
         { label: unit ? unit.unitName : (unitSlug || '') },
       ]}
       rightSlot={
@@ -1277,6 +1459,41 @@ export default function AdminApartment() {
         )
       }
     >
+      {/* Page header + horizontal tab bar */}
+      <div className="-mx-4 md:-mx-10 -mt-10 px-4 md:px-8 pt-8 pb-0 mb-0"
+        style={{ background: '#f9f7f2', borderBottom: '1px solid rgba(16,28,45,0.07)' }}>
+        {unit && (
+          <div className="mb-4">
+            <h2 className="font-display text-4xl font-bold" style={{ color: NAVY }}>
+              {unit.displayTitle || unit.unitName}
+            </h2>
+            {unit.updatedAt && (
+              <p className="font-body text-[10px] uppercase tracking-widest mt-1" style={{ color: 'rgba(16,28,45,0.4)' }}>
+                Last updated {new Date(unit.updatedAt).toLocaleString('pt-BR', { dateStyle: 'medium', timeStyle: 'short' })}
+              </p>
+            )}
+          </div>
+        )}
+        {/* Tab row */}
+        <div className="flex gap-8 border-b border-navy/10 -mb-px">
+          {tabs.map((t) => (
+            <button
+              key={t.id}
+              onClick={() => setTab(t.id)}
+              className="px-1 py-4 font-body font-semibold text-sm transition-colors border-b-2 whitespace-nowrap"
+              style={{
+                borderColor: tab === t.id ? GOLD : 'transparent',
+                color: tab === t.id ? GOLD : 'rgba(16,28,45,0.5)',
+              }}
+            >
+              {t.label}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* Content area */}
+      <div className="pt-8">
         {loading && <p className="font-body text-on-surface-variant">Carregando apartamento…</p>}
         {error && (
           <div className="border border-red-200 bg-red-50/60 rounded-lg p-4">
@@ -1290,13 +1507,14 @@ export default function AdminApartment() {
             {tab === 'overview' && <OverviewTab unit={unit} />}
             {tab === 'content' && <ContentTab unit={unit} api={api} onChanged={loadUnit} />}
             {tab === 'rooms' && <RoomsTab unit={unit} api={api} onChanged={loadUnit} />}
-            {tab === 'photos' && <PhotosTabUnit unit={unit} api={api} onChanged={loadUnit} />}
-            {tab === 'photo-tour' && <PhotoTourTab unit={unit} />}
-            {tab === 'reviews' && <ReviewsTabUnit unit={unit} api={api} />}
+            {tab === 'photos' && <UnitMediaWorkspace unit={unit} api={api} onChanged={loadUnit} />}
+            {tab === 'photo-tour' && <UnitPhotoTourPreview unit={unit} />}
+            {tab === 'reviews' && <ReviewsCanonicalLink unit={unit} />}
             {tab === 'booking' && <BookingTab unit={unit} api={api} />}
             {tab === 'settings' && <SettingsTab unit={unit} api={api} onChanged={loadUnit} />}
           </>
         )}
+      </div>
     </AdminShell>
   );
 }

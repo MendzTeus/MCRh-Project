@@ -1,5 +1,5 @@
 import { useState, useRef, useMemo, lazy, Suspense } from 'react';
-import { SlidersHorizontal as Tune, Quote } from 'lucide-react';
+import { SlidersHorizontal as Tune, Star } from 'lucide-react';
 const PropertyMap = lazy(() => import('../components/PropertyMap'));
 import { Link } from 'react-router-dom';
 import { Helmet } from 'react-helmet-async';
@@ -13,6 +13,8 @@ import { airbnbInventory, getInventoryForProperty } from '../data/airbnbInventor
 import { getUnitGallery, getListingMedia, getLocationCardImage } from '../data/listingMedia';
 import { getPropertyBySlug, properties } from '../data/properties';
 import { usePublicUnits } from '../hooks/usePublicUnits';
+import { usePublicProperties } from '../hooks/usePublicProperties';
+import { useFeaturedReviews } from '../hooks/useReviews';
 
 type FeaturedUnit = {
   slug: string;
@@ -37,6 +39,8 @@ export default function Home() {
     [allLocations, selectedArea],
   );
   const publicUnits = usePublicUnits();
+  const publicProperties = usePublicProperties();
+  const featuredReviews = useFeaturedReviews();
   // Drop location cards whose collection has no bookable (visible) units left —
   // e.g. a single-unit collection whose only listing is paused/hidden in the
   // admin — so the list never links to an empty collection page. Collections
@@ -55,6 +59,7 @@ export default function Home() {
   // Featured units are chosen in the admin (SiteContent → home.featured: ordered
   // list of unitSlugs). Falls back to the Chambers block when none are set.
   const featuredUnits = useMemo<FeaturedUnit[]>(() => {
+    if (!publicProperties.loaded) return [];
     const slugs = list<string>(site.content, 'home.featured', []);
     return slugs.flatMap((slug): FeaturedUnit[] => {
       if (publicUnits.hidden.has(slug)) return [];
@@ -64,18 +69,39 @@ export default function Home() {
       const override = publicUnits.overrides.get(slug);
       // Description: the unit's own collection, or the collection that groups it
       // (e.g. chambers-11 → the Chambers collection), else the listing title.
-      const property = getPropertyBySlug(inv.propertySlug)
+      const staticProperty = getPropertyBySlug(inv.propertySlug)
         || properties.find((p) => getInventoryForProperty(p.slug).some((iu) => iu.unitSlug === slug));
+      const canonicalProperty = staticProperty
+        ? publicProperties.bySlug.get(staticProperty.slug)
+        : undefined;
       return [{
         slug,
         propertySlug: inv.propertySlug,
         name: override?.unitName || media?.title || inv.unitName,
-        description: override?.description || property?.description || media?.title || '',
+        description: override?.description || canonicalProperty?.description || media?.title || '',
         images: getUnitGallery(slug, inv.propertySlug),
         href: `/properties/${inv.propertySlug}/${slug}`,
       }];
     });
-  }, [site.content, publicUnits]);
+  }, [site.content, publicUnits, publicProperties]);
+
+  const homeReviewCards = useMemo(() => featuredReviews.reviews.slice(0, 3).map((review) => {
+    const reviewSlug = review.propertySlug || '';
+    const inventoryUnit = airbnbInventory.find((unit) => unit.unitSlug === reviewSlug);
+    const staticProperty = inventoryUnit
+      ? getPropertyBySlug(inventoryUnit.propertySlug)
+        || properties.find((property) => getInventoryForProperty(property.slug)
+          .some((unit) => unit.unitSlug === inventoryUnit.unitSlug))
+      : undefined;
+    const canonicalProperty = publicProperties.bySlug.get(reviewSlug)
+      || (staticProperty ? publicProperties.bySlug.get(staticProperty.slug) : undefined);
+
+    return {
+      ...review,
+      property: canonicalProperty?.name || inventoryUnit?.propertyName || review.property || 'MCRh Manchester',
+      rating: Math.max(1, Math.min(5, Math.round(review.rating || 5))),
+    };
+  }), [featuredReviews.reviews, publicProperties.bySlug]);
 
   return (
     <div className="animate-in fade-in duration-500">
@@ -330,31 +356,57 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Guest Experiences Editorial */}
-      <section className="py-section-gap bg-surface-container-lowest border-t border-outline-variant/30">
-        <div className="max-w-[1280px] mx-auto px-margin-mobile md:px-margin-desktop">
-          <div className="text-center mb-16 md:mb-24">
-            <span className="font-body text-label-caps text-secondary mb-4 block tracking-widest uppercase">{text(site.content, 'home.testimonials.eyebrow', 'Testimonials')}</span>
-            <h2 className="font-display text-headline-md text-primary">{text(site.content, 'home.testimonials.title', 'Guest Experiences')}</h2>
+      {/* Published Airbnb reviews — no generic/static testimonial fallback. */}
+      {featuredReviews.loaded && homeReviewCards.length > 0 && (
+        <section className="py-section-gap bg-surface-container-lowest border-t border-outline-variant/30">
+          <div className="max-w-[1280px] mx-auto px-margin-mobile md:px-margin-desktop">
+            <div className="text-center mb-16 md:mb-24">
+              <span className="font-body text-label-caps text-secondary mb-4 block tracking-widest uppercase">{text(site.content, 'home.testimonials.eyebrow', 'Testimonials')}</span>
+              <h2 className="font-display text-headline-md text-primary">{text(site.content, 'home.testimonials.title', 'Guest Experiences')}</h2>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-16 md:gap-12 lg:gap-20">
+              {homeReviewCards.map((review) => (
+                <article key={review.id || `${review.name}-${review.date}`} className="flex flex-col items-center text-center">
+                  <div
+                    className="flex items-center gap-1 mb-7"
+                    aria-label={`${review.rating} out of 5 stars`}
+                  >
+                    {Array.from({ length: 5 }, (_, index) => (
+                      <Star
+                        key={index}
+                        className="w-4 h-4 text-secondary"
+                        fill={index < review.rating ? 'currentColor' : 'none'}
+                      />
+                    ))}
+                  </div>
+                  <p className="font-display text-xl md:text-2xl leading-relaxed text-primary mb-10 grow">
+                    “{review.text}”
+                  </p>
+                  <div className="flex items-center gap-3 border-t border-outline-variant/30 pt-6 mt-auto min-w-0">
+                    <div className="relative w-11 h-11 rounded-full bg-surface-dim overflow-hidden shrink-0 flex items-center justify-center">
+                      <span className="font-body text-sm text-on-surface-variant">{review.name?.charAt(0) || 'G'}</span>
+                      {review.avatarUrl && (
+                        <img
+                          src={review.avatarUrl}
+                          alt={review.name}
+                          loading="lazy"
+                          referrerPolicy="no-referrer"
+                          className="absolute inset-0 w-full h-full object-cover"
+                          onError={(event) => { event.currentTarget.style.display = 'none'; }}
+                        />
+                      )}
+                    </div>
+                    <div className="text-left min-w-0">
+                      <p className="font-body text-label-caps tracking-widest text-primary uppercase truncate">{review.name}</p>
+                      <p className="font-body text-xs text-on-surface-variant mt-1 truncate">{review.date} · {review.property}</p>
+                    </div>
+                  </div>
+                </article>
+              ))}
+            </div>
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-16 md:gap-12 lg:gap-24">
-            {list<{ text: string; name: string; property: string }>(site.content, 'home.testimonials', [
-              { text: 'An absolute masterclass in luxury hosting. Every detail of the apartment was thoughtfully curated, from the linens to the local guide provided.', name: 'Emma T.', property: 'Chambers Residence' },
-              { text: 'The perfect urban sanctuary. I travel often for work and this felt more like a boutique hotel than a rental. Exceptionally clean and beautifully designed.', name: 'James H.', property: 'John Dalton Street' },
-              { text: 'We loved our stay in Ancoats. The team at MCRh made checking in seamless, and the property exceeded all expectations. Highly recommended.', name: 'Sarah M.', property: 'Ancoats Retreat' },
-            ]).map((t, i) => (
-              <div key={i} className="flex flex-col items-center text-center">
-                <Quote className="w-10 h-10 text-outline-variant mb-8 opacity-40 shrink-0" />
-                <p className="font-display text-xl md:text-2xl leading-relaxed text-primary mb-12 grow">"{t.text}"</p>
-                <div className="flex flex-col items-center border-t border-outline-variant/30 pt-8 mt-auto w-24">
-                  <p className="font-body text-label-caps tracking-widest text-primary uppercase mb-2 whitespace-nowrap">{t.name}</p>
-                  <p className="font-body text-sm text-on-surface-variant whitespace-nowrap">{t.property}</p>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
+        </section>
+      )}
     </div>
   );
 }

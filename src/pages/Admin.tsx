@@ -1,27 +1,45 @@
-import { useState, useEffect, useCallback, useRef, useMemo, Fragment, type FormEvent, type ReactNode, type ChangeEvent } from 'react';
-import { Link } from 'react-router-dom';
+import { useState, useEffect, useCallback, useRef, useMemo, type ReactNode } from 'react';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { Star } from 'lucide-react';
-import { getListingMedia, cleanListingTitle } from '../data/listingMedia';
 import { getInventoryForProperty } from '../data/airbnbInventory';
 import { mapLocationDefaults } from '../data/locations';
-import { parseAirbnbReviews } from '../lib/parseAirbnbReviews';
 import { ROOM_CATEGORIES } from '../components/PhotoTour';
-import { useApi, fileToBase64, ADMIN_TOKEN_KEY as TOKEN_KEY } from '../hooks/useAdminApi';
+import { useApi, fileToBase64 } from '../hooks/useAdminApi';
 import { AdminShell } from '../components/admin/AdminShell';
 import { ConfirmDialog } from '../components/admin/AdminUI';
+import { ADMIN_NAV_ITEMS, getAdminNavPath, getLegacyAdminTab } from '../components/admin/adminNavigation';
+import { useAdminAuth } from '../components/admin/AdminAuthContext';
+import {
+  MediaGrid,
+  getMediaKey,
+  useMediaMutations,
+  type MediaItem,
+  type MediaOwner,
+} from '../components/admin/media';
 
 // Quiet Luxury signature accent
 const GOLD = '#C5A059';
 const NAVY = '#101c2d';
 
 // ── Types ───────────────────────────────────────────────────────────
-type Photo = { id: string; url: string; alt: string | null; isPrimary: boolean; displayOrder: number; roomCategory: string | null };
+type Photo = { id: string; url: string; alt: string | null; isPrimary: boolean; displayOrder: number; roomCategory: string | null; hidden?: boolean };
 type Unit = {
   unitSlug: string; unitName: string; propertySlug: string; propertyName: string;
   suppliedSpecs: string | null; postcode: string | null; airbnbUrl: string | null;
-  description: string | null; squareFeet: number | null; icalAirbnbUrl: string | null; icalVrboUrl: string | null; visible: boolean; airbnbListed?: boolean; displayOrder: number; photos: Photo[]; updatedAt?: string;
+  description: string | null; squareFeet: number | null; icalAirbnbUrl: string | null; icalVrboUrl: string | null;
+  displayTitle: string | null; visible: boolean; airbnbListed?: boolean; displayOrder: number; photos: Photo[]; updatedAt?: string;
 };
 type SiteData = { content: Record<string, unknown>; images: Record<string, { url: string; alt: string | null }> };
+type AdminProperty = {
+  slug: string;
+  name: string;
+  area: string | null;
+  eyebrow: string | null;
+  neighborhoodTitle: string | null;
+  description: string;
+  displayOrder: number | null;
+  updatedAt: string;
+};
 
 // Image slots the admin can override (friendly labels for the UI).
 const IMAGE_SLOTS: { slot: string; label: string; page: string }[] = [
@@ -60,297 +78,6 @@ function Status({ s }: { s: 'idle' | 'saving' | 'saved' | 'error' }) {
     <span className="font-body text-[10px] uppercase tracking-[0.15em]" style={{ color: s === 'error' ? '#ba1a1a' : GOLD }}>
       {s === 'saving' && 'Salvando…'}{s === 'saved' && '✓ Salvo'}{s === 'error' && 'Erro'}
     </span>
-  );
-}
-
-// ── Login ───────────────────────────────────────────────────────────
-function Login({ onLogin }: { onLogin: (token: string) => void }) {
-  const [password, setPassword] = useState('');
-  const [error, setError] = useState('');
-  const [busy, setBusy] = useState(false);
-
-  async function submit(e: FormEvent) {
-    e.preventDefault();
-    setBusy(true); setError('');
-    try {
-      const res = await fetch('/api/admin/login', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ password }) });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Falha no login');
-      onLogin(data.token);
-    } catch (err) { setError((err as Error).message); } finally { setBusy(false); }
-  }
-
-  return (
-    <div className="min-h-screen flex items-center justify-center px-6" style={{ background: NAVY }}>
-      <form onSubmit={submit} className="w-full max-w-sm bg-surface p-12" style={{ borderTop: `2px solid ${GOLD}` }}>
-        <div className="font-display text-4xl text-primary mb-1 tracking-tight">MCRh</div>
-        <div className="font-body text-[11px] uppercase tracking-[0.2em] text-on-surface-variant mb-10">Painel de Administração</div>
-        <label className={label}>Senha</label>
-        <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} autoFocus className={`${field} mb-8`} />
-        {error && <div className="font-body text-sm mb-6" style={{ color: '#ba1a1a' }}>{error}</div>}
-        <Btn type="submit" gold disabled={busy}>{busy ? 'Entrando…' : 'Entrar'}</Btn>
-      </form>
-    </div>
-  );
-}
-
-// ── Photo tile ──────────────────────────────────────────────────────
-function PhotoTile({ photo, onSetCover, onDelete, onMove, onEditAlt, canLeft, canRight }: { photo: Photo; onSetCover: () => void; onDelete: () => void; onMove: (dir: -1 | 1) => void; onEditAlt: () => void; canLeft: boolean; canRight: boolean }) {
-  const btn = 'flex-1 text-white/80 text-[11px] leading-none py-1 hover:text-[#C5A059] transition-colors disabled:opacity-25 disabled:hover:text-white/80';
-  return (
-    <div className="relative w-24 h-24 overflow-hidden shrink-0" style={{ border: photo.isPrimary ? `2px solid ${GOLD}` : '1px solid rgba(197,198,205,0.5)' }}>
-      <img src={photo.url} alt={photo.alt || ''} className="w-full h-full object-cover" />
-      {photo.isPrimary && <div className="absolute top-0 left-0 font-body text-[8px] uppercase tracking-widest text-white px-1.5 py-0.5" style={{ background: GOLD }}>Capa</div>}
-      {!photo.alt && <div title="Sem texto alternativo" className="absolute top-0 right-0 font-body text-[8px] uppercase tracking-widest text-white/90 px-1 py-0.5" style={{ background: '#ba1a1a' }}>alt</div>}
-      <div className="absolute bottom-0 left-0 right-0 flex" style={{ background: 'rgba(16,28,45,0.78)' }}>
-        <button title="Mover para a esquerda" onClick={() => onMove(-1)} disabled={!canLeft} className={btn}>◀</button>
-        <button title="Mover para a direita" onClick={() => onMove(1)} disabled={!canRight} className={btn}>▶</button>
-        <button title="Definir como capa" onClick={onSetCover} disabled={photo.isPrimary} className={btn} style={{ color: photo.isPrimary ? GOLD : undefined }}>★</button>
-        <button title="Editar texto alternativo (alt)" onClick={onEditAlt} className={btn}>✎</button>
-        <button title="Excluir" onClick={onDelete} className={`${btn} hover:text-red-300`}>✕</button>
-      </div>
-    </div>
-  );
-}
-
-// Move a slug to a target index within the featured list (for the order control).
-function moveInArray(arr: string[], slug: string, toIndex: number): string[] {
-  const from = arr.indexOf(slug);
-  if (from === -1) return arr;
-  const next = [...arr];
-  next.splice(from, 1);
-  next.splice(Math.max(0, Math.min(next.length, toIndex)), 0, slug);
-  return next;
-}
-
-// ── Unit card ───────────────────────────────────────────────────────
-function UnitCard({ unit, api, onChanged, featured, onSaveFeatured, displayTitles, onSaveDisplayTitle }: { unit: Unit; api: ReturnType<typeof useApi>; onChanged: () => void; featured: string[]; onSaveFeatured: (next: string[]) => void; displayTitles: Record<string, string>; onSaveDisplayTitle: (slug: string, value: string) => void }) {
-  const isFeatured = featured.includes(unit.unitSlug);
-  const featuredPos = featured.indexOf(unit.unitSlug); // 0-based
-  // Original Airbnb title (from the scrape) + its auto-cleaned fallback for preview.
-  const originalTitle = getListingMedia(unit.unitSlug)?.title || unit.unitName;
-  const storedDisplayTitle = displayTitles[unit.unitSlug] || '';
-  const [name, setName] = useState(unit.unitName);
-  const [specs, setSpecs] = useState(unit.suppliedSpecs || '');
-  const [airbnb, setAirbnb] = useState(unit.airbnbUrl || '');
-  const [postcode, setPostcode] = useState(unit.postcode || '');
-  const [description, setDescription] = useState(unit.description || '');
-  const [squareFeet, setSquareFeet] = useState(unit.squareFeet != null ? String(unit.squareFeet) : '');
-  const [icalAirbnb, setIcalAirbnb] = useState(unit.icalAirbnbUrl || '');
-  const [icalVrbo, setIcalVrbo] = useState(unit.icalVrboUrl || '');
-  const [dispTitle, setDispTitle] = useState(storedDisplayTitle);
-  const [status, setStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
-  const [showReviews, setShowReviews] = useState(false);
-  const fileRef = useRef<HTMLInputElement>(null);
-
-  useEffect(() => {
-    setName(unit.unitName); setSpecs(unit.suppliedSpecs || ''); setAirbnb(unit.airbnbUrl || '');
-    setPostcode(unit.postcode || ''); setDescription(unit.description || '');
-    setSquareFeet(unit.squareFeet != null ? String(unit.squareFeet) : '');
-    setIcalAirbnb(unit.icalAirbnbUrl || ''); setIcalVrbo(unit.icalVrboUrl || '');
-  }, [unit]);
-  useEffect(() => { setDispTitle(storedDisplayTitle); }, [storedDisplayTitle]);
-
-  const save = useCallback(async (patch: Record<string, unknown>) => {
-    setStatus('saving');
-    try { await api(`/admin/units/${unit.unitSlug}`, { method: 'PATCH', body: JSON.stringify(patch) }); setStatus('saved'); setTimeout(() => setStatus('idle'), 1500); onChanged(); }
-    catch { setStatus('error'); }
-  }, [api, unit.unitSlug, onChanged]);
-
-  async function uploadPhoto(file: File) {
-    setStatus('saving');
-    try {
-      const { base64, type } = await fileToBase64(file);
-      await api(`/admin/units/${unit.unitSlug}/photos`, { method: 'POST', body: JSON.stringify({ dataBase64: base64, contentType: type, alt: unit.unitName }) });
-      setStatus('saved'); onChanged();
-    } catch { setStatus('error'); }
-  }
-
-  // Reorder photos: move one tile left/right and persist the new order.
-  async function movePhoto(id: string, dir: -1 | 1) {
-    const ids = unit.photos.map((p) => p.id);
-    const from = ids.indexOf(id);
-    const to = from + dir;
-    if (from === -1 || to < 0 || to >= ids.length) return;
-    [ids[from], ids[to]] = [ids[to], ids[from]];
-    setStatus('saving');
-    try { await api(`/admin/units/${unit.unitSlug}/photos/reorder`, { method: 'POST', body: JSON.stringify({ orderedIds: ids }) }); setStatus('saved'); setTimeout(() => setStatus('idle'), 1200); onChanged(); }
-    catch { setStatus('error'); }
-  }
-
-  // Edit a photo's alt text (accessibility + SEO) via a simple prompt.
-  async function editAlt(id: string, current: string | null) {
-    const next = window.prompt('Texto alternativo (descrição da imagem):', current || '');
-    if (next === null) return;
-    setStatus('saving');
-    try { await api(`/admin/photos/${id}`, { method: 'PATCH', body: JSON.stringify({ alt: next }) }); setStatus('saved'); setTimeout(() => setStatus('idle'), 1200); onChanged(); }
-    catch { setStatus('error'); }
-  }
-
-  const cover = unit.photos.find((p) => p.isPrimary) || unit.photos[0];
-
-  return (
-    <div className="bg-surface-container-lowest border border-outline-variant/40 rounded-xl shadow-sm p-5" style={{ opacity: unit.visible ? 1 : 0.55 }}>
-      <div className="flex items-center gap-3 mb-4">
-        {cover ? (
-          <img src={cover.url} alt="" className="w-12 h-12 object-cover shrink-0" />
-        ) : (
-          <div className="w-12 h-12 shrink-0 border border-dashed border-outline-variant/50" />
-        )}
-        <div className="min-w-0 flex-1">
-          <div className="flex items-center gap-2 flex-wrap">
-            <span className="font-body text-[10px] uppercase tracking-[0.12em] text-on-surface-variant/70">{unit.unitSlug}</span>
-            <span className="font-body text-[9px] uppercase tracking-[0.12em] px-1.5 py-0.5 border"
-              style={{ color: unit.visible ? '#2f6e4d' : '#6b7280', borderColor: unit.visible ? '#2f6e4d55' : '#6b728055' }}>
-              {unit.visible ? 'Visível' : 'Oculto'}
-            </span>
-            {unit.airbnbListed === false && (
-              <span title="A verificação diária detectou que este anúncio está 'não listado' no Airbnb, por isso ele não aparece no site. Volta automaticamente quando você reativar no Airbnb."
-                className="font-body text-[9px] uppercase tracking-[0.12em] text-red-600 border border-red-300 px-1.5 py-0.5">
-                Não listado no Airbnb
-              </span>
-            )}
-          </div>
-          {unit.updatedAt && (
-            <p className="font-body text-[9px] uppercase tracking-widest text-on-surface-variant/40 mt-1">
-              Atualizado em {new Date(unit.updatedAt).toLocaleDateString('pt-BR')}
-            </p>
-          )}
-        </div>
-        <button type="button" onClick={() => save({ visible: !unit.visible })} aria-pressed={unit.visible}
-          className="flex items-center gap-2 font-body text-[10px] uppercase tracking-[0.15em] text-on-surface-variant shrink-0">
-          <span className="relative inline-block w-9 h-5 transition-colors" style={{ background: unit.visible ? GOLD : '#c5c6cd' }}>
-            <span className="absolute top-0.5 w-4 h-4 bg-white transition-all" style={{ left: unit.visible ? 18 : 2 }} />
-          </span>
-        </button>
-      </div>
-
-      {/* Quick actions */}
-      <div className="flex items-center gap-4 mb-4 pb-4 border-b border-outline-variant/20">
-        <Link to={`/admin/apartments/${unit.unitSlug}`} className="font-body text-[10px] uppercase tracking-[0.15em] hover:underline" style={{ color: GOLD }}>
-          Editar →
-        </Link>
-        <a href={unit.propertySlug ? `/properties/${unit.propertySlug}/${unit.unitSlug}` : `/property/${unit.unitSlug}`}
-          target="_blank" rel="noopener noreferrer"
-          className="font-body text-[10px] uppercase tracking-[0.15em] text-on-surface-variant hover:text-primary transition-colors">
-          Ver público →
-        </a>
-      </div>
-
-      {/* Featured on homepage */}
-      <div className="flex items-center justify-between mb-4 pb-4 border-b border-outline-variant/20">
-        <button type="button"
-          onClick={() => onSaveFeatured(isFeatured ? featured.filter((s) => s !== unit.unitSlug) : [...featured, unit.unitSlug])}
-          aria-pressed={isFeatured}
-          className="flex items-center gap-2 font-body text-[10px] uppercase tracking-[0.15em]"
-          style={{ color: isFeatured ? GOLD : 'var(--on-surface-variant, #44474c)' }}>
-          <span>{isFeatured ? '★ Em destaque' : '☆ Destaque na home'}</span>
-          <span className="relative inline-block w-9 h-5 transition-colors" style={{ background: isFeatured ? GOLD : '#c5c6cd' }}>
-            <span className="absolute top-0.5 w-4 h-4 bg-white transition-all" style={{ left: isFeatured ? 18 : 2 }} />
-          </span>
-        </button>
-        {isFeatured && (
-          <label className="flex items-center gap-2 font-body text-[10px] uppercase tracking-[0.12em] text-on-surface-variant/70">
-            Ordem
-            <input type="number" min={1} max={featured.length} value={featuredPos + 1}
-              onChange={(e) => {
-                const pos = Number(e.target.value);
-                if (Number.isFinite(pos)) onSaveFeatured(moveInArray(featured, unit.unitSlug, pos - 1));
-              }}
-              className="w-14 bg-transparent border-b border-outline-variant/50 py-1 text-center font-body text-sm text-on-surface focus:outline-none focus:border-[#C5A059]" />
-          </label>
-        )}
-      </div>
-
-      <div className="grid gap-4 mb-5">
-        <div><label className={label}>Nome</label>
-          <input value={name} onChange={(e) => setName(e.target.value)} onBlur={() => name !== unit.unitName && save({ unitName: name })} className={`${field} font-display text-base`} /></div>
-        <div>
-          <label className={label}>Título de exibição no site <span className="text-on-surface-variant/40 normal-case tracking-normal">(opcional)</span></label>
-          <input value={dispTitle} onChange={(e) => setDispTitle(e.target.value)}
-            onBlur={() => { if (dispTitle.trim() !== storedDisplayTitle) onSaveDisplayTitle(unit.unitSlug, dispTitle.trim()); }}
-            placeholder={cleanListingTitle(originalTitle) || originalTitle} className={field} />
-          <p className="font-body text-[10px] text-on-surface-variant/60 mt-1.5 leading-relaxed">
-            No site aparece: <span style={{ color: GOLD }}>{dispTitle.trim() || cleanListingTitle(originalTitle) || originalTitle}</span>
-            <br />Original do Airbnb: <span className="text-on-surface-variant/50">{originalTitle}</span>
-          </p>
-        </div>
-        <div><label className={label}>Specs</label>
-          <input value={specs} onChange={(e) => setSpecs(e.target.value)} onBlur={() => specs !== (unit.suppliedSpecs || '') && save({ suppliedSpecs: specs })} placeholder="2BED 2BATH" className={field} /></div>
-        <div><label className={label}>Link do Airbnb</label>
-          <input value={airbnb} onChange={(e) => setAirbnb(e.target.value)} onBlur={() => airbnb !== (unit.airbnbUrl || '') && save({ airbnbUrl: airbnb })} className={field} /></div>
-        <div><label className={label}>Postcode</label>
-          <input value={postcode} onChange={(e) => setPostcode(e.target.value)} onBlur={() => postcode !== (unit.postcode || '') && save({ postcode })} placeholder="M3 3EW" className={field} /></div>
-        <div><label className={label}>Área (ft²)</label>
-          <input type="number" value={squareFeet} onChange={(e) => setSquareFeet(e.target.value)}
-            onBlur={() => {
-              const v = squareFeet === '' ? null : Number(squareFeet);
-              if (v !== unit.squareFeet) save({ squareFeet: v });
-            }} placeholder="650" className={field} /></div>
-        <div><label className={label}>Descrição</label>
-          <textarea value={description} onChange={(e) => setDescription(e.target.value)}
-            onBlur={() => description !== (unit.description || '') && save({ description })}
-            rows={3} placeholder="Breve descrição do apartamento…" className={`${field} resize-none`} /></div>
-        <div><label className={label}>iCal Airbnb</label>
-          <input value={icalAirbnb} onChange={(e) => setIcalAirbnb(e.target.value)}
-            onBlur={() => icalAirbnb !== (unit.icalAirbnbUrl || '') && save({ icalAirbnbUrl: icalAirbnb })}
-            placeholder="https://www.airbnb.co.uk/calendar/ical/…" className={field} /></div>
-        <div><label className={label}>iCal VRBO</label>
-          <input value={icalVrbo} onChange={(e) => setIcalVrbo(e.target.value)}
-            onBlur={() => icalVrbo !== (unit.icalVrboUrl || '') && save({ icalVrboUrl: icalVrbo })}
-            placeholder="https://www.vrbo.com/icalendar/…" className={field} /></div>
-      </div>
-
-      <label className={label}>Fotos</label>
-      <div className="flex flex-wrap gap-2 items-start">
-        {unit.photos.map((p, i) => (
-          <div key={p.id} className="flex flex-col items-center gap-1">
-            <PhotoTile photo={p}
-              canLeft={i > 0} canRight={i < unit.photos.length - 1}
-              onMove={(dir) => movePhoto(p.id, dir)}
-              onEditAlt={() => editAlt(p.id, p.alt)}
-              onSetCover={async () => { await api(`/admin/photos/${p.id}`, { method: 'PATCH', body: JSON.stringify({ isPrimary: true }) }); onChanged(); }}
-              onDelete={async () => { if (confirm('Excluir esta foto?')) { await api(`/admin/photos/${p.id}`, { method: 'DELETE' }); onChanged(); } }}
-            />
-            <select
-              value={p.roomCategory || ''}
-              onChange={async (e) => {
-                const roomCategory = e.target.value || null;
-                await api(`/admin/photos/${p.id}`, { method: 'PATCH', body: JSON.stringify({ roomCategory }) });
-                onChanged();
-              }}
-              className="w-24 bg-transparent border-b border-outline-variant/40 font-body text-[9px] text-on-surface-variant focus:outline-none focus:border-[#C5A059] transition-colors py-0.5"
-              title="Categoria do cômodo"
-            >
-              <option value="">— categoria —</option>
-              {ROOM_CATEGORIES.map((cat) => <option key={cat} value={cat}>{cat}</option>)}
-            </select>
-          </div>
-        ))}
-        <button onClick={() => fileRef.current?.click()} className="w-24 h-24 border border-dashed border-outline-variant/70 text-on-surface-variant/60 font-body text-[10px] uppercase tracking-widest hover:border-[#C5A059] hover:text-[#C5A059] transition-colors shrink-0">+ Foto</button>
-        <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={(e) => { const f = e.target.files?.[0]; if (f) uploadPhoto(f); e.target.value = ''; }} />
-      </div>
-
-      {/* Reviews for this specific apartment (keyed by unit slug) */}
-      <div className="mt-5 pt-4 border-t border-outline-variant/20">
-        <button type="button" onClick={() => setShowReviews((v) => !v)}
-          className="w-full flex items-center justify-between font-body text-[10px] uppercase tracking-[0.15em] text-on-surface-variant">
-          <span>Reviews deste apartamento</span>
-          <span style={{ color: GOLD }}>{showReviews ? '▲ fechar' : '▼ gerenciar'}</span>
-        </button>
-        {showReviews && <div className="mt-4"><ReviewsEditor slug={unit.unitSlug} api={api} /></div>}
-      </div>
-
-      <div className="mt-5 pt-4 border-t border-outline-variant/20 flex items-center justify-between">
-        <Status s={status} />
-        <Link
-          to={`/admin/apartments/${unit.unitSlug}`}
-          className="font-body text-[10px] uppercase tracking-[0.15em] text-on-surface-variant hover:text-primary transition-colors"
-        >
-          Editar →
-        </Link>
-      </div>
-    </div>
   );
 }
 
@@ -542,7 +269,6 @@ function ContentTab({ site, api, onChanged }: { site: SiteData; api: ReturnType<
             <StringField k="home.testimonials.eyebrow" title="Sobretítulo" />
             <StringField k="home.testimonials.title" title="Título" />
           </div>
-          <ListEditor k="home.testimonials" title="Depoimentos" blank={{ text: '', name: '', property: '' }} cols={[{ key: 'text', label: 'Depoimento', wide: true }, { key: 'name', label: 'Nome' }, { key: 'property', label: 'Propriedade' }]} />
         </Group>
       </Section>
 
@@ -687,26 +413,77 @@ function ContentTab({ site, api, onChanged }: { site: SiteData; api: ReturnType<
 }
 
 // ── Properties tab ──────────────────────────────────────────────────
-const PROPERTY_SLUGS: { slug: string; label: string }[] = [
-  { slug: 'chambers', label: 'Chambers Residence' },
-  { slug: 'john-dalton-st', label: 'John Dalton Street' },
-  { slug: 'wood-street', label: 'Wood Street' },
-  { slug: 'the-collective', label: 'The Collective' },
-  { slug: 'loom-street', label: 'Loom Street' },
-  { slug: 'newton-street', label: 'Newton Street' },
-  { slug: 'lockgate-mews', label: 'Lockgate Mews' },
-  { slug: 'sezas', label: "Seza's" },
-  { slug: 'crusader', label: 'Crusader' },
-  { slug: 'mm2', label: 'MM2' },
-  { slug: 'spinning-mills', label: 'Spinning Mills' },
-  { slug: 'popworks', label: 'PopWorks' },
-  { slug: 'ancoats', label: 'Ancoats' },
-  { slug: 'old-trafford', label: 'Old Trafford' },
-];
+type CanonicalPropertyField = 'name' | 'area' | 'eyebrow' | 'neighborhoodTitle' | 'description';
 
-function PropertiesTab({ site, api, onChanged }: { site: SiteData; api: ReturnType<typeof useApi>; onChanged: () => void }) {
-  const save = useCallback((key: string, value: unknown) => api(`/admin/content/${key}`, { method: 'PUT', body: JSON.stringify({ value }) }).then(onChanged), [api, onChanged]);
-  const [open, setOpen] = useState<string>(PROPERTY_SLUGS[0].slug);
+function PropertyField({
+  property,
+  propertyField,
+  title,
+  textarea,
+  api,
+  onChanged,
+}: {
+  property: AdminProperty;
+  propertyField: CanonicalPropertyField;
+  title: string;
+  textarea?: boolean;
+  api: ReturnType<typeof useApi>;
+  onChanged: (property: AdminProperty) => void;
+}) {
+  const current = String(property[propertyField] ?? '');
+  const [value, setValue] = useState(current);
+  const [status, setStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
+
+  useEffect(() => {
+    setValue(current);
+  }, [current]);
+
+  async function commit() {
+    if (value === current) return;
+    setStatus('saving');
+    try {
+      const response = await api(`/admin/properties/${encodeURIComponent(property.slug)}`, {
+        method: 'PATCH',
+        body: JSON.stringify({ [propertyField]: value }),
+      });
+      onChanged(response.property);
+      setStatus('saved');
+      setTimeout(() => setStatus('idle'), 1500);
+    } catch {
+      setValue(current);
+      setStatus('error');
+    }
+  }
+
+  return (
+    <div>
+      <div className="flex items-center justify-between"><label className={label}>{title}</label><Status s={status} /></div>
+      {textarea
+        ? <textarea value={value} onChange={(e) => setValue(e.target.value)} onBlur={commit} rows={3} className={`${field} resize-none`} />
+        : <input value={value} onChange={(e) => setValue(e.target.value)} onBlur={commit} className={field} />}
+    </div>
+  );
+}
+
+function PropertiesTab({
+  properties,
+  site,
+  api,
+  onSiteChanged,
+  onPropertyChanged,
+}: {
+  properties: AdminProperty[];
+  site: SiteData;
+  api: ReturnType<typeof useApi>;
+  onSiteChanged: () => void;
+  onPropertyChanged: (property: AdminProperty) => void;
+}) {
+  const save = useCallback((key: string, value: unknown) => api(`/admin/content/${key}`, { method: 'PUT', body: JSON.stringify({ value }) }).then(onSiteChanged), [api, onSiteChanged]);
+  const [open, setOpen] = useState<string>(properties[0]?.slug || '');
+
+  useEffect(() => {
+    if (!open && properties[0]) setOpen(properties[0].slug);
+  }, [open, properties]);
 
   function SF({ k, title, textarea }: { k: string; title: string; textarea?: boolean }) {
     const [v, setV] = useState(String(site.content[k] ?? ''));
@@ -761,33 +538,49 @@ function PropertiesTab({ site, api, onChanged }: { site: SiteData; api: ReturnTy
     <div className="max-w-3xl">
       <p className="font-body text-body-md text-on-surface-variant mb-8">Edite o conteúdo de cada coleção. Clique no nome para expandir.</p>
       <div className="divide-y divide-outline-variant/30 border border-outline-variant/30 rounded-xl overflow-hidden shadow-sm">
-        {PROPERTY_SLUGS.map(({ slug, label: propLabel }) => (
-          <div key={slug}>
-            <button type="button" onClick={() => setOpen(open === slug ? '' : slug)}
+        {properties.map((property) => (
+          <div key={property.slug}>
+            <button type="button" onClick={() => setOpen(open === property.slug ? '' : property.slug)}
               className="w-full flex items-center justify-between py-5 text-left">
-              <span className="font-display text-lg text-primary">{propLabel}</span>
-              <span className="font-body text-[10px] uppercase tracking-[0.12em] text-on-surface-variant/60">{open === slug ? '▲ fechar' : '▼ editar'}</span>
+              <span className="flex items-baseline gap-3 min-w-0">
+                <span className="font-display text-lg text-primary truncate">{property.name}</span>
+                <span className="font-body text-[9px] uppercase tracking-[0.14em] text-on-surface-variant/50 shrink-0">{property.slug}</span>
+              </span>
+              <span className="font-body text-[10px] uppercase tracking-[0.12em] text-on-surface-variant/60">{open === property.slug ? '▲ fechar' : '▼ editar'}</span>
             </button>
-            {open === slug && (
+            {open === property.slug && (
               <div className="grid gap-6 pb-8">
                 <div className="grid grid-cols-2 gap-4">
-                  <SF k={`property.${slug}.name`} title="Nome" />
-                  <SF k={`property.${slug}.area`} title="Área / bairro" />
+                  <PropertyField property={property} propertyField="name" title="Nome" api={api} onChanged={onPropertyChanged} />
+                  <PropertyField property={property} propertyField="area" title="Área / bairro" api={api} onChanged={onPropertyChanged} />
                 </div>
                 <div className="grid grid-cols-2 gap-4">
-                  <SF k={`property.${slug}.eyebrow`} title="Sobretítulo (eyebrow)" />
-                  <SF k={`property.${slug}.neighborhoodTitle`} title="Título do bairro" />
+                  <PropertyField property={property} propertyField="eyebrow" title="Sobretítulo (eyebrow)" api={api} onChanged={onPropertyChanged} />
+                  <PropertyField property={property} propertyField="neighborhoodTitle" title="Título do bairro" api={api} onChanged={onPropertyChanged} />
                 </div>
-                <SF k={`property.${slug}.headline`} title="Headline" />
-                <SF k={`property.${slug}.description`} title="Descrição" textarea />
-                <SF k={`property.${slug}.quote`} title="Citação" textarea />
-                <SpecsField slug={slug} />
-                <LE k={`property.${slug}.amenities`} title="Amenidades" blank={{ item: '' } as unknown as Record<string,string>}
+                <SF k={`property.${property.slug}.headline`} title="Headline" />
+                <PropertyField property={property} propertyField="description" title="Descrição" textarea api={api} onChanged={onPropertyChanged} />
+                <SF k={`property.${property.slug}.quote`} title="Citação" textarea />
+                <SpecsField slug={property.slug} />
+                <LE k={`property.${property.slug}.amenities`} title="Amenidades" blank={{ item: '' } as unknown as Record<string,string>}
                   cols={[{ key: 'item' as never, label: 'Amenidade', wide: true }]} />
-                <LE k={`property.${slug}.nearby`} title="Distâncias / Nearby" blank={{ location: '', time: '' } as Record<string,string>}
+                <LE k={`property.${property.slug}.nearby`} title="Distâncias / Nearby" blank={{ location: '', time: '' } as Record<string,string>}
                   cols={[{ key: 'location', label: 'Local', wide: true }, { key: 'time', label: 'Tempo' }]} />
-                <UnitOrderEditor propertySlug={slug} api={api} />
-                <PropertyGalleryEditor slug={slug} api={api} />
+                <UnitOrderEditor propertySlug={property.slug} api={api} />
+                <PropertyGalleryEditor slug={property.slug} api={api} />
+                <div className="border-t border-outline-variant/20 pt-5">
+                  <p className={label}>Reviews da propriedade</p>
+                  <p className="font-body text-xs text-on-surface-variant/60 mb-3">
+                    Crie, edite, importe e publique reviews no workspace central de Reviews.
+                  </p>
+                  <Link
+                    to={`/admin/reviews?property=${encodeURIComponent(property.slug)}`}
+                    className="inline-flex items-center px-4 py-2 font-body text-[10px] uppercase tracking-[0.15em] border transition-colors"
+                    style={{ borderColor: GOLD, color: GOLD }}
+                  >
+                    Gerir reviews desta propriedade →
+                  </Link>
+                </div>
               </div>
             )}
           </div>
@@ -862,8 +655,11 @@ function UnitOrderEditor({ propertySlug, api }: { propertySlug: string; api: Ret
 
 function PropertyGalleryEditor({ slug, api }: { slug: string; api: ReturnType<typeof useApi> }) {
   const [photos, setPhotos] = useState<Photo[]>([]);
-  const fileRef = useRef<HTMLInputElement>(null);
   const [busy, setBusy] = useState(false);
+  const [pendingKeys, setPendingKeys] = useState<Set<string>>(new Set());
+  const [error, setError] = useState('');
+  const owner = useMemo<MediaOwner>(() => ({ ownerType: 'property', ownerSlug: slug }), [slug]);
+  const { uploadMedia, reorderMedia, patchMedia, deleteMedia } = useMediaMutations(api);
 
   const load = useCallback(async () => {
     const d = await api(`/admin/properties/${slug}/photos`);
@@ -872,171 +668,140 @@ function PropertyGalleryEditor({ slug, api }: { slug: string; api: ReturnType<ty
 
   useEffect(() => { load(); }, [load]);
 
-  async function upload(file: File) {
-    setBusy(true);
-    try {
-      const { base64, type } = await fileToBase64(file);
-      await api(`/admin/properties/${slug}/photos`, { method: 'POST', body: JSON.stringify({ dataBase64: base64, contentType: type, alt: slug }) });
-      load();
-    } finally { setBusy(false); }
+  const items = useMemo<MediaItem[]>(() => photos.map((photo) => ({
+    ...photo,
+    hidden: false,
+  })), [photos]);
+
+  function setPending(item: MediaItem, pending: boolean) {
+    const key = getMediaKey(item);
+    setPendingKeys((previous) => {
+      const next = new Set(previous);
+      if (pending) next.add(key);
+      else next.delete(key);
+      return next;
+    });
   }
 
-  async function move(id: string, dir: -1 | 1) {
+  async function upload(file: File) {
+    setBusy(true);
+    setError('');
+    try {
+      await uploadMedia({ owner, file, alt: slug });
+      await load();
+    } catch (uploadError) {
+      setError(uploadError instanceof Error ? uploadError.message : 'Erro ao enviar foto');
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function move(item: MediaItem, dir: -1 | 1) {
     const ids = photos.map((p) => p.id);
-    const from = ids.indexOf(id); const to = from + dir;
+    const from = item.id ? ids.indexOf(item.id) : -1;
+    const to = from + dir;
     if (from === -1 || to < 0 || to >= ids.length) return;
     [ids[from], ids[to]] = [ids[to], ids[from]];
-    await api(`/admin/properties/${slug}/photos/reorder`, { method: 'POST', body: JSON.stringify({ orderedIds: ids }) });
-    load();
+    const previous = photos;
+    const byId = new Map(photos.map((photo) => [photo.id, photo]));
+    setPhotos(ids.map((id) => byId.get(id)!).filter(Boolean));
+    setPending(item, true);
+    setError('');
+    try {
+      await reorderMedia({ owner, orderedIds: ids });
+      await load();
+    } catch (moveError) {
+      setPhotos(previous);
+      setError(moveError instanceof Error ? moveError.message : 'Erro ao guardar ordem');
+    } finally {
+      setPending(item, false);
+    }
+  }
+
+  async function editAlt(item: MediaItem) {
+    if (!item.id) return;
+    const next = window.prompt('Alt text:', item.alt || '');
+    if (next === null || next === (item.alt || '')) return;
+    setPending(item, true);
+    setError('');
+    try {
+      await patchMedia({ owner, mediaId: item.id, patch: { alt: next || null } });
+      await load();
+    } catch (patchError) {
+      setError(patchError instanceof Error ? patchError.message : 'Erro ao guardar texto alternativo');
+    } finally {
+      setPending(item, false);
+    }
+  }
+
+  async function setCover(item: MediaItem) {
+    if (!item.id || item.isPrimary) return;
+    setPending(item, true);
+    setError('');
+    try {
+      await patchMedia({ owner, mediaId: item.id, patch: { isPrimary: true } });
+      await load();
+    } catch (patchError) {
+      setError(patchError instanceof Error ? patchError.message : 'Erro ao definir capa');
+    } finally {
+      setPending(item, false);
+    }
+  }
+
+  async function remove(item: MediaItem) {
+    if (!item.id || !window.confirm('Excluir foto?')) return;
+    setPending(item, true);
+    setError('');
+    try {
+      await deleteMedia({ owner, mediaId: item.id });
+      await load();
+    } catch (deleteError) {
+      setError(deleteError instanceof Error ? deleteError.message : 'Erro ao excluir foto');
+    } finally {
+      setPending(item, false);
+    }
   }
 
   return (
     <div>
       <label className={label}>Galeria da coleção</label>
-      <div className="flex flex-wrap gap-2 items-center mt-2">
-        {photos.map((p, i) => {
-          const tile = <PhotoTile photo={p}
-            canLeft={i > 0} canRight={i < photos.length - 1}
-            onMove={(dir) => move(p.id, dir)}
-            onEditAlt={async () => { const next = window.prompt('Alt text:', p.alt || ''); if (next !== null) { await api(`/admin/photos/${p.id}`, { method: 'PATCH', body: JSON.stringify({ alt: next }) }); load(); } }}
-            onSetCover={async () => { await api(`/admin/photos/${p.id}`, { method: 'PATCH', body: JSON.stringify({ isPrimary: true }) }); load(); }}
-            onDelete={async () => { if (confirm('Excluir foto?')) { await api(`/admin/photos/${p.id}`, { method: 'DELETE' }); load(); } }}
-          />;
-          return <div key={p.id} style={{ display: 'contents' }}>{tile}</div>;
-        })}
-        <button type="button" onClick={() => fileRef.current?.click()} disabled={busy}
-          className="w-24 h-24 border border-dashed border-outline-variant/50 flex items-center justify-center font-body text-[10px] uppercase tracking-widest text-on-surface-variant/50 hover:border-[#C5A059] transition-colors">
-          {busy ? '…' : '+ Foto'}
-        </button>
-        <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={(e) => { const f = e.target.files?.[0]; if (f) upload(f); e.target.value = ''; }} />
+      {error && <p className="font-body text-xs text-red-600 mt-2">{error}</p>}
+      <div className="mt-2">
+        <MediaGrid
+          owner={owner}
+          groups={[{ key: 'gallery', label: 'Fotos', items }]}
+          pendingKeys={pendingKeys}
+          renderUpload={() => (
+            <label
+              className={`aspect-[4/3] rounded-xl border-2 border-dashed border-outline-variant/40 flex flex-col items-center justify-center gap-1 cursor-pointer transition-colors hover:border-[#C5A059] ${busy ? 'opacity-50 pointer-events-none' : ''}`}
+            >
+              <span className="text-xl" style={{ color: GOLD }}>＋</span>
+              <span className="font-body text-[9px] uppercase tracking-widest text-on-surface-variant/60">
+                {busy ? 'Enviando…' : 'Adicionar foto'}
+              </span>
+              <input
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={(event) => {
+                  const file = event.target.files?.[0];
+                  if (file) upload(file);
+                  event.target.value = '';
+                }}
+              />
+            </label>
+          )}
+          onMove={(_, item, _group, direction) => move(item, direction)}
+          onSetPrimary={(_, item) => setCover(item)}
+          onEditAlt={(_, item) => editAlt(item)}
+          onDelete={(_, item) => remove(item)}
+        />
       </div>
     </div>
   );
 }
 
 type ReviewRow = { id: string; propertySlug: string; name: string | null; date: string | null; text: string | null; rating: number; published: boolean; displayOrder: number; avatarUrl: string | null; sourceReviewId: string | null };
-
-function ReviewsEditor({ slug, api }: { slug: string; api: ReturnType<typeof useApi> }) {
-  const [reviews, setReviews] = useState<ReviewRow[]>([]);
-  const [loading, setLoading] = useState(true);
-
-  const load = useCallback(async () => {
-    setLoading(true);
-    try { const d = await api(`/admin/reviews?property=${slug}`); setReviews(Array.isArray(d) ? d : []); }
-    finally { setLoading(false); }
-  }, [api, slug]);
-
-  useEffect(() => { load(); }, [load]);
-
-  async function add() {
-    await api('/admin/reviews', { method: 'POST', body: JSON.stringify({ propertySlug: slug, name: 'Nome', date: 'Mês AAAA', text: '', rating: 5, displayOrder: reviews.length + 1 }) });
-    load();
-  }
-
-  async function update(id: string, patch: Partial<ReviewRow>) {
-    await api(`/admin/reviews/${id}`, { method: 'PATCH', body: JSON.stringify(patch) });
-    setReviews((prev) => prev.map((r) => r.id === id ? { ...r, ...patch } : r));
-  }
-
-  async function remove(id: string) {
-    if (!window.confirm('Remover este review?')) return;
-    await api(`/admin/reviews/${id}`, { method: 'DELETE' });
-    setReviews((prev) => prev.filter((r) => r.id !== id));
-  }
-
-  return (
-    <div>
-      <div className="flex items-center justify-between mb-3">
-        <label className={label}>Reviews</label>
-        <span className="font-body text-[10px] text-on-surface-variant/50">{loading ? 'carregando…' : `${reviews.length} reviews`}</span>
-      </div>
-      <ImportBox slug={slug} api={api} onDone={load} />
-      <div className="space-y-4">
-        {reviews.map((r) => (
-          <div key={r.id} className="border border-outline-variant/30 rounded-xl shadow-sm p-4 grid gap-3" style={{ opacity: r.published ? 1 : 0.5 }}>
-            <div className="flex items-center gap-3">
-              <input value={r.name || ''} placeholder="Nome" onChange={(e) => update(r.id, { name: e.target.value })} className={`${field} flex-1`} />
-              <input value={r.date || ''} placeholder="Mês AAAA" onChange={(e) => update(r.id, { date: e.target.value })} className={`${field} w-32`} />
-              <input type="number" value={r.rating} min={1} max={5} step={0.1} onChange={(e) => update(r.id, { rating: Number(e.target.value) })} className={`${field} w-16`} title="Nota" />
-            </div>
-            <textarea value={r.text || ''} placeholder="Texto do review…" rows={2} onChange={(e) => update(r.id, { text: e.target.value })} className={`${field} resize-none`} />
-            <div className="flex items-center gap-3">
-              {r.avatarUrl
-                ? <img src={r.avatarUrl} alt={r.name || ''} className="w-9 h-9 rounded-full object-cover shrink-0" />
-                : <div className="w-9 h-9 rounded-full bg-outline-variant/20 shrink-0" />}
-              <input value={r.avatarUrl || ''} placeholder="URL da foto (avatar do Airbnb)" onChange={(e) => update(r.id, { avatarUrl: e.target.value })} className={`${field} flex-1`} />
-              <input value={r.sourceReviewId || ''} placeholder="Airbnb review-id" onChange={(e) => update(r.id, { sourceReviewId: e.target.value })} className={`${field} w-40`} title="data-review-id do Airbnb (evita duplicata)" />
-            </div>
-            <div className="flex items-center gap-4">
-              <button type="button" onClick={() => update(r.id, { published: !r.published })}
-                className="font-body text-[10px] uppercase tracking-[0.12em] text-on-surface-variant/70">
-                {r.published ? '● Publicado' : '○ Oculto'}
-              </button>
-              <button type="button" onClick={() => remove(r.id)} className="font-body text-[10px] uppercase tracking-[0.12em] text-red-500 ml-auto">Remover</button>
-            </div>
-          </div>
-        ))}
-        <button onClick={add} className="font-body text-[10px] uppercase tracking-[0.15em] text-[#C5A059]">+ Adicionar review</button>
-      </div>
-    </div>
-  );
-}
-
-// Paste/upload copied Airbnb review HTML → parse client-side → batch import.
-function ImportBox({ slug, api, onDone }: { slug: string; api: ReturnType<typeof useApi>; onDone: () => void }) {
-  const [open, setOpen] = useState(false);
-  const [html, setHtml] = useState('');
-  const [busy, setBusy] = useState(false);
-  const [msg, setMsg] = useState('');
-
-  function onFile(e: ChangeEvent<HTMLInputElement>) {
-    const f = e.target.files?.[0];
-    if (!f) return;
-    f.text().then(setHtml);
-  }
-
-  async function doImport() {
-    setMsg('');
-    const parsed = parseAirbnbReviews(html);
-    if (parsed.length === 0) { setMsg('Nenhum review encontrado no HTML colado.'); return; }
-    setBusy(true);
-    try {
-      const res = await api('/admin/reviews/import', { method: 'POST', body: JSON.stringify({ propertySlug: slug, reviews: parsed }) });
-      setMsg(`${res.added} adicionado(s), ${res.skipped} duplicado(s) ignorado(s).`);
-      setHtml('');
-      onDone();
-    } catch {
-      setMsg('Falha ao importar.');
-    } finally {
-      setBusy(false);
-    }
-  }
-
-  if (!open) {
-    return (
-      <button onClick={() => setOpen(true)} className="mb-4 font-body text-[10px] uppercase tracking-[0.15em] text-[#C5A059]">
-        ↑ Importar reviews do Airbnb (HTML)
-      </button>
-    );
-  }
-
-  return (
-    <div className="mb-4 border border-outline-variant/30 rounded-xl shadow-sm p-4 grid gap-3">
-      <p className="font-body text-[11px] text-on-surface-variant/70">
-        Cole o HTML copiado do Airbnb (Inspect → Copy outerHTML) ou envie um arquivo .html. O sistema extrai nome, foto, nota, texto e o review-id automaticamente.
-      </p>
-      <textarea value={html} placeholder="Cole aqui o HTML das reviews…" rows={5} onChange={(e) => setHtml(e.target.value)} className={`${field} resize-none font-mono text-[11px]`} />
-      <div className="flex items-center gap-3 flex-wrap">
-        <input type="file" accept=".html,text/html" onChange={onFile} className="font-body text-[11px] text-on-surface-variant" />
-        <button onClick={doImport} disabled={busy || !html.trim()} className="font-body text-[10px] uppercase tracking-[0.15em] text-[#C5A059] disabled:opacity-40">
-          {busy ? 'Importando…' : 'Importar'}
-        </button>
-        <button onClick={() => { setOpen(false); setHtml(''); setMsg(''); }} className="font-body text-[10px] uppercase tracking-[0.12em] text-on-surface-variant/50">Fechar</button>
-        {msg && <span className="font-body text-[11px] text-on-surface-variant ml-auto">{msg}</span>}
-      </div>
-    </div>
-  );
-}
 
 // ── Reviews tab (global, cross-apartment manager — Phase 16) ────────
 // Review.propertySlug is used 1:1 as the owning unit's unitSlug in practice
@@ -1626,12 +1391,19 @@ function DashboardTab({ units, onGoToApartments, onGoToPhotos }: {
   );
 }
 
-function PhotosTab({ units, api, onChanged }: { units: Unit[]; api: ReturnType<typeof useApi>; onChanged: () => void }) {
+function PhotosTab({ units, api, onChanged }: { units: Unit[]; api: ReturnType<typeof useApi>; onChanged: () => void | Promise<void> }) {
   const [selectedPropertySlug, setSelectedPropertySlug] = useState('');
   const [selectedUnitSlug, setSelectedUnitSlug] = useState('');
   const [status, setStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
+  const [error, setError] = useState('');
+  const [pendingKeys, setPendingKeys] = useState<Set<string>>(new Set());
   const [bulkCat, setBulkCat] = useState('');
   const fileRef = useRef<HTMLInputElement>(null);
+  const owner = useMemo<MediaOwner>(
+    () => ({ ownerType: 'unit', ownerSlug: selectedUnitSlug }),
+    [selectedUnitSlug],
+  );
+  const { uploadMedia, reorderMedia, patchMedia, deleteMedia } = useMediaMutations(api);
 
   // Build ordered property list from loaded units
   const properties = useMemo(() => {
@@ -1647,70 +1419,145 @@ function PhotosTab({ units, api, onChanged }: { units: Unit[]; api: ReturnType<t
 
   const currentUnit = units.find((u) => u.unitSlug === selectedUnitSlug);
 
-  const sortedPhotos = useMemo(
-    () => [...(currentUnit?.photos || [])].sort((a, b) => a.displayOrder - b.displayOrder),
+  const sortedPhotos = useMemo<MediaItem[]>(
+    () => [...(currentUnit?.photos || [])]
+      .sort((a, b) => a.displayOrder - b.displayOrder)
+      .map((photo) => ({ ...photo, hidden: photo.hidden ?? false })),
     [currentUnit],
   );
 
   // Group sorted photos by roomCategory for display
   const groups = useMemo(() => {
-    const map = new Map<string, Photo[]>();
+    const map = new Map<string, MediaItem[]>();
     const order: string[] = [];
     for (const p of sortedPhotos) {
       const cat = p.roomCategory || '';
       if (!map.has(cat)) { map.set(cat, []); order.push(cat); }
       map.get(cat)!.push(p);
     }
-    return order.map((cat) => ({ cat, photos: map.get(cat)! }));
+    return order.map((cat) => ({ key: cat, label: cat || 'Sem categoria', items: map.get(cat)! }));
   }, [sortedPhotos]);
 
   const uncategorizedCount = sortedPhotos.filter((p) => !p.roomCategory).length;
 
-  async function uploadPhoto(file: File) {
-    if (!selectedUnitSlug || !currentUnit) return;
-    const { base64, type } = await fileToBase64(file);
-    try {
-      await api(`/admin/units/${selectedUnitSlug}/photos`, {
-        method: 'POST',
-        body: JSON.stringify({ dataBase64: base64, contentType: type, alt: currentUnit.unitName }),
-      });
-      onChanged();
-    } catch { setStatus('error'); }
+  function setPending(item: MediaItem, pending: boolean) {
+    const key = getMediaKey(item);
+    setPendingKeys((previous) => {
+      const next = new Set(previous);
+      if (pending) next.add(key);
+      else next.delete(key);
+      return next;
+    });
   }
 
-  async function moveCategoryPhoto(id: string, dir: -1 | 1, catKey: string) {
+  function markSaved() {
+    setStatus('saved');
+    setTimeout(() => setStatus('idle'), 1200);
+  }
+
+  async function uploadPhoto(file: File) {
+    if (!selectedUnitSlug || !currentUnit) return;
+    setStatus('saving');
+    setError('');
+    try {
+      await uploadMedia({ owner, file, alt: currentUnit.unitName });
+      await Promise.resolve(onChanged());
+      markSaved();
+    } catch (uploadError) {
+      setStatus('error');
+      setError(uploadError instanceof Error ? uploadError.message : 'Erro ao enviar foto');
+    }
+  }
+
+  async function moveCategoryPhoto(item: MediaItem, dir: -1 | 1, catKey: string) {
+    if (!item.id) return;
     const catPhotos = sortedPhotos.filter((p) => (p.roomCategory || '') === catKey);
-    const catIdx = catPhotos.findIndex((p) => p.id === id);
+    const catIdx = catPhotos.findIndex((p) => p.id === item.id);
     const swapIdx = catIdx + dir;
     if (catIdx === -1 || swapIdx < 0 || swapIdx >= catPhotos.length) return;
 
-    const ids = sortedPhotos.map((p) => p.id);
-    const gA = ids.indexOf(id);
-    const gB = ids.indexOf(catPhotos[swapIdx].id);
+    const ids = sortedPhotos.map((p) => p.id).filter((id): id is string => Boolean(id));
+    const gA = ids.indexOf(item.id);
+    const swapId = catPhotos[swapIdx].id;
+    if (!swapId) return;
+    const gB = ids.indexOf(swapId);
     [ids[gA], ids[gB]] = [ids[gB], ids[gA]];
 
     setStatus('saving');
+    setError('');
+    setPending(item, true);
     try {
-      await api(`/admin/units/${selectedUnitSlug}/photos/reorder`, { method: 'POST', body: JSON.stringify({ orderedIds: ids }) });
-      setStatus('saved'); setTimeout(() => setStatus('idle'), 1200); onChanged();
-    } catch { setStatus('error'); }
+      await reorderMedia({ owner, orderedIds: ids });
+      await Promise.resolve(onChanged());
+      markSaved();
+    } catch (moveError) {
+      setStatus('error');
+      setError(moveError instanceof Error ? moveError.message : 'Erro ao guardar ordem');
+    } finally {
+      setPending(item, false);
+    }
   }
 
-  async function setCategory(id: string, roomCategory: string | null) {
+  async function patchPhoto(item: MediaItem, patch: Parameters<typeof patchMedia>[0]['patch'], fallbackError: string) {
+    if (!item.id) return;
     setStatus('saving');
+    setError('');
+    setPending(item, true);
     try {
-      await api(`/admin/photos/${id}`, { method: 'PATCH', body: JSON.stringify({ roomCategory }) });
-      setStatus('saved'); setTimeout(() => setStatus('idle'), 1200); onChanged();
-    } catch { setStatus('error'); }
+      await patchMedia({ owner, mediaId: item.id, patch });
+      await Promise.resolve(onChanged());
+      markSaved();
+    } catch (patchError) {
+      setStatus('error');
+      setError(patchError instanceof Error ? patchError.message : fallbackError);
+    } finally {
+      setPending(item, false);
+    }
   }
 
-  async function bulkSetCategory(ids: string[], roomCategory: string | null) {
-    if (!ids.length) return;
+  async function bulkSetCategory(items: MediaItem[], roomCategory: string | null) {
+    const withIds = items.filter((item): item is MediaItem & { id: string } => Boolean(item.id));
+    if (!withIds.length) return;
     setStatus('saving');
+    setError('');
+    withIds.forEach((item) => setPending(item, true));
     try {
-      await Promise.all(ids.map((id) => api(`/admin/photos/${id}`, { method: 'PATCH', body: JSON.stringify({ roomCategory }) })));
-      setStatus('saved'); setTimeout(() => setStatus('idle'), 1200); onChanged();
-    } catch { setStatus('error'); }
+      await Promise.all(withIds.map((item) => patchMedia({
+        owner,
+        mediaId: item.id,
+        patch: { roomCategory },
+      })));
+      await Promise.resolve(onChanged());
+      markSaved();
+    } catch (bulkError) {
+      setStatus('error');
+      setError(bulkError instanceof Error ? bulkError.message : 'Erro ao guardar categorias');
+    } finally {
+      withIds.forEach((item) => setPending(item, false));
+    }
+  }
+
+  async function editAlt(item: MediaItem) {
+    const next = window.prompt('Alt text:', item.alt || '');
+    if (next === null || next === (item.alt || '')) return;
+    await patchPhoto(item, { alt: next || null }, 'Erro ao guardar texto alternativo');
+  }
+
+  async function removePhoto(item: MediaItem) {
+    if (!item.id || !window.confirm(`Excluir esta foto${item.alt ? ` (${item.alt})` : ''}?`)) return;
+    setStatus('saving');
+    setError('');
+    setPending(item, true);
+    try {
+      await deleteMedia({ owner, mediaId: item.id });
+      await Promise.resolve(onChanged());
+      markSaved();
+    } catch (deleteError) {
+      setStatus('error');
+      setError(deleteError instanceof Error ? deleteError.message : 'Erro ao excluir foto');
+    } finally {
+      setPending(item, false);
+    }
   }
 
   return (
@@ -1768,6 +1615,7 @@ function PhotosTab({ units, api, onChanged }: { units: Unit[]; api: ReturnType<t
               <p className="font-body text-sm text-on-surface-variant mt-0.5">
                 {currentUnit.unitName} · {sortedPhotos.length} foto{sortedPhotos.length !== 1 ? 's' : ''}
               </p>
+              {error && <p className="font-body text-xs text-red-600 mt-1">{error}</p>}
               {currentUnit.airbnbUrl && (
                 <p className="font-body text-[10px] text-on-surface-variant/40 mt-1 truncate max-w-xs">{currentUnit.airbnbUrl}</p>
               )}
@@ -1782,7 +1630,10 @@ function PhotosTab({ units, api, onChanged }: { units: Unit[]; api: ReturnType<t
               </button>
               <input
                 ref={fileRef} type="file" accept="image/*" multiple className="hidden"
-                onChange={(e) => { Array.from(e.target.files || []).forEach((f) => uploadPhoto(f as File)); e.target.value = ''; }}
+                onChange={async (event) => {
+                  for (const file of Array.from(event.currentTarget.files || []) as File[]) await uploadPhoto(file);
+                  event.target.value = '';
+                }}
               />
             </div>
           </div>
@@ -1805,8 +1656,7 @@ function PhotosTab({ units, api, onChanged }: { units: Unit[]; api: ReturnType<t
                 {bulkCat && (
                   <button
                     onClick={async () => {
-                      const ids = sortedPhotos.filter((p) => !p.roomCategory).map((p) => p.id);
-                      await bulkSetCategory(ids, bulkCat);
+                      await bulkSetCategory(sortedPhotos.filter((photo) => !photo.roomCategory), bulkCat);
                       setBulkCat('');
                     }}
                     className="font-body text-[10px] uppercase tracking-widest text-amber-700 hover:text-amber-900 underline"
@@ -1831,50 +1681,26 @@ function PhotosTab({ units, api, onChanged }: { units: Unit[]; api: ReturnType<t
           )}
 
           {/* Photos grouped by room category */}
-          {groups.map(({ cat, photos: catPhotos }) => (
-            <div key={cat || '_uncategorized'} className="space-y-3">
-              <div className="flex items-center gap-3">
-                <h3 className="font-body text-[11px] uppercase tracking-[0.15em]" style={{ color: cat ? NAVY : '#92400e' }}>
-                  {cat || 'Sem categoria'}
-                </h3>
-                <span className="font-body text-[10px] text-on-surface-variant/50">
-                  {catPhotos.length} foto{catPhotos.length !== 1 ? 's' : ''}
-                </span>
-                <div className="flex-1 h-px bg-outline-variant/20" />
-              </div>
-              <div className="flex flex-wrap gap-3 items-start">
-                {catPhotos.map((p, i) => (
-                  <div key={p.id} className="flex flex-col items-center gap-1.5">
-                    <PhotoTile
-                      photo={p}
-                      canLeft={i > 0}
-                      canRight={i < catPhotos.length - 1}
-                      onMove={(dir) => moveCategoryPhoto(p.id, dir, cat)}
-                      onEditAlt={() => {
-                        const next = window.prompt('Alt text:', p.alt || '');
-                        if (next !== null) api(`/admin/photos/${p.id}`, { method: 'PATCH', body: JSON.stringify({ alt: next }) }).then(onChanged).catch(() => {});
-                      }}
-                      onSetCover={() => api(`/admin/photos/${p.id}`, { method: 'PATCH', body: JSON.stringify({ isPrimary: true }) }).then(onChanged).catch(() => {})}
-                      onDelete={() => {
-                        if (confirm(`Excluir esta foto${p.alt ? ` (${p.alt})` : ''}?`)) {
-                          api(`/admin/photos/${p.id}`, { method: 'DELETE' }).then(onChanged).catch(() => {});
-                        }
-                      }}
-                    />
-                    <select
-                      value={p.roomCategory || ''}
-                      onChange={(e) => setCategory(p.id, e.target.value || null)}
-                      className="w-24 bg-transparent border-b border-outline-variant/40 font-body text-[9px] text-on-surface-variant focus:outline-none focus:border-[#C5A059] transition-colors py-0.5"
-                      title="Categoria da divisão"
-                    >
-                      <option value="">— categoria —</option>
-                      {ROOM_CATEGORIES.map((c) => <option key={c} value={c}>{c}</option>)}
-                    </select>
-                  </div>
-                ))}
-              </div>
-            </div>
-          ))}
+          <MediaGrid
+            owner={owner}
+            groups={groups}
+            categories={ROOM_CATEGORIES}
+            pendingKeys={pendingKeys}
+            onMove={(_, item, category, direction) => moveCategoryPhoto(item, direction, category)}
+            onMoveToGroup={(_, item, category) => {
+              if ((item.roomCategory || '') !== category) {
+                patchPhoto(item, { roomCategory: category || null }, 'Erro ao guardar categoria');
+              }
+            }}
+            onCategoryChange={(_, item, category) =>
+              patchPhoto(item, { roomCategory: category || null }, 'Erro ao guardar categoria')}
+            onToggleHidden={(_, item) =>
+              patchPhoto(item, { hidden: !item.hidden }, 'Erro ao alterar visibilidade')}
+            onSetPrimary={(_, item) =>
+              patchPhoto(item, { isPrimary: true }, 'Erro ao definir capa')}
+            onEditAlt={(_, item) => editAlt(item)}
+            onDelete={(_, item) => removePhoto(item)}
+          />
         </>
       )}
     </div>
@@ -1983,10 +1809,17 @@ function CollectorTab() {
 // ── Main ────────────────────────────────────────────────────────────
 type Tab = 'dashboard' | 'apartments' | 'photos' | 'images' | 'content' | 'properties' | 'reviews' | 'leads' | 'availability' | 'collector';
 
+function resolveAdminTab(queryValue: string | null): Tab {
+  return getLegacyAdminTab(queryValue) ?? 'dashboard';
+}
+
 export default function Admin() {
-  const [token, setToken] = useState<string | null>(() => localStorage.getItem(TOKEN_KEY));
-  const [tab, setTab] = useState<Tab>('dashboard');
+  const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const { token, logout } = useAdminAuth();
+  const tab = resolveAdminTab(searchParams.get('tab'));
   const [units, setUnits] = useState<Unit[]>([]);
+  const [properties, setProperties] = useState<AdminProperty[]>([]);
   const [site, setSite] = useState<SiteData>({ content: {}, images: {} });
   const [loading, setLoading] = useState(false);
   const [query, setQuery] = useState('');
@@ -1994,27 +1827,28 @@ export default function Admin() {
   const [visibilityFilter, setVisibilityFilter] = useState<'all' | 'visible' | 'hidden'>('all');
   const [sortBy, setSortBy] = useState<'name' | 'property' | 'updated'>('property');
   const [page, setPage] = useState(1);
-  const [expandedSlug, setExpandedSlug] = useState<string | null>(null);
   const [selectedSlugs, setSelectedSlugs] = useState<string[]>([]);
   const PAGE_SIZE = 24;
 
-  const logout = useCallback(() => { localStorage.removeItem(TOKEN_KEY); setToken(null); setUnits([]); }, []);
   const api = useApi(token, logout);
 
-  const load = useCallback(async () => {
-    setLoading(true);
+  const load = useCallback(async (showLoading = true) => {
+    if (showLoading) setLoading(true);
     // Settle each request independently — if one endpoint fails (e.g. a missing
     // column on /admin/units), the other still loads so the whole panel doesn't
     // go blank. Each tab shows whatever data it could fetch.
-    const [u, s] = await Promise.allSettled([api('/admin/units'), api('/admin/site')]);
+    const [u, p, s] = await Promise.allSettled([
+      api('/admin/units'),
+      api('/admin/properties'),
+      api('/admin/site'),
+    ]);
     if (u.status === 'fulfilled' && Array.isArray(u.value?.units)) setUnits(u.value.units);
+    if (p.status === 'fulfilled' && Array.isArray(p.value?.properties)) setProperties(p.value.properties);
     if (s.status === 'fulfilled' && s.value) setSite(s.value);
-    setLoading(false);
+    if (showLoading) setLoading(false);
   }, [api]);
 
-  useEffect(() => { if (token) load(); }, [token, load]);
-
-  if (!token) return <Login onLogin={(t) => { localStorage.setItem(TOKEN_KEY, t); setToken(t); }} />;
+  useEffect(() => { load(); }, [load]);
 
   const propertyOptions = [...new Set(units.map((u) => u.propertySlug))]
     .map((slug) => ({ slug, name: units.find((u) => u.propertySlug === slug)?.propertyName || slug }));
@@ -2044,30 +1878,10 @@ export default function Admin() {
   const featured = Array.isArray(site.content['home.featured']) ? (site.content['home.featured'] as string[]) : [];
   const saveFeatured = (next: string[]) =>
     api('/admin/content/home.featured', { method: 'PUT', body: JSON.stringify({ value: next }) }).then(load).catch(() => {});
-  const displayTitles = (site.content['unit.displayTitles'] && typeof site.content['unit.displayTitles'] === 'object'
-    ? site.content['unit.displayTitles'] : {}) as Record<string, string>;
-  const saveDisplayTitle = (slug: string, value: string) => {
-    const next = { ...displayTitles };
-    if (value) next[slug] = value; else delete next[slug];
-    return api('/admin/content/unit.displayTitles', { method: 'PUT', body: JSON.stringify({ value: next }) }).then(load).catch(() => {});
-  };
-
-  const tabs: { id: Tab; label: string }[] = [
-    { id: 'dashboard', label: 'Painel' },
-    { id: 'apartments', label: 'Apartamentos' },
-    { id: 'photos', label: 'Fotos' },
-    { id: 'images', label: 'Imagens' },
-    { id: 'content', label: 'Conteúdo' },
-    { id: 'properties', label: 'Propriedades' },
-    { id: 'reviews', label: 'Reviews' },
-    { id: 'availability', label: 'Disponibilidade' },
-    { id: 'leads', label: 'Leads' },
-    { id: 'collector', label: 'Coletor' },
-  ];
 
   return (
     <AdminShell
-      navItems={tabs.map((t) => ({ id: t.id, label: t.label, onClick: () => setTab(t.id) }))}
+      navItems={ADMIN_NAV_ITEMS}
       activeId={tab}
       breadcrumbs={[{ label: 'Admin' }]}
       rightSlot={
@@ -2080,7 +1894,11 @@ export default function Admin() {
         {loading && <p className="font-body text-on-surface-variant">Carregando…</p>}
 
         {tab === 'dashboard' && !loading && (
-          <DashboardTab units={units} onGoToApartments={(q) => { setQuery(q); setTab('apartments'); }} onGoToPhotos={() => setTab('photos')} />
+          <DashboardTab
+            units={units}
+            onGoToApartments={() => navigate(getAdminNavPath('apartments'))}
+            onGoToPhotos={() => navigate(getAdminNavPath('photos'))}
+          />
         )}
 
         {tab === 'apartments' && !loading && (
@@ -2146,69 +1964,54 @@ export default function Admin() {
                     {pageUnits.map((u) => {
                       const cover = u.photos.find((p) => p.isPrimary) || u.photos[0];
                       const isFeatured = featured.includes(u.unitSlug);
-                      const isExpanded = expandedSlug === u.unitSlug;
                       return (
-                        <Fragment key={u.unitSlug}>
-                          <tr className="border-b border-outline-variant/15 last:border-b-0" style={{ opacity: u.visible ? 1 : 0.55 }}>
-                            <td className="py-3 px-4">
-                              <input type="checkbox" checked={selectedSlugs.includes(u.unitSlug)}
-                                onChange={(e) => setSelectedSlugs((prev) => e.target.checked ? [...prev, u.unitSlug] : prev.filter((s) => s !== u.unitSlug))}
-                                aria-label={`Selecionar ${u.unitName}`} className="w-4 h-4" />
-                            </td>
-                            <td className="py-3 px-4">
-                              {cover ? (
-                                <img src={cover.url} alt="" className="w-12 h-12 rounded-lg object-cover" />
-                              ) : (
-                                <div className="w-12 h-12 rounded-lg border border-dashed border-outline-variant/50" />
+                        <tr key={u.unitSlug} className="border-b border-outline-variant/15 last:border-b-0" style={{ opacity: u.visible ? 1 : 0.55 }}>
+                          <td className="py-3 px-4">
+                            <input type="checkbox" checked={selectedSlugs.includes(u.unitSlug)}
+                              onChange={(e) => setSelectedSlugs((prev) => e.target.checked ? [...prev, u.unitSlug] : prev.filter((s) => s !== u.unitSlug))}
+                              aria-label={`Selecionar ${u.unitName}`} className="w-4 h-4" />
+                          </td>
+                          <td className="py-3 px-4">
+                            {cover ? (
+                              <img src={cover.url} alt="" className="w-12 h-12 rounded-lg object-cover" />
+                            ) : (
+                              <div className="w-12 h-12 rounded-lg border border-dashed border-outline-variant/50" />
+                            )}
+                          </td>
+                          <td className="py-3 px-4">
+                            <div className="flex items-center gap-2 flex-wrap">
+                              <span className="font-body font-semibold text-sm text-on-surface">{u.unitName}</span>
+                              {isFeatured && <span title="Em destaque na home" style={{ color: GOLD }}>★</span>}
+                              {u.airbnbListed === false && (
+                                <span title="A verificação diária detectou que este anúncio está 'não listado' no Airbnb, por isso ele não aparece no site. Volta automaticamente quando você reativar no Airbnb."
+                                  className="font-body text-[9px] uppercase tracking-[0.12em] text-red-600 border border-red-300 px-1.5 py-0.5 rounded">
+                                  Não listado no Airbnb
+                                </span>
                               )}
-                            </td>
-                            <td className="py-3 px-4">
-                              <div className="flex items-center gap-2 flex-wrap">
-                                <span className="font-body font-semibold text-sm text-on-surface">{u.unitName}</span>
-                                {isFeatured && <span title="Em destaque na home" style={{ color: GOLD }}>★</span>}
-                                {u.airbnbListed === false && (
-                                  <span title="A verificação diária detectou que este anúncio está 'não listado' no Airbnb, por isso ele não aparece no site. Volta automaticamente quando você reativar no Airbnb."
-                                    className="font-body text-[9px] uppercase tracking-[0.12em] text-red-600 border border-red-300 px-1.5 py-0.5 rounded">
-                                    Não listado no Airbnb
-                                  </span>
-                                )}
-                              </div>
-                            </td>
-                            <td className="py-3 px-4 font-body text-sm text-on-surface-variant/70">{u.propertyName}</td>
-                            <td className="py-3 px-4 text-center">
-                              <button type="button" onClick={() => api(`/admin/units/${u.unitSlug}`, { method: 'PATCH', body: JSON.stringify({ visible: !u.visible }) }).then(load).catch(() => {})}
-                                aria-pressed={u.visible} aria-label={u.visible ? 'Ocultar apartamento' : 'Tornar apartamento visível'}
-                                className="relative inline-block w-9 h-5 rounded-full transition-colors align-middle" style={{ background: u.visible ? GOLD : '#c5c6cd' }}>
-                                <span className="absolute top-0.5 w-4 h-4 rounded-full bg-white transition-all" style={{ left: u.visible ? 18 : 2 }} />
-                              </button>
-                            </td>
-                            <td className="py-3 px-4">
-                              <div className="flex items-center justify-end gap-3">
-                                <a href={u.propertySlug ? `/properties/${u.propertySlug}/${u.unitSlug}` : `/property/${u.unitSlug}`}
-                                  target="_blank" rel="noopener noreferrer" title="Ver público"
-                                  className="font-body text-[10px] uppercase tracking-[0.15em] text-on-surface-variant/70 hover:text-[#C5A059] transition-colors">
-                                  Ver
-                                </a>
-                                <Link to={`/admin/apartments/${u.unitSlug}`} title="Editar"
-                                  className="font-body text-[10px] uppercase tracking-[0.15em] hover:text-[#C5A059] transition-colors" style={{ color: GOLD }}>
-                                  Editar
-                                </Link>
-                                <button type="button" onClick={() => setExpandedSlug(isExpanded ? null : u.unitSlug)}
-                                  aria-expanded={isExpanded} title={isExpanded ? 'Recolher' : 'Gerenciar (destaque, fotos, reviews)'}
-                                  className="font-body text-[10px] uppercase tracking-[0.15em] text-on-surface-variant/70 hover:text-[#C5A059] transition-colors">
-                                  {isExpanded ? '▲' : '▼'}
-                                </button>
-                              </div>
-                            </td>
-                          </tr>
-                          {isExpanded && (
-                            <tr className="border-b border-outline-variant/15 last:border-b-0">
-                              <td colSpan={6} className="p-5 bg-surface-container-low/40">
-                                <UnitCard unit={u} api={api} onChanged={load} featured={featured} onSaveFeatured={saveFeatured} displayTitles={displayTitles} onSaveDisplayTitle={saveDisplayTitle} />
-                              </td>
-                            </tr>
-                          )}
-                        </Fragment>
+                            </div>
+                          </td>
+                          <td className="py-3 px-4 font-body text-sm text-on-surface-variant/70">{u.propertyName}</td>
+                          <td className="py-3 px-4 text-center">
+                            <button type="button" onClick={() => api(`/admin/units/${u.unitSlug}`, { method: 'PATCH', body: JSON.stringify({ visible: !u.visible }) }).then(load).catch(() => {})}
+                              aria-pressed={u.visible} aria-label={u.visible ? 'Ocultar apartamento' : 'Tornar apartamento visível'}
+                              className="relative inline-block w-9 h-5 rounded-full transition-colors align-middle" style={{ background: u.visible ? GOLD : '#c5c6cd' }}>
+                              <span className="absolute top-0.5 w-4 h-4 rounded-full bg-white transition-all" style={{ left: u.visible ? 18 : 2 }} />
+                            </button>
+                          </td>
+                          <td className="py-3 px-4">
+                            <div className="flex items-center justify-end gap-3">
+                              <a href={u.propertySlug ? `/properties/${u.propertySlug}/${u.unitSlug}` : `/property/${u.unitSlug}`}
+                                target="_blank" rel="noopener noreferrer" title="Ver público"
+                                className="font-body text-[10px] uppercase tracking-[0.15em] text-on-surface-variant/70 hover:text-[#C5A059] transition-colors">
+                                Ver
+                              </a>
+                              <Link to={`/admin/apartments/${u.unitSlug}`} title="Editar"
+                                className="font-body text-[10px] uppercase tracking-[0.15em] hover:text-[#C5A059] transition-colors" style={{ color: GOLD }}>
+                                Editar
+                              </Link>
+                            </div>
+                          </td>
+                        </tr>
                       );
                     })}
                   </tbody>
@@ -2231,10 +2034,20 @@ export default function Admin() {
           </>
         )}
 
-        {tab === 'photos' && !loading && <PhotosTab units={units} api={api} onChanged={load} />}
+        {tab === 'photos' && !loading && <PhotosTab units={units} api={api} onChanged={() => load(false)} />}
         {tab === 'images' && !loading && <ImagesTab site={site} api={api} onChanged={load} />}
         {tab === 'content' && !loading && <ContentTab site={site} api={api} onChanged={load} />}
-        {tab === 'properties' && !loading && <PropertiesTab site={site} api={api} onChanged={load} />}
+        {tab === 'properties' && !loading && (
+          <PropertiesTab
+            properties={properties}
+            site={site}
+            api={api}
+            onSiteChanged={load}
+            onPropertyChanged={(updated) => setProperties((current) =>
+              current.map((property) => property.slug === updated.slug ? updated : property)
+            )}
+          />
+        )}
         {tab === 'reviews' && !loading && <ReviewsTab units={units} api={api} />}
         {tab === 'availability' && !loading && <AvailabilityTab api={api} />}
         {tab === 'leads' && !loading && <LeadsTab api={api} />}

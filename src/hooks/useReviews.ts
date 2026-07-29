@@ -7,10 +7,10 @@ import type { Review } from '../data/reviews';
 type State = { reviews: Review[]; loaded: boolean };
 
 const cache = new Map<string, Promise<Review[]>>();
-function fetchOnce(key: string): Promise<Review[]> {
+function fetchOnce(key: string, url: string): Promise<Review[]> {
   let p = cache.get(key);
   if (!p) {
-    p = fetch(`/api/content/reviews?property=${encodeURIComponent(key)}`)
+    p = fetch(url)
       .then((r) => r.json())
       .then((rows) => (Array.isArray(rows) ? rows : []))
       .catch(() => []);
@@ -19,8 +19,7 @@ function fetchOnce(key: string): Promise<Review[]> {
   return p;
 }
 
-export function useReviews(propertySlug: string | string[]): State {
-  const key = (Array.isArray(propertySlug) ? propertySlug : [propertySlug]).filter(Boolean).join(',');
+function useReviewQuery(key: string, url: string): State {
   const [state, setState] = useState<State>({ reviews: [], loaded: false });
 
   useEffect(() => {
@@ -29,12 +28,21 @@ export function useReviews(propertySlug: string | string[]): State {
       setState({ reviews: [], loaded: true });
       return () => { active = false; };
     }
-    fetchOnce(key).then((rows) => {
+    fetchOnce(key, url).then((rows) => {
       if (!active) return;
       setState({ reviews: rows, loaded: true });
     });
     return () => { active = false; };
-  }, [key]);
+  }, [key, url]);
 
   return state;
+}
+
+export function useReviews(propertySlug: string | string[]): State {
+  const key = (Array.isArray(propertySlug) ? propertySlug : [propertySlug]).filter(Boolean).join(',');
+  return useReviewQuery(key, `/api/content/reviews?property=${encodeURIComponent(key)}`);
+}
+
+export function useFeaturedReviews(): State {
+  return useReviewQuery('__home_featured__', '/api/content/reviews?featured=home');
 }

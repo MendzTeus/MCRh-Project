@@ -33,6 +33,13 @@ describe('Task 1.13 — unauthenticated access to /api/admin/*', () => {
     expect(res.status).toBe(401);
   });
 
+  it('rejects GET and PATCH /api/admin/properties with 401 when no token is sent', async () => {
+    const getRes = await request(app).get('/api/admin/properties');
+    const patchRes = await request(app).patch('/api/admin/properties/chambers').send({ name: 'Chambers Residence' });
+    expect(getRes.status).toBe(401);
+    expect(patchRes.status).toBe(401);
+  });
+
   it('rejects POST /api/admin/units/some-slug/photos (upload) with 401 when no token is sent — Task 5.14', async () => {
     const res = await request(app)
       .post('/api/admin/units/some-slug/photos')

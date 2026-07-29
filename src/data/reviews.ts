@@ -1,4 +1,6 @@
 export type Review = {
+  id?: string;
+  propertySlug?: string;
   name: string;
   date: string;
   text: string;
