@@ -43,7 +43,7 @@ export const airbnbInventory: AirbnbInventoryUnit[] = [
   { propertySlug: 'the-collective', propertyName: 'Wood Street Collective', unitSlug: '22-4-wsc', unitName: 'Room 4', postcode: 'M3 3EF', airbnbUrl: 'https://airbnb.com/h/22-4-wsc' },
   { propertySlug: 'the-collective', propertyName: 'Wood Street Collective', unitSlug: '22-5-wsc', unitName: 'Room 5', postcode: 'M3 3EF', airbnbUrl: 'https://airbnb.com/h/22-5-wsc' },
   { propertySlug: 'the-collective', propertyName: 'Wood Street Collective', unitSlug: '22-6-wsc', unitName: 'Room 6', postcode: 'M3 3EF', airbnbUrl: 'https://airbnb.com/h/22-6-wsc' },
-  { propertySlug: 'the-collective', propertyName: 'Wood Street Collective', unitSlug: 'wood-street-collective-full-house', unitName: 'Full House', postcode: 'M3 3EF' },
+  { propertySlug: 'the-collective', propertyName: 'Wood Street Collective', unitSlug: 'wood-street-collective-full-house', unitName: 'Full House', postcode: 'M3 3EF', airbnbUrl: 'https://airbnb.co.uk/h/6br-mission-house' },
 
   { propertySlug: 'loom-street', propertyName: '8 Loom Street', unitSlug: 'mill-conversion-8', unitName: 'Apartment 8', postcode: 'M4 6AN', airbnbUrl: 'https://www.airbnb.com/h/mill-conversion-8' },
   { propertySlug: 'loom-street', propertyName: '8 Loom Street', unitSlug: 'mill-conversion-3', unitName: 'Apartment 3', postcode: 'M4 6AN', airbnbUrl: 'https://www.airbnb.co.uk/h/mill-conversion-3' },

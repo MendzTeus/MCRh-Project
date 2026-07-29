@@ -1,6 +1,6 @@
 {
-  "generatedAt": "2026-07-06T23:08:43.000Z",
-  "sourceCount": 1,
+  "generatedAt": "2026-07-29T20:36:41.546Z",
+  "sourceCount": 7,
   "results": [
     {
       "propertySlug": "the-collective",
@@ -2156,6 +2156,68 @@
       ],
       "likelyInvalid": false,
       "importedAt": "2026-07-06T20:36:53.384Z"
+    },
+    {
+      "propertySlug": "the-collective",
+      "propertyName": "Wood Street Collective",
+      "unitSlug": "wood-street-collective-full-house",
+      "unitName": "Full House",
+      "suppliedSpecs": null,
+      "postcode": "M3 3EF",
+      "inputUrl": "https://airbnb.co.uk/h/6br-mission-house",
+      "status": 200,
+      "finalUrl": "https://www.airbnb.co.uk/rooms/1594918404152580741",
+      "canonical": "https://www.airbnb.co.uk/rooms/1594918404152580741",
+      "title": "The Mission | 6BR | Historic House | Rooftop Views - Houses for Rent in Greater Manchester, England, United Kingdom - Airbnb",
+      "airbnbName": "The Mission | 6BR | Historic House | Rooftop Views",
+      "ogTitle": "Home in Greater Manchester · 6 bedrooms · 7 beds · 6 bathrooms",
+      "roomType": "Home in Greater Manchester",
+      "rating": "5",
+      "specsFromAirbnb": [
+        "6 bedrooms",
+        "7 beds",
+        "6 bathrooms"
+      ],
+      "guests": 13,
+      "bedrooms": 6,
+      "beds": 7,
+      "baths": 6,
+      "reviewsCount": 1,
+      "primaryImage": "https://a0.muscache.com/im/pictures/hosting/Hosting-1594918404152580741/original/7aeab51a-2dfc-46bb-b710-78db02d5a551.jpeg?im_w=720&width=720&quality=70&auto=webp",
+      "imageUrls": [
+        "https://a0.muscache.com/im/pictures/hosting/Hosting-1594918404152580741/original/7aeab51a-2dfc-46bb-b710-78db02d5a551.jpeg",
+        "https://a0.muscache.com/im/pictures/hosting/Hosting-1575998473231231156/original/6f0a16bf-980d-439a-ac06-b1be22fb3683.jpeg",
+        "https://a0.muscache.com/im/pictures/hosting/Hosting-1594918404152580741/original/69977e3d-f430-4069-8119-a44d7b13a27c.jpeg",
+        "https://a0.muscache.com/im/pictures/hosting/Hosting-1575998473231231156/original/860aec68-8d68-4bb3-a116-1ff61464f2ef.jpeg",
+        "https://a0.muscache.com/im/pictures/hosting/Hosting-1575998473231231156/original/63b4cc55-3637-4024-b234-dff4c5375477.jpeg",
+        "https://a0.muscache.com/im/pictures/hosting/Hosting-1594918404152580741/original/fa5f56c0-eccb-4cb0-8527-98f39b761704.jpeg",
+        "https://a0.muscache.com/im/pictures/hosting/Hosting-1575998473231231156/original/a8e2f4ed-d8bd-49a1-8e38-3416c33720c1.jpeg",
+        "https://a0.muscache.com/im/pictures/hosting/Hosting-1594918404152580741/original/e13341ce-c36b-4f09-adac-1182526809b4.jpeg",
+        "https://a0.muscache.com/im/pictures/user/User/original/0b277c3c-1053-4fa1-b132-895b7f11d07f.jpeg",
+        "https://a0.muscache.com/im/pictures/user/User/original/b9cd4c6a-7968-4e49-97d4-5dfab50741df.jpeg",
+        "https://a0.muscache.com/im/pictures/hosting/Hosting-1594918404152580741/original/91de2beb-b2f4-496f-bd73-e0c600844efe.jpeg",
+        "https://a0.muscache.com/im/pictures/hosting/Hosting-1594918404152580741/original/cc6d171d-90f8-4bb7-a023-70f17753ae34.jpeg",
+        "https://a0.muscache.com/im/pictures/hosting/Hosting-1594918404152580741/original/141d0519-bea8-4ff0-811a-c670af7fffca.jpeg",
+        "https://a0.muscache.com/im/pictures/hosting/Hosting-1594918404152580741/original/33d35c04-8a4e-4e0c-bb8d-134658d73e52.jpeg",
+        "https://a0.muscache.com/im/pictures/hosting/Hosting-1594918404152580741/original/9fc9b85a-b452-403f-b6a8-9fc259c9f44a.jpeg",
+        "https://a0.muscache.com/im/pictures/hosting/Hosting-1594918404152580741/original/35973c82-9c42-4e70-82b2-b86b2f51f210.jpeg",
+        "https://a0.muscache.com/im/pictures/hosting/Hosting-1594918404152580741/original/1989f238-d786-4d27-bfda-b92100a5762f.jpeg",
+        "https://a0.muscache.com/im/pictures/hosting/Hosting-1594918404152580741/original/3d5ede64-1622-4bc1-b819-da7adf645c50.jpeg",
+        "https://a0.muscache.com/im/pictures/hosting/Hosting-1594918404152580741/original/a999c39a-f605-462e-b4e3-0705964d6779.jpeg",
+        "https://a0.muscache.com/im/pictures/hosting/Hosting-1594918404152580741/original/edb00e64-063d-4928-a86a-75edbec67854.jpeg",
+        "https://a0.muscache.com/im/pictures/hosting/Hosting-1594918404152580741/original/306d4ad9-e4ea-4867-b32b-035e53b47e8e.jpeg",
+        "https://a0.muscache.com/im/pictures/hosting/Hosting-1594918404152580741/original/bf86ee43-33a0-4798-a0ea-5ee1ea3ec910.jpeg",
+        "https://a0.muscache.com/im/pictures/hosting/Hosting-1594918404152580741/original/87365bbf-f4af-453b-b527-afdcd3d137bd.jpeg",
+        "https://a0.muscache.com/im/pictures/hosting/Hosting-1594918404152580741/original/7f433387-6ae2-42d7-b347-688524778658.jpeg",
+        "https://a0.muscache.com/im/pictures/hosting/Hosting-1594918404152580741/original/9cf170f4-b863-4c8a-b6e8-d38fa93631ca.jpeg",
+        "https://a0.muscache.com/im/pictures/hosting/Hosting-1594918404152580741/original/005ca3ef-5a1f-4c0e-878a-892bdadc94e7.jpeg",
+        "https://a0.muscache.com/im/pictures/hosting/Hosting-1594918404152580741/original/32ba3510-14fb-4f19-b32b-abfd7082c459.jpeg",
+        "https://a0.muscache.com/im/pictures/hosting/Hosting-1594918404152580741/original/57a7f572-f732-4334-bb2c-b2711f229be8.jpeg",
+        "https://a0.muscache.com/im/pictures/hosting/Hosting-1594918404152580741/original/dc4ed4c5-53fb-4f26-9411-b904db6c9b4b.jpeg",
+        "https://a0.muscache.com/im/pictures/hosting/Hosting-1594918404152580741/original/c81201e1-9511-4b06-8676-5714c95a1906.jpeg"
+      ],
+      "likelyInvalid": false,
+      "importedAt": "2026-07-29T20:36:41.540Z"
     }
   ]
 }
