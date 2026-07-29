@@ -3,12 +3,7 @@ import { useSiteContent, list, text } from '../hooks/useSiteContent';
 
 export default function Footer() {
   const site = useSiteContent();
-  const links = list<{ label: string; href: string }>(site.content, 'footer.links', [
-    { label: 'Privacy Policy', href: '#' },
-    { label: 'Terms of Service', href: '#' },
-    { label: 'Sustainability', href: '#' },
-    { label: 'Careers', href: '#' },
-  ]);
+  const links = list<{ label: string; href: string }>(site.content, 'footer.links', []);
   const social = list<{ label: string; href: string }>(site.content, 'footer.social', []);
   return (
     <footer className="bg-surface-container-low w-full py-16 font-body text-body-md transition-all border-t border-outline-variant/30">

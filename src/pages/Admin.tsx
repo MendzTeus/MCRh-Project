@@ -359,17 +359,7 @@ function ContentTab({ site, api, onChanged }: { site: SiteData; api: ReturnType<
         <Group title="Service Architecture">
           <StringField k="management.services.eyebrow" title="Sobretítulo" />
           <StringField k="management.services.title" title="Título" />
-          <ListEditor k="management.services.cards" title="Cards de serviço (4)" blank={{ title: '', desc: '' }} cols={[{ key: 'title', label: 'Título' }, { key: 'desc', label: 'Descrição', wide: true }]} />
-        </Group>
-        <Group title="Transparent Reporting">
-          <StringField k="management.reporting.title" title="Título" />
-          <StringField k="management.reporting.paragraph" title="Parágrafo" textarea />
-          <ListEditor k="management.reporting.bullets" title="Bullets" blank={{ item: '' }} cols={[{ key: 'item', label: 'Item', wide: true }]} />
-        </Group>
-        <Group title="Partner Criteria">
-          <StringField k="management.partner.title" title="Título" />
-          <StringField k="management.partner.paragraph" title="Intro" textarea />
-          <ListEditor k="management.partner.bullets" title="Bullets" blank={{ item: '' }} cols={[{ key: 'item', label: 'Item', wide: true }]} />
+          <ListEditor k="management.services.cards" title="Cards de serviço (6)" blank={{ title: '', desc: '' }} cols={[{ key: 'title', label: 'Título' }, { key: 'desc', label: 'Descrição', wide: true }]} />
         </Group>
       </Section>
 
