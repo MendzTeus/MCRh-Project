@@ -7,6 +7,7 @@ export type PublicUnit = {
   propertySlug: string;
   propertyName: string;
   suppliedSpecs: string | null;
+  maxGuests: number | null;
   postcode: string | null;
   airbnbUrl: string | null;
   description: string | null;

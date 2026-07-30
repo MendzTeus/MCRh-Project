@@ -2,7 +2,7 @@ import 'leaflet/dist/leaflet.css';
 import { Link } from 'react-router-dom';
 import { Helmet } from 'react-helmet-async';
 import { useState, useRef, useEffect, useMemo } from 'react';
-import { Calendar, User, SlidersHorizontal, ArrowUpDown, Heart, Bed, Bath, Plus, Minus, X } from 'lucide-react';
+import { Calendar, User, SlidersHorizontal, ArrowUpDown, Heart, Bed, Bath, Plus, Minus } from 'lucide-react';
 import type { MapLocation } from '../data/locations';
 import { pois } from '../data/pois';
 import { airbnbInventory, inventoryRegions, getRegionForProperty, type AirbnbInventoryUnit } from '../data/airbnbInventory';
@@ -16,8 +16,10 @@ import DateRangePicker from '../components/DateRangePicker';
 
 function specsToNumbers(specs?: string) {
   if (!specs) return { beds: 1, baths: 1 };
-  const bedMatch = specs.match(/(\d+)BED/);
-  const bathMatch = specs.match(/(\d+)BATH/);
+  // Handles both the static inventory's "2BED 2BATH" and the admin-edited
+  // DB overrides' "2 Bedrooms 2 Bathrooms" formats.
+  const bedMatch = specs.match(/(\d+)\s*BED/i);
+  const bathMatch = specs.match(/(\d+)\s*BATH/i);
   return { beds: bedMatch ? parseInt(bedMatch[1]) : 1, baths: bathMatch ? parseInt(bathMatch[1]) : 1 };
 }
 
@@ -103,20 +105,19 @@ function PropertiesMap({
         };
       });
 
-      // Points of interest — deliberately styled apart from property pins (small
-      // blue landmark dot) so guests can tell landmarks from rentals at a glance.
-      const poiIcon = L.divIcon({
+      // Points of interest — always-visible label card like the property pins,
+      // but in blue so guests can tell landmarks from rentals at a glance
+      // without having to hover.
+      const makePoiIcon = (name: string) => L.divIcon({
         className: '',
-        html: `<div style="width:14px;height:14px;border-radius:50%;background:#2563eb;border:2px solid #fff;box-shadow:0 1px 5px rgba(0,0,0,0.35);"></div>`,
-        iconSize: [14, 14],
-        iconAnchor: [7, 7],
+        html: `<div style="background:#2563eb;color:#fff;font-size:10px;font-weight:600;padding:3px 8px;border-radius:4px;white-space:nowrap;box-shadow:0 2px 6px rgba(37,99,235,0.4);font-family:sans-serif;position:relative;">${escapeMapText(name)}<div style="position:absolute;bottom:-4px;left:50%;transform:translateX(-50%);width:0;height:0;border-left:4px solid transparent;border-right:4px solid transparent;border-top:4px solid #2563eb;"></div></div>`,
+        iconSize: [100, 22], iconAnchor: [50, 26],
       });
       pois.forEach((poi) => {
-        L.marker([poi.coordinates.lat, poi.coordinates.lng], { icon: poiIcon, zIndexOffset: -500 })
+        L.marker([poi.coordinates.lat, poi.coordinates.lng], { icon: makePoiIcon(poi.name), zIndexOffset: -500 })
           .addTo(map)
-          .bindTooltip(poi.name, { direction: 'top', offset: [0, -8] })
           .bindPopup(
-            `<div style="font-family:sans-serif;min-width:140px"><b style="font-size:13px;color:#2563eb">${poi.name}</b><br/><span style="font-size:12px;color:#666">${poi.postcode}</span></div>`,
+            `<div style="font-family:sans-serif;min-width:140px"><b style="font-size:13px;color:#2563eb">${escapeMapText(poi.name)}</b><br/><span style="font-size:12px;color:#666">${escapeMapText(poi.postcode)}</span></div>`,
             { closeButton: false, offset: [0, -6] }
           );
       });
@@ -198,7 +199,6 @@ export default function Properties() {
   const [filterOpen, setFilterOpen] = useState(false);
   const [filterMinBeds, setFilterMinBeds] = useState(0);
   const [filterRegion, setFilterRegion] = useState<string | null>(null);
-  const [filterAvailOnly, setFilterAvailOnly] = useState(false);
 
   // Refs for scrolling to groups from map click
   const groupRefs = useRef<Record<string, HTMLDivElement | null>>({});
@@ -253,7 +253,9 @@ export default function Properties() {
       .filter((u) => !publicUnits.hidden.has(u.unitSlug))
       .map((u) => {
         const o = publicUnits.overrides.get(u.unitSlug);
-        return o ? { ...u, unitName: o.unitName || u.unitName, suppliedSpecs: o.suppliedSpecs || u.suppliedSpecs, airbnbUrl: o.airbnbUrl || u.airbnbUrl } : u;
+        return o
+          ? { ...u, unitName: o.unitName || u.unitName, suppliedSpecs: o.suppliedSpecs || u.suppliedSpecs, airbnbUrl: o.airbnbUrl || u.airbnbUrl, maxGuests: o.maxGuests ?? null }
+          : { ...u, maxGuests: null as number | null };
       });
     return groupByProperty(inv).map((group) => ({
       ...group,
@@ -270,7 +272,12 @@ export default function Properties() {
       units: g.units.filter((unit) => {
         const { beds } = specsToNumbers(unit.suppliedSpecs);
         if (filterMinBeds > 0 && beds < filterMinBeds) return false;
-        if (filterAvailOnly && availability && availability[unit.unitSlug] === false) return false;
+        // Once dates are picked, don't show apartments the guest can't book anyway.
+        if (availability && availability[unit.unitSlug] === false) return false;
+        // Prefer the admin-set capacity; fall back to an estimate from bed count
+        // when it hasn't been configured. Units with no data at all stay visible.
+        const capacity = unit.maxGuests ?? (unit.suppliedSpecs ? beds * 2 : null);
+        if (capacity !== null && guests > capacity) return false;
         return true;
       }),
     })).filter((g) => g.units.length > 0);
@@ -291,10 +298,10 @@ export default function Properties() {
       });
     }
     return groups;
-  }, [overlaidGroups, sortBy, filterMinBeds, filterRegion, filterAvailOnly, availability]);
+  }, [overlaidGroups, sortBy, filterMinBeds, filterRegion, availability, guests]);
 
   const totalDisplayed = displayedGroups.reduce((sum, g) => sum + g.units.length, 0);
-  const hasActiveFilters = filterMinBeds > 0 || filterRegion !== null || filterAvailOnly;
+  const hasActiveFilters = filterMinBeds > 0 || filterRegion !== null;
   const sortLabel = SORT_OPTIONS.find((o) => o.value === sortBy)?.label ?? 'Sort';
 
   return (
@@ -386,7 +393,7 @@ export default function Properties() {
                     <SlidersHorizontal style={{ width: 14, height: 14 }} />
                     Filters
                     {hasActiveFilters && (
-                      <span onClick={(e) => { e.stopPropagation(); setFilterMinBeds(0); setFilterRegion(null); setFilterAvailOnly(false); }} style={{ marginLeft: 4, opacity: 0.7 }}>×</span>
+                      <span onClick={(e) => { e.stopPropagation(); setFilterMinBeds(0); setFilterRegion(null); }} style={{ marginLeft: 4, opacity: 0.7 }}>×</span>
                     )}
                   </button>
                   {filterOpen && (
@@ -425,22 +432,8 @@ export default function Properties() {
                           })}
                         </div>
                       </div>
-                      {availability && (
-                        <div>
-                          <button
-                            onClick={() => setFilterAvailOnly((v) => !v)}
-                            className="font-body text-sm"
-                            style={{ display: 'flex', alignItems: 'center', gap: 10, background: 'none', border: 'none', cursor: 'pointer', color: '#1c1c18', padding: 0 }}
-                          >
-                            <div style={{ width: 18, height: 18, borderRadius: 4, border: `1px solid ${filterAvailOnly ? '#1c1c18' : 'rgba(197,198,205,0.7)'}`, background: filterAvailOnly ? '#1c1c18' : 'transparent', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                              {filterAvailOnly && <X style={{ width: 10, height: 10, color: '#fff' }} />}
-                            </div>
-                            Available only
-                          </button>
-                        </div>
-                      )}
                       <button
-                        onClick={() => { setFilterMinBeds(0); setFilterRegion(null); setFilterAvailOnly(false); setFilterOpen(false); }}
+                        onClick={() => { setFilterMinBeds(0); setFilterRegion(null); setFilterOpen(false); }}
                         className="font-body text-xs"
                         style={{ marginTop: 16, width: '100%', padding: '8px 0', border: '1px solid rgba(197,198,205,0.4)', borderRadius: 6, background: 'transparent', cursor: 'pointer', color: '#44474c' }}
                       >
@@ -475,7 +468,7 @@ export default function Properties() {
             {displayedGroups.length === 0 && (
               <div style={{ padding: '48px 0', textAlign: 'center', color: '#44474c' }}>
                 <p className="font-body text-sm">No apartments match your filters.</p>
-                <button onClick={() => { setFilterMinBeds(0); setFilterRegion(null); setFilterAvailOnly(false); }} className="font-body text-sm" style={{ marginTop: 12, textDecoration: 'underline', background: 'none', border: 'none', cursor: 'pointer', color: '#1c1c18' }}>Clear filters</button>
+                <button onClick={() => { setFilterMinBeds(0); setFilterRegion(null); }} className="font-body text-sm" style={{ marginTop: 12, textDecoration: 'underline', background: 'none', border: 'none', cursor: 'pointer', color: '#1c1c18' }}>Clear filters</button>
               </div>
             )}
             {displayedGroups.map((group) => (

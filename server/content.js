@@ -10,7 +10,7 @@ router.get('/units', async (_req, res) => {
   const [unitsResult, mediaResult, reviewsResult, hiddenResult] = await Promise.all([
     supabase
       .from('Unit')
-      .select('unitSlug, unitName, displayTitle, propertySlug, propertyName, suppliedSpecs, postcode, airbnbUrl, description, squareFeet, displayOrder')
+      .select('unitSlug, unitName, displayTitle, propertySlug, propertyName, suppliedSpecs, postcode, airbnbUrl, description, squareFeet, displayOrder, maxGuests')
       .eq('visible', true)
       .eq('airbnbListed', true)
       .order('displayOrder'),
