@@ -207,6 +207,11 @@ export default function PropertyDetail() {
   const displayTitle =
     adminUnit?.displayTitle?.trim() ||
     cleanListingTitle(unit.title) || unit.title;
+  // Raw Airbnb marketing title (e.g. "Chambers Residence 5* | 2BR | Executive
+  // Suite") — used only in staff-facing enquiry messages so whoever answers
+  // can match the exact listing on Airbnb straight away, instead of the
+  // cleaned-up guest-facing displayTitle.
+  const airbnbListingTitle = listingMedia?.title || unit.title || displayTitle;
   // Grouped collection routes (notably /properties/ancoats/:unit) still need
   // the amenities of the unit's actual building, not the parent collection.
   const inventoryProperty = getPropertyBySlug(inventoryUnit?.propertySlug);
@@ -228,10 +233,10 @@ export default function PropertyDetail() {
       })
     : '');
   const enquiryText = hasDates
-    ? `Hello! I would like to book the apartment ${displayTitle} from ${fmtDate(checkIn)} to ${fmtDate(checkOut)} for ${guests} ${guests === 1 ? 'guest' : 'guests'}.`
-    : `Hello! I would like to know more about the apartment ${displayTitle}.`;
+    ? `Hello! I would like to book the apartment ${airbnbListingTitle} from ${fmtDate(checkIn)} to ${fmtDate(checkOut)} for ${guests} ${guests === 1 ? 'guest' : 'guests'}.`
+    : `Hello! I would like to know more about the apartment ${airbnbListingTitle}.`;
   const whatsappHref = `https://wa.me/${whatsappNumber}?text=${encodeURIComponent(enquiryText)}`;
-  const emailHref = `mailto:${contactEmail}?subject=${encodeURIComponent(`Booking enquiry — ${displayTitle}`)}&body=${encodeURIComponent(enquiryText)}`;
+  const emailHref = `mailto:${contactEmail}?subject=${encodeURIComponent(`Booking enquiry — ${airbnbListingTitle}`)}&body=${encodeURIComponent(enquiryText)}`;
 
   // Booking deep-links carrying the selected dates + guests. Airbnb prefers the
   // resolved rooms/<id> URL (query params survive there; /h/ short links can drop
