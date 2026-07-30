@@ -81,8 +81,8 @@ function PropertiesMap({
 
       const makeIcon = (name: string, active = false) => L.divIcon({
         className: '',
-        html: `<div style="background:${active ? '#C8A45C' : '#1c1c18'};color:#fff;font-size:11px;font-weight:600;padding:4px 9px;border-radius:4px;white-space:nowrap;box-shadow:0 2px 8px rgba(0,0,0,0.3);font-family:sans-serif;position:relative;cursor:pointer;">${escapeMapText(name)}<div style="position:absolute;bottom:-5px;left:50%;transform:translateX(-50%);width:0;height:0;border-left:5px solid transparent;border-right:5px solid transparent;border-top:5px solid ${active ? '#C8A45C' : '#1c1c18'};"></div></div>`,
-        iconSize: [100, 28], iconAnchor: [50, 33],
+        html: `<div style="width:220px;text-align:center;position:relative;"><div style="display:inline-block;background:${active ? '#C8A45C' : '#1c1c18'};color:#fff;font-size:8px;font-weight:600;padding:2px 6px;border-radius:4px;white-space:nowrap;box-shadow:0 2px 8px rgba(0,0,0,0.3);font-family:sans-serif;position:relative;cursor:pointer;">${escapeMapText(name)}<div style="position:absolute;bottom:-5px;left:50%;transform:translateX(-50%);width:0;height:0;border-left:5px solid transparent;border-right:5px solid transparent;border-top:5px solid ${active ? '#C8A45C' : '#1c1c18'};"></div></div></div>`,
+        iconSize: [220, 20], iconAnchor: [110, 25],
       });
 
       locations.forEach((loc) => {
