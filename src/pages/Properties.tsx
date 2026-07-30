@@ -33,6 +33,11 @@ function escapeMapText(value: string) {
   })[character] || character);
 }
 
+// Below this zoom level the map only shows small dots — pinned labels for
+// every building + POI at once made the wide view unreadable. Zooming in
+// (or focusing a property, which flies to zoom 16) reveals the full cards.
+const MAP_LABEL_ZOOM = 15;
+
 function groupByProperty(units: AirbnbInventoryUnit[]) {
   const groups: { propertyName: string; propertySlug: string; units: AirbnbInventoryUnit[] }[] = [];
   const seen: Record<string, number> = {};
@@ -58,8 +63,24 @@ function PropertiesMap({
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<any>(null);
   const markersRef = useRef<Record<string, any>>({});
+  const poiMarkersRef = useRef<any[]>([]);
   const onMarkerClickRef = useRef(onMarkerClick);
   onMarkerClickRef.current = onMarkerClick;
+  const focusedPropertySlugRef = useRef(focusedPropertySlug);
+  focusedPropertySlugRef.current = focusedPropertySlug;
+  const updateMarkerIconsRef = useRef<() => void>(() => {});
+  updateMarkerIconsRef.current = () => {
+    if (!mapRef.current) return;
+    const showLabels = mapRef.current.getZoom() >= MAP_LABEL_ZOOM;
+    Object.entries(markersRef.current).forEach(([slug, v]: [string, any]) => {
+      const isFocused = slug === focusedPropertySlugRef.current;
+      v.marker.setIcon(isFocused || showLabels ? v.makeLabelIcon(isFocused) : v.makeDotIcon(isFocused));
+      v.marker.setZIndexOffset(isFocused ? 1000 : 0);
+    });
+    poiMarkersRef.current.forEach((v: any) => {
+      v.marker.setIcon(showLabels ? v.makeLabelIcon() : v.makeDotIcon());
+    });
+  };
 
   useEffect(() => {
     if (!containerRef.current || mapRef.current) return;
@@ -84,9 +105,15 @@ function PropertiesMap({
         html: `<div style="width:220px;text-align:center;position:relative;"><div style="display:inline-block;background:${active ? '#C8A45C' : '#1c1c18'};color:#fff;font-size:8px;font-weight:600;padding:2px 6px;border-radius:4px;white-space:nowrap;box-shadow:0 2px 8px rgba(0,0,0,0.3);font-family:sans-serif;position:relative;cursor:pointer;">${escapeMapText(name)}<div style="position:absolute;bottom:-5px;left:50%;transform:translateX(-50%);width:0;height:0;border-left:5px solid transparent;border-right:5px solid transparent;border-top:5px solid ${active ? '#C8A45C' : '#1c1c18'};"></div></div></div>`,
         iconSize: [220, 20], iconAnchor: [110, 25],
       });
+      // Zoomed-out fallback: a plain dot so the wide view isn't covered in cards.
+      const makeDotIcon = (active = false) => L.divIcon({
+        className: '',
+        html: `<div style="width:14px;height:14px;border-radius:50%;background:${active ? '#C8A45C' : '#1c1c18'};border:2px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,0.35);cursor:pointer;"></div>`,
+        iconSize: [14, 14], iconAnchor: [7, 7],
+      });
 
       locations.forEach((loc) => {
-        const marker = L.marker([loc.coordinates.lat, loc.coordinates.lng], { icon: makeIcon(loc.name) })
+        const marker = L.marker([loc.coordinates.lat, loc.coordinates.lng], { icon: makeDotIcon() })
           .addTo(map)
           .bindPopup(
             `<div style="font-family:sans-serif;min-width:140px"><b style="font-size:14px">${escapeMapText(loc.name)}</b><br/><span style="font-size:12px;color:#666">${escapeMapText(loc.area)} · ${escapeMapText(loc.postcode)}</span></div>`,
@@ -101,13 +128,14 @@ function PropertiesMap({
           marker,
           lat: loc.coordinates.lat,
           lng: loc.coordinates.lng,
-          makeIcon: (a: boolean) => makeIcon(loc.name, a),
+          makeLabelIcon: (a: boolean) => makeIcon(loc.name, a),
+          makeDotIcon: (a: boolean) => makeDotIcon(a),
         };
       });
 
-      // Points of interest — always-visible label card like the property pins,
-      // but in blue so guests can tell landmarks from rentals at a glance
-      // without having to hover.
+      // Points of interest — labeled card like the property pins (in blue, so
+      // guests can tell landmarks from rentals at a glance), shown only once
+      // zoomed in; a small dot otherwise so the wide view stays readable.
       const makePoiIcon = (name: string) => L.divIcon({
         className: '',
         // Outer div matches iconSize and centers the label; the label itself is
@@ -116,38 +144,44 @@ function PropertiesMap({
         html: `<div style="width:220px;text-align:center;position:relative;"><div style="display:inline-block;background:#2563eb;color:#fff;font-size:8px;font-weight:600;padding:2px 6px;border-radius:4px;white-space:nowrap;box-shadow:0 2px 6px rgba(37,99,235,0.4);font-family:sans-serif;position:relative;">${escapeMapText(name)}<div style="position:absolute;bottom:-4px;left:50%;transform:translateX(-50%);width:0;height:0;border-left:4px solid transparent;border-right:4px solid transparent;border-top:4px solid #2563eb;"></div></div></div>`,
         iconSize: [220, 20], iconAnchor: [110, 24],
       });
+      const makePoiDotIcon = () => L.divIcon({
+        className: '',
+        html: `<div style="width:10px;height:10px;border-radius:50%;background:#2563eb;border:2px solid #fff;box-shadow:0 1px 3px rgba(37,99,235,0.5);"></div>`,
+        iconSize: [10, 10], iconAnchor: [5, 5],
+      });
       pois.forEach((poi) => {
-        L.marker([poi.coordinates.lat, poi.coordinates.lng], { icon: makePoiIcon(poi.name), zIndexOffset: -500 })
+        const marker = L.marker([poi.coordinates.lat, poi.coordinates.lng], { icon: makePoiDotIcon(), zIndexOffset: -500 })
           .addTo(map)
           .bindPopup(
             `<div style="font-family:sans-serif;min-width:140px"><b style="font-size:13px;color:#2563eb">${escapeMapText(poi.name)}</b><br/><span style="font-size:12px;color:#666">${escapeMapText(poi.postcode)}</span></div>`,
             { closeButton: false, offset: [0, -6] }
           );
+        poiMarkersRef.current.push({
+          marker,
+          makeLabelIcon: () => makePoiIcon(poi.name),
+          makeDotIcon: () => makePoiDotIcon(),
+        });
       });
 
+      map.on('zoomend', () => updateMarkerIconsRef.current());
+      updateMarkerIconsRef.current();
       map.invalidateSize();
       mapRef.current = map;
     });
     return () => {
       cancelled = true;
       const created = mapRef.current ?? map;
-      if (created) { created.stop(); created.remove(); mapRef.current = null; markersRef.current = {}; }
+      if (created) { created.stop(); created.remove(); mapRef.current = null; markersRef.current = {}; poiMarkersRef.current = []; }
     };
   }, [locations]);
 
   useEffect(() => {
     if (!mapRef.current || !Object.keys(markersRef.current).length) return;
-    // Reset every marker to its default look and stacking order.
-    Object.values(markersRef.current).forEach((v: any) => {
-      v.marker.setIcon(v.makeIcon(false));
-      v.marker.setZIndexOffset(0);
-    });
+    updateMarkerIconsRef.current();
     if (!focusedPropertySlug) return;
     const entry = markersRef.current[focusedPropertySlug];
     if (!entry) return;
-    // Highlight, lift above overlapping labels, and zoom in on the location.
-    entry.marker.setIcon(entry.makeIcon(true));
-    entry.marker.setZIndexOffset(1000);
+    // Zoom in on the focused location; the resulting zoomend also refreshes icons.
     mapRef.current.flyTo([entry.lat, entry.lng], 16, { animate: true, duration: 0.6 });
   }, [focusedPropertySlug]);
 
@@ -276,6 +310,18 @@ export default function Properties() {
       propertyName: publicProperties.bySlug.get(group.propertySlug)?.name || group.propertyName,
     }));
   }, [publicUnits, publicProperties.bySlug]);
+
+  // Only pin buildings that still have at least one visible/listed unit —
+  // otherwise a fully-hidden property (admin-hidden or delisted on Airbnb)
+  // keeps showing on the map even though it can't appear in the results.
+  const visiblePropertySlugs = useMemo(
+    () => new Set(overlaidGroups.map((g) => g.propertySlug)),
+    [overlaidGroups]
+  );
+  const visibleMapLocations = useMemo(
+    () => mapLocations.filter((loc) => visiblePropertySlugs.has(loc.collectionSlug)),
+    [mapLocations, visiblePropertySlugs]
+  );
 
   // Apply filter then sort
   const displayedGroups = useMemo(() => {
@@ -467,7 +513,7 @@ export default function Properties() {
           {/* Mobile map */}
           {isMobile && showMobileMap && (
             <div style={{ height: 320, borderBottom: '1px solid rgba(197,198,205,0.3)' }}>
-              <PropertiesMap locations={mapLocations} focusedPropertySlug={focusedPropertySlug} onMarkerClick={handleMarkerClick} />
+              <PropertiesMap locations={visibleMapLocations} focusedPropertySlug={focusedPropertySlug} onMarkerClick={handleMarkerClick} />
             </div>
           )}
 
@@ -563,7 +609,7 @@ export default function Properties() {
         {/* ── Right: sticky map (desktop only) ── */}
         {!isMobile && (
           <div style={{ flex: 1, position: 'sticky', top: 80, height: 'calc(100vh - 80px)' }}>
-            <PropertiesMap locations={mapLocations} focusedPropertySlug={focusedPropertySlug} onMarkerClick={handleMarkerClick} />
+            <PropertiesMap locations={visibleMapLocations} focusedPropertySlug={focusedPropertySlug} onMarkerClick={handleMarkerClick} />
           </div>
         )}
       </div>
