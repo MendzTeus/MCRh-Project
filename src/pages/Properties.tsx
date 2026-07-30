@@ -248,6 +248,17 @@ export default function Properties() {
     ? `${new Date(checkIn + 'T00:00').toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })} – ${new Date(checkOut + 'T00:00').toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })}`
     : 'Dates';
 
+  // Carry the selected dates/guests through to the unit detail page so its own
+  // date state (and the Airbnb deep-link it builds) starts prefilled instead
+  // of blank.
+  const detailQuery = (() => {
+    const params = new URLSearchParams();
+    if (checkIn && checkOut) { params.set('checkIn', checkIn); params.set('checkOut', checkOut); }
+    if (guests !== 2) params.set('guests', String(guests));
+    const qs = params.toString();
+    return qs ? `?${qs}` : '';
+  })();
+
   // Layer DB state over the static inventory: drop hidden apartments and apply
   // admin edits (name / specs / airbnb link). Falls back to static untouched
   // while the overlay is loading or if the API is unreachable.
@@ -537,7 +548,7 @@ export default function Properties() {
                             {unit.airbnbUrl ? (
                               <a href={unit.airbnbUrl.startsWith('http') ? unit.airbnbUrl : `https://${unit.airbnbUrl}`} target="_blank" rel="noopener noreferrer" onClick={(e) => e.stopPropagation()} className="font-body text-on-surface-variant" style={{ fontSize: 10, textDecoration: 'none' }}>Airbnb ↗</a>
                             ) : <span />}
-                            <Link to={`/properties/${unit.propertySlug}/${unit.unitSlug}`} onClick={(e) => e.stopPropagation()} className="font-body text-primary" style={{ padding: '5px 14px', border: '1px solid #000', fontSize: 9, letterSpacing: '0.12em', textTransform: 'uppercase', textDecoration: 'none', borderRadius: 4 }}>View</Link>
+                            <Link to={`/properties/${unit.propertySlug}/${unit.unitSlug}${detailQuery}`} onClick={(e) => e.stopPropagation()} className="font-body text-primary" style={{ padding: '5px 14px', border: '1px solid #000', fontSize: 9, letterSpacing: '0.12em', textTransform: 'uppercase', textDecoration: 'none', borderRadius: 4 }}>View</Link>
                           </div>
                         </div>
                       </article>
