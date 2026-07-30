@@ -110,8 +110,11 @@ function PropertiesMap({
       // without having to hover.
       const makePoiIcon = (name: string) => L.divIcon({
         className: '',
-        html: `<div style="background:#2563eb;color:#fff;font-size:10px;font-weight:600;padding:3px 8px;border-radius:4px;white-space:nowrap;box-shadow:0 2px 6px rgba(37,99,235,0.4);font-family:sans-serif;position:relative;">${escapeMapText(name)}<div style="position:absolute;bottom:-4px;left:50%;transform:translateX(-50%);width:0;height:0;border-left:4px solid transparent;border-right:4px solid transparent;border-top:4px solid #2563eb;"></div></div>`,
-        iconSize: [100, 22], iconAnchor: [50, 26],
+        // Outer div matches iconSize and centers the label; the label itself is
+        // inline-block so it shrinks/grows to fit the text instead of stretching
+        // to the fixed-width box and spilling text past its edges.
+        html: `<div style="width:220px;text-align:center;position:relative;"><div style="display:inline-block;background:#2563eb;color:#fff;font-size:8px;font-weight:600;padding:2px 6px;border-radius:4px;white-space:nowrap;box-shadow:0 2px 6px rgba(37,99,235,0.4);font-family:sans-serif;position:relative;">${escapeMapText(name)}<div style="position:absolute;bottom:-4px;left:50%;transform:translateX(-50%);width:0;height:0;border-left:4px solid transparent;border-right:4px solid transparent;border-top:4px solid #2563eb;"></div></div></div>`,
+        iconSize: [220, 20], iconAnchor: [110, 24],
       });
       pois.forEach((poi) => {
         L.marker([poi.coordinates.lat, poi.coordinates.lng], { icon: makePoiIcon(poi.name), zIndexOffset: -500 })
