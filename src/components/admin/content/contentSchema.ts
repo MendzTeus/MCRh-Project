@@ -68,7 +68,7 @@ export const CONTENT_SECTIONS: ContentSectionDef[] = [
       ...HOME_BLOCKS.map(homeBlockGroup),
       { title: 'Mapa, números e depoimentos', fields: [
         text('home.map.title', 'Título da seção do mapa'),
-        list('home.stats', 'Números', [{ key: 'value', label: 'Número (ex.: 30+)' }, { key: 'label', label: 'Rótulo', wide: true }]),
+        list('home.stats', 'Números', [{ key: 'value', label: 'Número (ex.: 40+)' }, { key: 'label', label: 'Rótulo', wide: true }]),
         text('home.testimonials.eyebrow', 'Sobretítulo dos depoimentos'),
         text('home.testimonials.title', 'Título dos depoimentos'),
       ] },

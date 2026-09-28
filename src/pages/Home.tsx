@@ -343,8 +343,8 @@ export default function Home() {
       <section className="py-section-gap bg-primary border-t border-white/10">
         <div className="max-w-[1280px] mx-auto px-margin-mobile md:px-margin-desktop grid grid-cols-2 md:grid-cols-4 gap-12 md:gap-0 divide-y-2 md:divide-y-0 md:divide-x divide-white/10">
           {list<{ value: string; label: string }>(site.content, 'home.stats', [
-            { value: '30+', label: 'Properties' },
-            { value: '500+', label: 'Guest Reviews' },
+            { value: '40+', label: 'Properties' },
+            { value: '3000+', label: 'Guest Reviews' },
             { value: '100%', label: '5-Star Stays' },
             { value: '7', label: 'Neighbourhoods' },
           ]).map(({ value, label }) => (

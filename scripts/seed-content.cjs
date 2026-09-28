@@ -12,8 +12,8 @@ const content = {
   'home.hero.ctaHref': '/properties',
   'home.map.title': 'Discover Our Locations',
   'home.stats': [
-    { value: '30+', label: 'Properties' },
-    { value: '500+', label: 'Guest Reviews' },
+    { value: '40+', label: 'Properties' },
+    { value: '3000+', label: 'Guest Reviews' },
     { value: '100%', label: '5-Star Stays' },
     { value: '7', label: 'Neighbourhoods' },
   ],
