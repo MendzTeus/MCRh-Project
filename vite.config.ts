@@ -1,3 +1,4 @@
+/// <reference types="vitest/config" />
 import tailwindcss from '@tailwindcss/vite';
 import react from '@vitejs/plugin-react';
 import path from 'path';
@@ -19,6 +20,15 @@ export default defineConfig(() => {
           target: `http://localhost:${process.env.API_PORT || 3001}`,
           changeOrigin: true,
         },
+      },
+    },
+    test: {
+      // Placeholder credentials so server modules can be imported in tests
+      // without a real database. The URL is a closed local port, so any DB call
+      // a test reaches fails instantly and offline — never production.
+      env: {
+        SUPABASE_URL: 'http://127.0.0.1:9',
+        SUPABASE_SERVICE_KEY: 'test-key',
       },
     },
   };

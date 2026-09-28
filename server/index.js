@@ -203,8 +203,19 @@ app.get('/api/availability/calendar', async (req, res) => {
   });
 });
 
-// Health check
-app.get('/api/health', (_, res) => res.json({ ok: true }));
+// Health check. `?deep=1` also confirms the database answers, so an uptime
+// monitor can tell "API up but Supabase unreachable/misconfigured" apart from
+// "all good" — the public pages depend on both.
+app.get('/api/health', async (req, res) => {
+  if (req.query.deep !== '1') return res.json({ ok: true });
+  try {
+    const { error } = await supabase.from('Property').select('slug').limit(1);
+    if (error) return res.status(503).json({ ok: false, db: 'error' });
+    res.json({ ok: true, db: 'ok' });
+  } catch {
+    res.status(503).json({ ok: false, db: 'unreachable' });
+  }
+});
 
 // Serve the built React SPA — must come after all /api routes
 const distDir = path.join(__dirname, '..', 'dist');

@@ -81,5 +81,7 @@ describe('Task 1.15 — authorised admin access', () => {
       .get('/api/admin/units')
       .set('Authorization', `Bearer ${token}`);
     expect(res.status).not.toBe(401);
-  });
+    // Past the gate the handler queries Supabase; with the placeholder test
+    // credentials that fails only after supabase-js's retries (~7s).
+  }, 20000);
 });
