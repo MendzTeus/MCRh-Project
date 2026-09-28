@@ -1,7 +1,7 @@
-// READ-ONLY diagnostic: how many enquiries exist per status, and which recent
-// ones may have been missed. The public form saves status "novo", but the new
-// Leads page and the Dashboard only count "new", so "novo" leads never show as
-// pending there. Nothing is written to the database.
+// READ-ONLY diagnostic: how many enquiries exist per status, and which ones
+// still carry the legacy Portuguese status ("novo"/"lido"/"arquivado") that
+// migration 004 converts. Before the Phase 1 fix, "novo" leads never showed as
+// pending on the new Leads page / Dashboard. Nothing is written to the database.
 //
 // Usage: npm run check:leads   (needs SUPABASE_URL / SUPABASE_SERVICE_KEY in .env)
 import 'dotenv/config';
@@ -31,7 +31,9 @@ console.log(`\nTotal enquiries: ${data.length}`);
 console.table(byStatus);
 
 const unseen = data.filter((lead) => lead.status === 'novo');
-console.log(`\nStatus "novo" (invisible as pending on the new Leads page / Dashboard): ${unseen.length}`);
+const legacy = data.filter((lead) => ['novo', 'lido', 'arquivado'].includes(lead.status)).length;
+console.log(`\nRows with legacy status (converted by migration 004): ${legacy}`);
+console.log(`Status "novo" — never answered through the new Leads page: ${unseen.length}`);
 console.table(unseen.slice(0, 20).map((lead) => ({
   createdAt: lead.createdAt?.slice(0, 16).replace('T', ' '),
   name: lead.name,

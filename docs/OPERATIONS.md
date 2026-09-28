@@ -121,3 +121,17 @@ npm run check:leads   # somente leitura
 
 Mostra quantos leads há por status e lista os recentes com status `novo`, que hoje
 não aparecem como pendentes na página nova de Leads nem no Dashboard.
+
+## 10. Histórico de deploys com passos especiais
+
+### Fase 1 — Leads
+
+1. **Deploy do código** (sem migration). A partir dele:
+   - o formulário de contato volta a gravar leads (antes todo envio falhava);
+   - leads novos entram com status `new`; os antigos `novo/lido/arquivado`
+     aparecem como `new/contacted/closed` no admin, sem mexer no banco.
+   - Conferir depois do deploy: enviar um teste pelo formulário em /contact →
+     ver o lead em /admin/leads e no Dashboard → excluí-lo.
+2. **Migration `004_enquiry_status.sql`** (opcional, pode ser dias depois):
+   exportar a tabela `Enquiry` em CSV → rodar no projeto de teste → rodar em
+   produção. Só limpa os valores antigos; nada muda na tela.

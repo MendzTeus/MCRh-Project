@@ -16,8 +16,12 @@ const app = express();
 // The admin parser runs first and marks the body as read, so the small global
 // parser below skips it.
 app.use('/api/admin', express.json({ limit: '15mb' }), adminRouter);
-app.use('/api/content', contentRouter); // read-only, GET only — no body to parse
+// Must come before the content router: its public enquiry form POSTs a JSON
+// body, which previously arrived unparsed (every submission was rejected).
 app.use(express.json({ limit: '100kb' }));
+app.use('/api/content', contentRouter);
+// The site's contact form posts here; same handler as /api/content/enquiries.
+app.post('/api/enquiries', ...contentRouter.enquiryHandlers);
 
 // Map propertySlug → Property.id
 const slugToId = {};

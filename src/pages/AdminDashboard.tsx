@@ -16,6 +16,15 @@ type Review = {
   rating: number; published: boolean; avatarUrl: string | null; propertySlug: string;
   unitSlug?: string | null; createdAt: string;
 };
+type Lead = {
+  id: string; name: string; email: string; propertyName: string | null;
+  status: 'new' | 'contacted' | 'closed'; createdAt: string;
+};
+const LEAD_STATUS_STYLE: Record<Lead['status'], { label: string; color: string; bg: string }> = {
+  new:       { label: 'New',       color: GOLD,      bg: `${GOLD}18` },
+  contacted: { label: 'Contacted', color: '#1565C0', bg: '#EDF5FF' },
+  closed:    { label: 'Closed',    color: `${NAVY}70`, bg: `${NAVY}10` },
+};
 
 // ── Stars ────────────────────────────────────────────────────────────
 function Stars({ rating }: { rating: number }) {
@@ -123,7 +132,7 @@ function Dashboard() {
 
   const [units, setUnits] = useState<Unit[]>([]);
   const [reviews, setReviews] = useState<Review[]>([]);
-  const [pendingLeads, setPendingLeads] = useState<number | null>(null);
+  const [leads, setLeads] = useState<Lead[] | null>(null);
   const [loading, setLoading] = useState(true);
 
   const load = useCallback(async () => {
@@ -135,9 +144,7 @@ function Dashboard() {
       ]);
       if (u.status === 'fulfilled' && Array.isArray(u.value?.units)) setUnits(u.value.units);
       if (r.status === 'fulfilled' && Array.isArray(r.value)) setReviews(r.value);
-      if (l.status === 'fulfilled' && Array.isArray(l.value)) {
-        setPendingLeads(l.value.filter((lead: { status: string }) => lead.status === 'new').length);
-      }
+      if (l.status === 'fulfilled' && Array.isArray(l.value)) setLeads(l.value);
     } finally { setLoading(false); }
   }, [api]);
 
@@ -150,6 +157,8 @@ function Dashboard() {
   const avgRating = publishedReviews.length > 0
     ? (publishedReviews.reduce((s, r) => s + r.rating, 0) / publishedReviews.length).toFixed(1)
     : '–';
+  const pendingLeads = leads ? leads.filter((lead) => lead.status === 'new').length : null;
+  const recentLeads = (leads || []).slice(0, 5); // API returns newest first
   const recentReviews = [...publishedReviews]
     .sort((a, b) => b.createdAt.localeCompare(a.createdAt))
     .slice(0, 6);
@@ -252,23 +261,40 @@ function Dashboard() {
               <table className="w-full text-left">
                 <thead>
                   <tr style={{ background: `${NAVY}06` }}>
-                    {['Lead Name', 'Apartment', 'Status', 'Date'].map((h) => (
+                    {['Lead Name', 'Enquiry about', 'Status', 'Date'].map((h) => (
                       <th key={h} className="px-6 py-4 font-label text-[10px] font-bold uppercase tracking-widest" style={{ color: `${NAVY}40` }}>
                         {h}
                       </th>
                     ))}
                   </tr>
                 </thead>
-                <tbody className="divide-y" style={{ borderColor: `${NAVY}08` }}>
-                  {pendingLeads === null && loading ? (
+                <tbody className="divide-y divide-[#101c2d]/[0.06]">
+                  {loading ? (
                     <tr><td colSpan={4} className="px-6 py-10 text-center font-body text-sm" style={{ color: `${NAVY}30` }}>Loading…</td></tr>
+                  ) : leads === null ? (
+                    <tr><td colSpan={4} className="px-6 py-10 text-center font-body text-sm" style={{ color: '#b91c1c' }}>Could not load leads.</td></tr>
+                  ) : recentLeads.length === 0 ? (
+                    <tr><td colSpan={4} className="px-6 py-10 text-center font-body text-sm" style={{ color: `${NAVY}40` }}>No leads yet.</td></tr>
                   ) : (
-                    <tr>
-                      <td colSpan={4} className="px-6 py-10 text-center">
-                        <p className="font-body text-sm" style={{ color: `${NAVY}40` }}>No recent leads.</p>
-                        <p className="font-body text-xs mt-1" style={{ color: `${NAVY}25` }}>Leads will appear here when the API is enabled.</p>
-                      </td>
-                    </tr>
+                    recentLeads.map((lead) => {
+                      const st = LEAD_STATUS_STYLE[lead.status] ?? LEAD_STATUS_STYLE.new;
+                      return (
+                        <tr key={lead.id} onClick={() => navigate('/admin/leads')} className="cursor-pointer hover:bg-gray-50/70 transition-colors">
+                          <td className="px-6 py-4">
+                            <p className="font-body text-sm font-semibold" style={{ color: NAVY }}>{lead.name}</p>
+                            <p className="font-body text-xs" style={{ color: `${NAVY}50` }}>{lead.email}</p>
+                          </td>
+                          <td className="px-6 py-4 font-body text-sm" style={{ color: NAVY }}>{lead.propertyName || '—'}</td>
+                          <td className="px-6 py-4">
+                            <span className="inline-flex px-2.5 py-1 rounded-full font-body text-[10px] font-semibold uppercase tracking-wide"
+                              style={{ background: st.bg, color: st.color }}>{st.label}</span>
+                          </td>
+                          <td className="px-6 py-4 font-body text-xs" style={{ color: `${NAVY}60` }}>
+                            {new Date(lead.createdAt).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })}
+                          </td>
+                        </tr>
+                      );
+                    })
                   )}
                 </tbody>
               </table>

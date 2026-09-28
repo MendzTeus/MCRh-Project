@@ -3,6 +3,7 @@ const crypto = require('crypto');
 const { supabase } = require('./db');
 const { signToken, requireAdmin } = require('./auth');
 const { syncAll, syncUnit } = require('./sync');
+const { LEAD_STATUSES, storedValuesFor, normalizeLead } = require('./leads');
 
 const router = express.Router();
 const BUCKET = 'property-media';
@@ -576,21 +577,27 @@ router.post('/sync/:unitSlug', async (req, res) => {
 });
 
 // ── Leads (Enquiry) ──────────────────────────────────────────────────
+// Statuses are returned in the canonical vocabulary (new/contacted/closed) even
+// for rows still stored with the legacy Portuguese values — see server/leads.js.
 router.get('/leads', async (req, res) => {
   const q = supabase.from('Enquiry').select('*').order('createdAt', { ascending: false });
-  if (req.query.status) q.eq('status', req.query.status);
+  if (req.query.status) {
+    if (!LEAD_STATUSES.includes(req.query.status)) return res.status(400).json({ error: 'invalid status' });
+    q.in('status', storedValuesFor(req.query.status));
+  }
   const { data, error } = await q;
   if (error) return res.status(500).json({ error: error.message });
-  res.json(data);
+  res.json((data || []).map(normalizeLead));
 });
 
 router.patch('/leads/:id', async (req, res) => {
-  const allowed = ['status'];
-  const patch = {};
-  for (const k of allowed) if (k in (req.body || {})) patch[k] = req.body[k];
-  const { data, error } = await supabase.from('Enquiry').update(patch).eq('id', req.params.id).select().single();
+  const { status } = req.body || {};
+  if (!LEAD_STATUSES.includes(status)) {
+    return res.status(400).json({ error: `status must be one of: ${LEAD_STATUSES.join(', ')}` });
+  }
+  const { data, error } = await supabase.from('Enquiry').update({ status }).eq('id', req.params.id).select().single();
   if (error) return res.status(500).json({ error: error.message });
-  res.json(data);
+  res.json(normalizeLead(data));
 });
 
 router.delete('/leads/:id', async (req, res) => {

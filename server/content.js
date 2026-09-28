@@ -162,8 +162,9 @@ const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const MAX_TEXT_LEN = 200;
 const MAX_MESSAGE_LEN = 2000;
 
-// Public enquiry submission.
-router.post('/enquiries', enquiryThrottle, async (req, res) => {
+// Public enquiry submission. Also mounted at POST /api/enquiries (the URL the
+// site's contact form posts to) — see server/index.js.
+async function createEnquiry(req, res) {
   const { name, email, phone, message, propertyName, checkIn, checkOut, guests, unitSlug, source } = req.body || {};
 
   if (!name || !email) return res.status(400).json({ error: 'name and email required' });
@@ -180,8 +181,14 @@ router.post('/enquiries', enquiryThrottle, async (req, res) => {
   if (message != null && (typeof message !== 'string' || message.length > MAX_MESSAGE_LEN)) {
     return res.status(400).json({ error: 'message too long' });
   }
-  if (propertyName != null && (typeof propertyName !== 'string' || propertyName.length > MAX_TEXT_LEN)) {
-    return res.status(400).json({ error: 'invalid propertyName' });
+  for (const [field, value] of Object.entries({ propertyName, checkIn, checkOut, unitSlug, source })) {
+    if (value != null && (typeof value !== 'string' || value.length > MAX_TEXT_LEN)) {
+      return res.status(400).json({ error: `invalid ${field}` });
+    }
+  }
+  const guestCount = guests == null || guests === '' ? null : parseInt(guests, 10);
+  if (guestCount != null && (!Number.isInteger(guestCount) || guestCount < 1 || guestCount > 50)) {
+    return res.status(400).json({ error: 'invalid guests' });
   }
 
   const row = {
@@ -192,15 +199,29 @@ router.post('/enquiries', enquiryThrottle, async (req, res) => {
     propertyName: propertyName || 'General',
     checkIn: checkIn || null,
     checkOut: checkOut || null,
-    guests: guests ? parseInt(guests, 10) : null,
+    guests: guestCount,
     unitSlug: unitSlug || null,
     source: source || null,
-    status: 'novo',
+    status: 'new',
     createdAt: new Date().toISOString(),
   };
-  const { error } = await supabase.from('Enquiry').insert(row);
-  if (error) return res.status(500).json({ error: error.message });
+  let { error } = await supabase.from('Enquiry').insert(row);
+  // The production schema isn't versioned yet. If a CHECK constraint still
+  // only allows the legacy Portuguese statuses (Postgres code 23514), save
+  // with the legacy value rather than lose the lead — the admin maps it back
+  // to "new" on read. Remove once migration 004 is applied everywhere.
+  if (error?.code === '23514') {
+    ({ error } = await supabase.from('Enquiry').insert({ ...row, status: 'novo' }));
+  }
+  if (error) {
+    console.error('[enquiries] insert failed:', error.message);
+    return res.status(500).json({ error: 'Could not save enquiry' });
+  }
   res.status(201).json({ ok: true });
-});
+}
+
+const enquiryHandlers = [enquiryThrottle, createEnquiry];
+router.post('/enquiries', ...enquiryHandlers);
 
 module.exports = router;
+module.exports.enquiryHandlers = enquiryHandlers;
