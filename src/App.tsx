@@ -1,7 +1,6 @@
 import { Navigate, Routes, Route, useLocation, useSearchParams } from 'react-router-dom';
 import Navbar from './components/Navbar';
 import Footer from './components/Footer';
-import Admin from './pages/Admin';
 import AdminApartment from './pages/AdminApartment';
 import AdminApartmentsList from './pages/AdminApartmentsList';
 import AdminDashboard from './pages/AdminDashboard';
@@ -16,16 +15,17 @@ import ManagementServices from './pages/ManagementServices';
 import About from './pages/About';
 import Contact from './pages/Contact';
 import NotFound from './pages/NotFound';
-import { getLegacyAdminTab } from './components/admin/adminNavigation';
+import { getLegacyAdminPath } from './components/admin/adminNavigation';
+import {
+  AdminAvailabilityPage, AdminCollectorPage, AdminContentPage, AdminImagesPage, AdminPhotosPage, AdminPropertiesPage,
+} from './pages/AdminSectionPages';
 import { AdminAuthProvider } from './components/admin/AdminAuthContext';
 import { ProtectedAdminRoute } from './components/admin/ProtectedAdminRoute';
 
+// /admin and the old single-page links (/admin?tab=conteudo…) → their own pages.
 function AdminEntry() {
   const [searchParams] = useSearchParams();
-  if (!getLegacyAdminTab(searchParams.get('tab'))) {
-    return <Navigate to="/admin/dashboard" replace />;
-  }
-  return <Admin />;
+  return <Navigate to={getLegacyAdminPath(searchParams.get('tab'))} replace />;
 }
 
 export default function App() {
@@ -43,6 +43,12 @@ export default function App() {
             <Route path="/admin/apartments/:unitSlug" element={<AdminApartment />} />
             <Route path="/admin/reviews" element={<AdminReviews />} />
             <Route path="/admin/leads" element={<AdminLeads />} />
+            <Route path="/admin/photos" element={<AdminPhotosPage />} />
+            <Route path="/admin/images" element={<AdminImagesPage />} />
+            <Route path="/admin/content" element={<AdminContentPage />} />
+            <Route path="/admin/properties" element={<AdminPropertiesPage />} />
+            <Route path="/admin/availability" element={<AdminAvailabilityPage />} />
+            <Route path="/admin/collector" element={<AdminCollectorPage />} />
             <Route path="/admin/*" element={<Navigate to="/admin/dashboard" replace />} />
           </Routes>
         </ProtectedAdminRoute>

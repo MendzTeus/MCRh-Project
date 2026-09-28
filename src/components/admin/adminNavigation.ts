@@ -1,55 +1,51 @@
 export type AdminNavId =
   | 'dashboard'
+  | 'leads'
   | 'apartments'
   | 'photos'
-  | 'images'
-  | 'content'
   | 'properties'
+  | 'content'
+  | 'images'
   | 'reviews'
   | 'availability'
-  | 'leads'
   | 'collector';
 
 export type AdminNavItem = {
   id: AdminNavId;
   label: string;
   path: string;
+  /** Sidebar heading the item is listed under. */
+  group: string;
 };
 
+// One route per section. Order and groups are what the sidebar shows.
 export const ADMIN_NAV_ITEMS: readonly AdminNavItem[] = [
-  { id: 'dashboard', label: 'Dashboard', path: '/admin?tab=painel' },
-  { id: 'apartments', label: 'Apartments', path: '/admin/apartments' },
-  { id: 'photos', label: 'Photos', path: '/admin?tab=fotos' },
-  { id: 'images', label: 'Images', path: '/admin?tab=imagens' },
-  { id: 'content', label: 'Content', path: '/admin?tab=conteudo' },
-  { id: 'properties', label: 'Properties', path: '/admin?tab=propriedades' },
-  { id: 'reviews', label: 'Reviews', path: '/admin/reviews' },
-  { id: 'availability', label: 'Availability', path: '/admin?tab=disponibilidade' },
-  { id: 'leads', label: 'Leads', path: '/admin/leads' },
-  { id: 'collector', label: 'Collector', path: '/admin?tab=coletor' },
+  { id: 'dashboard', label: 'Painel', path: '/admin/dashboard', group: 'Operação' },
+  { id: 'leads', label: 'Leads', path: '/admin/leads', group: 'Operação' },
+  { id: 'availability', label: 'Disponibilidade', path: '/admin/availability', group: 'Operação' },
+  { id: 'apartments', label: 'Apartamentos', path: '/admin/apartments', group: 'Imóveis' },
+  { id: 'photos', label: 'Fotos dos apartamentos', path: '/admin/photos', group: 'Imóveis' },
+  { id: 'properties', label: 'Prédios e coleções', path: '/admin/properties', group: 'Imóveis' },
+  { id: 'reviews', label: 'Avaliações', path: '/admin/reviews', group: 'Imóveis' },
+  { id: 'content', label: 'Textos do site', path: '/admin/content', group: 'Site' },
+  { id: 'images', label: 'Imagens das páginas', path: '/admin/images', group: 'Site' },
+  { id: 'collector', label: 'Coletor de avaliações', path: '/admin/collector', group: 'Ferramentas' },
 ];
 
-export type LegacyAdminTab =
-  | 'dashboard'
-  | 'photos'
-  | 'images'
-  | 'content'
-  | 'properties'
-  | 'availability'
-  | 'collector';
-
-const LEGACY_ADMIN_TAB_BY_QUERY: Readonly<Record<string, LegacyAdminTab>> = {
-  painel: 'dashboard',
-  fotos: 'photos',
-  imagens: 'images',
-  conteudo: 'content',
-  propriedades: 'properties',
-  disponibilidade: 'availability',
-  coletor: 'collector',
+// Old single-page admin links (/admin?tab=…) — kept working as redirects.
+const LEGACY_TAB_PATHS: Readonly<Record<string, string>> = {
+  painel: '/admin/dashboard',
+  fotos: '/admin/photos',
+  imagens: '/admin/images',
+  conteudo: '/admin/content',
+  propriedades: '/admin/properties',
+  disponibilidade: '/admin/availability',
+  coletor: '/admin/collector',
 };
 
-export function getLegacyAdminTab(queryValue: string | null): LegacyAdminTab | null {
-  return queryValue ? LEGACY_ADMIN_TAB_BY_QUERY[queryValue] ?? null : null;
+/** New path for an old `?tab=` value, or the dashboard for anything else. */
+export function getLegacyAdminPath(tab: string | null): string {
+  return (tab && LEGACY_TAB_PATHS[tab]) || '/admin/dashboard';
 }
 
 export function getAdminNavPath(id: AdminNavId): string {

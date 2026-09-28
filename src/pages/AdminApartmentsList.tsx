@@ -380,14 +380,6 @@ function ApartmentsList() {
       navItems={ADMIN_NAV_ITEMS}
       activeId="apartments"
       breadcrumbs={[{ label: 'Admin' }, { label: 'Apartments' }]}
-      rightSlot={
-        <button
-          onClick={logout}
-          className="font-body text-[10px] uppercase tracking-[0.15em] text-white/50 hover:text-white transition-colors"
-        >
-          Sair
-        </button>
-      }
     >
       <div style={{ background: CREAM, minHeight: '100%' }} className="-mx-4 md:-mx-10 -mt-10 px-4 md:px-10 pt-10 pb-12">
 
