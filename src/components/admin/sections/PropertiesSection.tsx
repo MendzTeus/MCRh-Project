@@ -252,7 +252,7 @@ function PropertyGalleryEditor({ slug, api }: { slug: string; api: ReturnType<ty
       await load();
     } catch (moveError) {
       setPhotos(previous);
-      setError(moveError instanceof Error ? moveError.message : 'Erro ao guardar ordem');
+      setError(moveError instanceof Error ? moveError.message : 'Erro ao salvar ordem');
     } finally {
       setPending(item, false);
     }
@@ -268,7 +268,7 @@ function PropertyGalleryEditor({ slug, api }: { slug: string; api: ReturnType<ty
       await patchMedia({ owner, mediaId: item.id, patch: { alt: next || null } });
       await load();
     } catch (patchError) {
-      setError(patchError instanceof Error ? patchError.message : 'Erro ao guardar texto alternativo');
+      setError(patchError instanceof Error ? patchError.message : 'Erro ao salvar texto alternativo');
     } finally {
       setPending(item, false);
     }

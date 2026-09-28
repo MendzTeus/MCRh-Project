@@ -1,5 +1,4 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
-import { useNavigate } from 'react-router-dom';
 import {
   Search, X, ChevronRight, User, Mail, Phone, Calendar, MessageSquare,
   Inbox, Users, ExternalLink, Trash2,
@@ -34,7 +33,7 @@ type Lead = {
 };
 
 const SOURCE_LABELS: Record<string, string> = {
-  'contact-form': 'Contact form',
+  'contact-form': 'Formulário de contato',
 };
 
 function nightsBetween(checkIn?: string | null, checkOut?: string | null): number | null {
@@ -45,9 +44,9 @@ function nightsBetween(checkIn?: string | null, checkOut?: string | null): numbe
 
 // ── Status badge ──────────────────────────────────────────────────────
 const STATUS_STYLE: Record<LeadStatus, { bg: string; color: string; label: string }> = {
-  new:       { bg: `${GOLD}18`, color: GOLD,          label: 'New' },
-  contacted: { bg: '#EDF5FF',   color: '#1565C0',     label: 'Contacted' },
-  closed:    { bg: `${NAVY}10`, color: `${NAVY}70`,   label: 'Closed' },
+  new:       { bg: `${GOLD}18`, color: GOLD,          label: 'Novo' },
+  contacted: { bg: '#EDF5FF',   color: '#1565C0',     label: 'Respondido' },
+  closed:    { bg: `${NAVY}10`, color: `${NAVY}70`,   label: 'Encerrado' },
 };
 
 function StatusBadge({ status }: { status: LeadStatus }) {
@@ -94,7 +93,7 @@ function DetailPanel({ lead, onClose, onStatusChange, onDelete }: {
           <div>
             <p className="font-body text-sm font-semibold" style={{ color: NAVY }}>{lead.name}</p>
             <p className="font-body text-[11px]" style={{ color: `${NAVY}50` }}>
-              Received {new Date(lead.createdAt).toLocaleString('en-GB', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
+              Recebido em {new Date(lead.createdAt).toLocaleString('pt-BR', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
               {lead.source && <> · {SOURCE_LABELS[lead.source] || lead.source}</>}
             </p>
           </div>
@@ -126,12 +125,12 @@ function DetailPanel({ lead, onClose, onStatusChange, onDelete }: {
         <div className="space-y-3">
           {lead.propertyName && (
             <div>
-              <p className="font-body text-[10px] font-bold uppercase tracking-widest mb-1" style={{ color: `${NAVY}50` }}>Enquiry about</p>
+              <p className="font-body text-[10px] font-bold uppercase tracking-widest mb-1" style={{ color: `${NAVY}50` }}>Assunto</p>
               <p className="font-body text-sm" style={{ color: NAVY }}>{lead.propertyName}</p>
               {lead.unitSlug && (
                 <a href={`/property/${encodeURIComponent(lead.unitSlug)}`} target="_blank" rel="noopener noreferrer"
                   className="inline-flex items-center gap-1 font-body text-xs mt-1 hover:underline" style={{ color: GOLD }}>
-                  View apartment <ExternalLink size={11} />
+                  Ver apartamento <ExternalLink size={11} />
                 </a>
               )}
             </div>
@@ -139,17 +138,17 @@ function DetailPanel({ lead, onClose, onStatusChange, onDelete }: {
           {lead.guests != null && (
             <div className="flex items-center gap-2">
               <Users size={13} style={{ color: `${NAVY}40` }} />
-              <p className="font-body text-sm" style={{ color: NAVY }}>{lead.guests} {lead.guests === 1 ? 'guest' : 'guests'}</p>
+              <p className="font-body text-sm" style={{ color: NAVY }}>{lead.guests} {lead.guests === 1 ? 'hóspede' : 'hóspedes'}</p>
             </div>
           )}
           {(lead.checkIn || lead.checkOut) && (
             <div>
-              <p className="font-body text-[10px] font-bold uppercase tracking-widest mb-1" style={{ color: `${NAVY}50` }}>Stay Dates</p>
+              <p className="font-body text-[10px] font-bold uppercase tracking-widest mb-1" style={{ color: `${NAVY}50` }}>Datas da estadia</p>
               <div className="flex items-center gap-2">
                 <Calendar size={13} style={{ color: `${NAVY}40` }} />
                 <p className="font-body text-sm" style={{ color: NAVY }}>
                   {lead.checkIn ?? '?'} — {lead.checkOut ?? '?'}
-                  {nights != null && <span style={{ color: `${NAVY}50` }}> ({nights} {nights === 1 ? 'night' : 'nights'})</span>}
+                  {nights != null && <span style={{ color: `${NAVY}50` }}> ({nights} {nights === 1 ? 'noite' : 'noites'})</span>}
                 </p>
               </div>
             </div>
@@ -161,7 +160,7 @@ function DetailPanel({ lead, onClose, onStatusChange, onDelete }: {
             <hr style={{ borderColor: `${NAVY}08` }} />
             <div>
               <p className="font-body text-[10px] font-bold uppercase tracking-widest mb-2" style={{ color: `${NAVY}50` }}>
-                Message
+                Mensagem
               </p>
               <div className="flex gap-2">
                 <MessageSquare size={13} className="flex-shrink-0 mt-0.5" style={{ color: `${NAVY}40` }} />
@@ -181,9 +180,9 @@ function DetailPanel({ lead, onClose, onStatusChange, onDelete }: {
             onChange={(e) => onStatusChange(lead.id, e.target.value as LeadStatus)}
             className="w-full bg-[#f9f7f2] border border-navy/10 rounded-lg px-3 py-2.5 font-body text-sm focus:outline-none transition-all"
             style={{ color: NAVY }}>
-            <option value="new">New</option>
-            <option value="contacted">Contacted</option>
-            <option value="closed">Closed</option>
+            <option value="new">Novo</option>
+            <option value="contacted">Respondido</option>
+            <option value="closed">Encerrado</option>
           </select>
         </div>
 
@@ -195,12 +194,12 @@ function DetailPanel({ lead, onClose, onStatusChange, onDelete }: {
           onClick={() => { if (lead.status === 'new') onStatusChange(lead.id, 'contacted'); }}
           className="flex-1 inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg font-body text-sm font-semibold"
           style={{ background: NAVY, color: 'white' }}>
-          <Mail size={14} /> Reply by email
+          <Mail size={14} /> Responder por e-mail
         </a>
-        <button onClick={() => onDelete(lead)} title="Delete lead"
+        <button onClick={() => onDelete(lead)} title="Excluir lead"
           className="inline-flex items-center gap-1.5 px-3 py-2.5 rounded-lg font-body text-xs border transition-colors hover:bg-red-50"
           style={{ borderColor: '#fecaca', color: '#b91c1c' }}>
-          <Trash2 size={13} /> Delete
+          <Trash2 size={13} /> Excluir
         </button>
       </div>
     </div>
@@ -209,7 +208,6 @@ function DetailPanel({ lead, onClose, onStatusChange, onDelete }: {
 
 // ── Main page ─────────────────────────────────────────────────────────
 function LeadsPage() {
-  const navigate = useNavigate();
   const { token, logout } = useAdminAuth();
   const api = useApi(token, logout);
 
@@ -233,7 +231,7 @@ function LeadsPage() {
       const data: Lead[] = await api('/admin/leads', {});
       setLeads(Array.isArray(data) ? data : []);
     } catch (err) {
-      setLoadError((err as Error).message || 'Could not load leads');
+      setLoadError((err as Error).message || 'Não foi possível carregar os leads');
     } finally {
       setLoading(false);
     }
@@ -266,7 +264,7 @@ function LeadsPage() {
     if (selected?.id === id) setSelected((s) => s ? { ...s, status } : s);
     try { await api(`/admin/leads/${id}`, { method: 'PATCH', body: JSON.stringify({ status }) }); }
     catch (err) {
-      setActionError(`Status not saved: ${(err as Error).message}`);
+      setActionError(`Status não salvo: ${(err as Error).message}`);
       load();
     }
   }
@@ -279,7 +277,7 @@ function LeadsPage() {
       setLeads((prev) => prev.filter((l) => l.id !== lead.id));
       if (selected?.id === lead.id) setSelected(null);
     } catch (err) {
-      setActionError(`Lead not deleted: ${(err as Error).message}`);
+      setActionError(`Lead não excluído: ${(err as Error).message}`);
     }
   }
 
@@ -296,9 +294,9 @@ function LeadsPage() {
       )}
       <ConfirmDialog
         open={toDelete !== null}
-        title="Delete lead?"
-        message={toDelete ? `The enquiry from ${toDelete.name} (${toDelete.email}) will be permanently removed.` : ''}
-        confirmLabel="Delete"
+        title="Excluir este lead?"
+        message={toDelete ? `O contato de ${toDelete.name} (${toDelete.email}) será removido definitivamente.` : ''}
+        confirmLabel="Excluir"
         onConfirm={() => { if (toDelete) deleteLead(toDelete); }}
         onCancel={() => setToDelete(null)}
       />
@@ -307,21 +305,21 @@ function LeadsPage() {
       <div className="-mx-4 md:-mx-10 -mt-10 px-4 md:px-8 pt-8 pb-6 mb-8"
         style={{ background: '#f9f7f2', borderBottom: '1px solid rgba(16,28,45,0.07)' }}>
         <h2 className="font-display text-3xl font-bold mb-1" style={{ color: NAVY }}>Leads</h2>
-        <p className="font-body text-sm" style={{ color: `${NAVY}70` }}>Review and manage potential guest inquiries</p>
+        <p className="font-body text-sm" style={{ color: `${NAVY}70` }}>Pedidos de reserva e contatos enviados pelo site</p>
       </div>
 
       {/* Stat cards */}
       <div className="grid grid-cols-3 gap-4 mb-8">
-        <StatCard label="New" value={counts.new} accent />
-        <StatCard label="Contacted" value={counts.contacted} />
-        <StatCard label="Closed" value={counts.closed} />
+        <StatCard label="Novos" value={counts.new} accent />
+        <StatCard label="Respondidos" value={counts.contacted} />
+        <StatCard label="Encerrados" value={counts.closed} />
       </div>
 
       {actionError && (
         <div role="alert" className="mb-5 px-4 py-3 rounded-lg font-body text-sm flex items-center justify-between gap-3"
           style={{ background: '#fef2f2', color: '#b91c1c', border: '1px solid #fecaca' }}>
           {actionError}
-          <button onClick={() => setActionError(null)} aria-label="Dismiss"><X size={14} /></button>
+          <button onClick={() => setActionError(null)} aria-label="Fechar"><X size={14} /></button>
         </div>
       )}
 
@@ -329,10 +327,10 @@ function LeadsPage() {
         <div className="bg-white rounded-xl shadow-sm flex flex-col items-center justify-center py-20"
           style={{ border: '1px solid rgba(16,28,45,0.05)' }}>
           <Inbox size={36} className="mb-4" style={{ color: `${NAVY}25` }} />
-          <p className="font-body text-sm font-semibold mb-1" style={{ color: NAVY }}>Could not load leads</p>
+          <p className="font-body text-sm font-semibold mb-1" style={{ color: NAVY }}>Não foi possível carregar os leads</p>
           <p className="font-body text-xs text-center max-w-xs mb-4" style={{ color: `${NAVY}50` }}>{loadError}</p>
           <button onClick={load} className="font-body text-xs font-semibold uppercase tracking-widest" style={{ color: GOLD }}>
-            Try again
+            Tentar de novo
           </button>
         </div>
       ) : (
@@ -342,26 +340,26 @@ function LeadsPage() {
             <div className="relative flex-1 min-w-[200px]">
               <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" style={{ color: `${NAVY}50` }} />
               <input value={search} onChange={(e) => { setSearch(e.target.value); setPage(1); }}
-                placeholder="Search name, email, phone, apartment, message…"
+                placeholder="Buscar por nome, e-mail, telefone, apartamento, mensagem…"
                 className={`${selCls} pl-9 w-full`} />
             </div>
             <select value={filterStatus} onChange={(e) => { setFilterStatus(e.target.value as '' | LeadStatus); setPage(1); }} className={selCls}>
-              <option value="">All Statuses</option>
-              <option value="new">New</option>
-              <option value="contacted">Contacted</option>
-              <option value="closed">Closed</option>
+              <option value="">Todos os status</option>
+              <option value="new">Novo</option>
+              <option value="contacted">Respondido</option>
+              <option value="closed">Encerrado</option>
             </select>
             {(search || filterStatus) && (
               <button onClick={() => { setSearch(''); setFilterStatus(''); setPage(1); }}
                 className="flex items-center gap-1.5 font-body text-xs px-3 py-2.5 rounded-lg border transition-colors hover:bg-red-50"
                 style={{ borderColor: `${NAVY}20`, color: `${NAVY}70` }}>
-                <X size={12} /> Clear
+                <X size={12} /> Limpar
               </button>
             )}
           </div>
 
           <p className="font-body text-xs mb-4" style={{ color: `${NAVY}50` }}>
-            {filtered.length} of {leads.length} leads
+            {filtered.length} de {leads.length} leads
           </p>
 
           {/* Table */}
@@ -379,14 +377,14 @@ function LeadsPage() {
               </div>
             ) : filtered.length === 0 ? (
               <div className="px-6 py-16 text-center">
-                <p className="font-body text-sm" style={{ color: `${NAVY}50` }}>No leads found.</p>
+                <p className="font-body text-sm" style={{ color: `${NAVY}50` }}>Nenhum lead encontrado.</p>
               </div>
             ) : (
               <>
                 {/* Header */}
                 <div className="hidden md:grid grid-cols-[1fr_140px_160px_100px_40px] gap-4 items-center px-6 py-3 border-b"
                   style={{ borderColor: `${NAVY}08`, background: '#fafaf9' }}>
-                  {['Name', 'Dates', 'Enquiry about', 'Status', ''].map((h) => (
+                  {['Nome', 'Datas', 'Assunto', 'Status', ''].map((h) => (
                     <span key={h} className="font-body text-[10px] font-bold uppercase tracking-widest" style={{ color: `${NAVY}50` }}>{h}</span>
                   ))}
                 </div>
@@ -408,12 +406,12 @@ function LeadsPage() {
                                 {l.checkIn} → {l.checkOut ?? '?'}
                               </p>
                               {nights != null && (
-                                <p className="font-body text-[10px]" style={{ color: `${NAVY}50` }}>{nights} {nights === 1 ? 'night' : 'nights'}</p>
+                                <p className="font-body text-[10px]" style={{ color: `${NAVY}50` }}>{nights} {nights === 1 ? 'noite' : 'noites'}</p>
                               )}
                             </>
                           ) : (
                             <p className="font-body text-[10px]" style={{ color: `${NAVY}40` }}>
-                              Received {new Date(l.createdAt).toLocaleDateString('en-GB', { day: '2-digit', month: 'short' })}
+                              Recebido em {new Date(l.createdAt).toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' })}
                             </p>
                           )}
                         </div>
@@ -448,12 +446,12 @@ function LeadsPage() {
             <div className="flex items-center justify-center gap-4 mt-5">
               <button onClick={() => setPage((p) => Math.max(1, p - 1))} disabled={pageSafe === 1}
                 className="font-body text-[11px] uppercase tracking-widest disabled:opacity-30" style={{ color: `${NAVY}50` }}>
-                ← Previous
+                ← Anterior
               </button>
-              <span className="font-body text-xs" style={{ color: `${NAVY}50` }}>Page {pageSafe} of {pageCount}</span>
+              <span className="font-body text-xs" style={{ color: `${NAVY}50` }}>Página {pageSafe} de {pageCount}</span>
               <button onClick={() => setPage((p) => Math.min(pageCount, p + 1))} disabled={pageSafe === pageCount}
                 className="font-body text-[11px] uppercase tracking-widest disabled:opacity-30" style={{ color: `${NAVY}50` }}>
-                Next →
+                Próxima →
               </button>
             </div>
           )}

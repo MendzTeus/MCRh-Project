@@ -198,7 +198,7 @@ export function UnitMediaWorkspace({ unit, api, onChanged }: UnitMediaTabProps) 
     return persistItemPatch(
       item,
       { roomCategory: category || null, displayOrder: targetCount },
-      'Erro ao guardar categoria',
+      'Erro ao salvar categoria',
       refresh,
     );
   }
@@ -245,7 +245,7 @@ export function UnitMediaWorkspace({ unit, api, onChanged }: UnitMediaTabProps) 
       setOrderStatus('saved');
       setTimeout(() => setOrderStatus('idle'), 1500);
     } catch (error) {
-      setLastError(error instanceof Error ? error.message : 'Erro ao guardar ordem');
+      setLastError(error instanceof Error ? error.message : 'Erro ao salvar ordem');
       setOrderStatus('error');
     }
   }
@@ -281,11 +281,11 @@ export function UnitMediaWorkspace({ unit, api, onChanged }: UnitMediaTabProps) 
     if (!item.id) return;
     const nextAlt = window.prompt('Texto alternativo (descrição da imagem):', item.alt || '');
     if (nextAlt === null || nextAlt === (item.alt || '')) return;
-    await persistItemPatch(item, { alt: nextAlt || null }, 'Erro ao guardar texto alternativo');
+    await persistItemPatch(item, { alt: nextAlt || null }, 'Erro ao salvar texto alternativo');
   }
 
   async function remove(item: MediaItem) {
-    if (!item.id || !window.confirm('Excluir esta foto? Esta ação também remove o ficheiro do armazenamento.')) return;
+    if (!item.id || !window.confirm('Excluir esta foto? Esta ação também apaga o arquivo do armazenamento.')) return;
     setPending(item, true);
     setLastError('');
     try {

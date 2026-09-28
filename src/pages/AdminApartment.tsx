@@ -1,14 +1,13 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { Link, useParams, useSearchParams, useNavigate } from 'react-router-dom';
-import { ROOM_CATEGORIES } from '../components/PhotoTour';
 import { cleanListingTitle, getListingMedia } from '../data/listingMedia';
-import { useApi, fileToBase64, useUnsavedChangesGuard } from '../hooks/useAdminApi';
+import { useApi, useUnsavedChangesGuard } from '../hooks/useAdminApi';
 import { AdminShell } from '../components/admin/AdminShell';
 import { ADMIN_NAV_ITEMS } from '../components/admin/adminNavigation';
 import { useAdminAuth } from '../components/admin/AdminAuthContext';
 import { UnitMediaWorkspace, UnitPhotoTourPreview } from '../components/admin/media';
 
-// ── Design tokens (must match Admin.tsx) ───────────────────────────
+// ── Design tokens (same as the rest of the admin) ───────────────────────────
 const GOLD = '#C5A059';
 const NAVY = '#101c2d';
 const lbl = 'font-body text-[10px] uppercase tracking-[0.15em] text-on-surface-variant block mb-1.5';
@@ -96,84 +95,6 @@ function getDynamicCategories(unit: Pick<FullUnit, 'bedrooms' | 'bathrooms' | 'e
   return cats;
 }
 
-// ── Draggable photo tile ─────────────────────────────────────────────
-type DragTileProps = {
-  url: string; cat: string; index: number; total: number;
-  isDragging: boolean; isSaving: boolean; isHidden: boolean; isPrimary: boolean; canSetCover: boolean;
-  categories: string[];
-  selectable: boolean; isSelected: boolean; onToggleSelected: () => void;
-  onDragStart: () => void; onDragEnd: () => void;
-  onMoveLeft: () => void; onMoveRight: () => void; onRemove: () => void;
-  onCategoryChange: (cat: string) => void;
-  onToggleHidden: () => void;
-  onSetCover: () => void;
-};
-const DragTile: React.FC<DragTileProps> = ({
-  url, cat, index, total, isDragging, isSaving, isHidden, isPrimary, canSetCover,
-  categories, selectable, isSelected, onToggleSelected,
-  onDragStart, onDragEnd, onMoveLeft, onMoveRight, onRemove, onCategoryChange, onToggleHidden, onSetCover,
-}) => {
-  const btn = 'flex-1 text-white/80 text-[11px] leading-none py-1 hover:text-[#C5A059] transition-colors disabled:opacity-25 disabled:hover:text-white/80';
-  return (
-    <div className="flex flex-col gap-1 w-full">
-      {/* Image (draggable) */}
-      <div
-        draggable
-        onDragStart={(e) => { e.dataTransfer.setData('text/plain', url); e.dataTransfer.effectAllowed = 'move'; onDragStart(); }}
-        onDragEnd={(e) => { e.dataTransfer.clearData(); onDragEnd(); }}
-        className={`relative shrink-0 overflow-hidden rounded-xl shadow-md aspect-[4/3] cursor-grab active:cursor-grabbing select-none transition-opacity ${isDragging ? 'opacity-30' : isSaving ? 'opacity-60' : isHidden ? 'opacity-40' : ''}`}
-        style={{ border: `${isSelected || isPrimary ? 2 : 1}px solid ${isSelected ? '#C5A059' : isPrimary ? GOLD : isHidden ? 'rgba(186,26,26,0.5)' : 'rgba(197,198,205,0.4)'}`, boxShadow: isSelected ? '0 0 0 2px rgba(197,160,89,0.5) inset' : undefined }}
-      >
-        {selectable && (
-          <label className="absolute top-1 left-1 z-20 flex items-center justify-center w-5 h-5 rounded bg-black/40 cursor-pointer">
-            <input type="checkbox" checked={isSelected} onChange={onToggleSelected} className="accent-[#C5A059]" aria-label="Selecionar foto" />
-          </label>
-        )}
-        {isPrimary && (
-          <div className="absolute top-1 right-1 z-10 font-body text-[8px] uppercase tracking-widest text-white px-1.5 py-0.5 rounded"
-            style={{ background: GOLD }}>Capa</div>
-        )}
-        {isSaving && (
-          <div className="absolute inset-0 z-10 flex items-center justify-center bg-black/25">
-            <span className="font-body text-[9px] uppercase tracking-widest text-white">salvando…</span>
-          </div>
-        )}
-        {isHidden && !isSaving && (
-          <div className="absolute inset-0 z-10 flex items-center justify-center pointer-events-none">
-            <span className="font-body text-[9px] uppercase tracking-widest text-white bg-red-700/80 px-2 py-0.5 rounded">Oculto</span>
-          </div>
-        )}
-        <img src={url} alt="" referrerPolicy="no-referrer" className="w-full h-full object-cover" loading="lazy" />
-        <div className="absolute bottom-0 left-0 right-0 flex" style={{ background: 'rgba(16,28,45,0.78)' }}>
-          <button onClick={onMoveLeft} disabled={index === 0 || isSaving} title="Mover para a esquerda" aria-label="Mover para a esquerda" className={btn}>◀</button>
-          <button onClick={onMoveRight} disabled={index === total - 1 || isSaving} title="Mover para a direita" aria-label="Mover para a direita" className={btn}>▶</button>
-          {canSetCover && <button onClick={onSetCover} disabled={isSaving || isPrimary} title="Definir como capa" aria-label="Definir como capa" className={btn} style={{ color: isPrimary ? GOLD : undefined }}>★</button>}
-          {cat && <button onClick={onRemove} disabled={isSaving} title="Remover da categoria" aria-label="Remover da categoria" className={`${btn} hover:text-red-300`}>✕</button>}
-        </div>
-      </div>
-      {/* Category selector (always visible) */}
-      <select
-        value={cat}
-        onChange={(e) => onCategoryChange(e.target.value)}
-        disabled={isSaving}
-        className="w-full bg-surface border border-outline-variant/30 font-body text-[10px] text-on-surface-variant focus:outline-none focus:border-[#C5A059] py-1 px-1.5 rounded-sm cursor-pointer"
-      >
-        <option value="">— sem categoria —</option>
-        {categories.map((c) => <option key={c} value={c}>{c}</option>)}
-      </select>
-      {/* Hide toggle */}
-      <button
-        onClick={onToggleHidden}
-        disabled={isSaving}
-        className="w-full font-body text-[9px] uppercase tracking-[0.12em] py-1 transition-colors disabled:opacity-40"
-        style={{ color: isHidden ? '#ba1a1a' : 'rgba(0,0,0,0.35)' }}
-      >
-        {isHidden ? '● Oculto do tour' : '○ Ocultar do tour'}
-      </button>
-    </div>
-  );
-}
-
 // ══════════════════════════════════════════════════════════════════
 // TAB: Overview
 // ══════════════════════════════════════════════════════════════════
@@ -188,8 +109,8 @@ function OverviewTab({ unit }: { unit: FullUnit }) {
   if (uncatPhotos > 0) warnings.push(`${uncatPhotos} foto${uncatPhotos !== 1 ? 's' : ''} sem categoria no Photo Tour`);
   if (!unit.description) warnings.push('Sem descrição pública');
   if (!unit.postcode) warnings.push('Sem código postal');
-  if (!unit.maxGuests) warnings.push('Capacidade máxima não definida (aba Divisões)');
-  if (!unit.bedrooms) warnings.push('Número de quartos não definido (aba Divisões)');
+  if (!unit.maxGuests) warnings.push('Capacidade máxima não definida (aba Cômodos)');
+  if (!unit.bedrooms) warnings.push('Número de quartos não definido (aba Cômodos)');
   if (!unit.airbnbUrl) warnings.push('Sem link Airbnb configurado');
 
   const stat = (label: string, value: string | number | null | undefined) => (
@@ -210,7 +131,7 @@ function OverviewTab({ unit }: { unit: FullUnit }) {
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         {stat('Fotos', unit.photos.length)}
-        {stat('Reviews', unit.reviewsCount)}
+        {stat('Avaliações', unit.reviewsCount)}
         {stat('Nota média', unit.avgRating ? unit.avgRating.toFixed(2) : null)}
         {stat('Hóspedes máx.', unit.maxGuests)}
         {stat('Quartos', unit.bedrooms)}
@@ -232,7 +153,7 @@ function OverviewTab({ unit }: { unit: FullUnit }) {
         </div>
         <div className="grid gap-1.5 font-body text-sm text-on-surface-variant mt-2">
           <p>Slug: <code className="font-mono text-on-surface text-xs">{unit.unitSlug}</code></p>
-          <p>Edifício: <span className="text-on-surface">{unit.propertyName}</span> <code className="font-mono text-xs">({unit.propertySlug})</code></p>
+          <p>Prédio: <span className="text-on-surface">{unit.propertyName}</span> <code className="font-mono text-xs">({unit.propertySlug})</code></p>
           {unit.postcode && <p>Código postal: <span className="text-on-surface">{unit.postcode}</span></p>}
           {unit.suppliedSpecs && <p>Specs: <span className="text-on-surface">{unit.suppliedSpecs}</span></p>}
           <p className="mt-1">
@@ -293,8 +214,8 @@ function ContentTab({ unit, api, onChanged }: { unit: FullUnit; api: ReturnType<
       <section className="bg-white rounded-xl shadow-sm border border-navy/5 p-8 md:p-10">
         <header className="mb-8 pb-6 border-b border-navy/5 flex items-center justify-between">
           <div>
-            <h3 className="font-display text-2xl font-semibold" style={{ color: NAVY }}>Property Details</h3>
-            <p className="font-body text-sm mt-1" style={{ color: 'rgba(16,28,45,0.5)' }}>Refine the public presentation of the residence.</p>
+            <h3 className="font-display text-2xl font-semibold" style={{ color: NAVY }}>Dados do apartamento</h3>
+            <p className="font-body text-sm mt-1" style={{ color: 'rgba(16,28,45,0.5)' }}>Como o apartamento aparece no site.</p>
           </div>
           <SaveStatus s={status} error={lastError} />
         </header>
@@ -302,28 +223,28 @@ function ContentTab({ unit, api, onChanged }: { unit: FullUnit; api: ReturnType<
         <div className="grid grid-cols-1 md:grid-cols-2 gap-x-10 gap-y-7">
           {/* Internal name */}
           <div className="md:col-span-2">
-            <label className={stLbl}>Internal Name</label>
+            <label className={stLbl}>Nome interno</label>
             <input value={name} onChange={(e) => setName(e.target.value)}
               onBlur={() => name !== unit.unitName && save({ unitName: name })}
               className={stFld} placeholder="Apartment 11.2" />
-            <p className="font-body text-[10px] mt-1.5" style={{ color: 'rgba(16,28,45,0.35)' }}>Used internally and as public title fallback.</p>
+            <p className="font-body text-[10px] mt-1.5" style={{ color: 'rgba(16,28,45,0.35)' }}>Usado no admin e como título no site quando o título público está vazio.</p>
           </div>
 
           {/* Display title */}
           <div className="md:col-span-2">
-            <label className={stLbl}>Public Title</label>
+            <label className={stLbl}>Título público</label>
             <input value={displayTitle} onChange={(e) => setDisplayTitle(e.target.value)}
               onBlur={() => displayTitleDirty && save({ displayTitle: displayTitle || null }).then((saved) => saved && onChanged())}
-              className={stFld} placeholder="Leave empty to use automatic name" />
+              className={stFld} placeholder="Vazio = usa o nome automático" />
             <div className="mt-2 rounded-lg border border-navy/5 bg-[#f9f7f2] px-4 py-3 font-body text-xs leading-relaxed" aria-live="polite">
               <p style={{ color: 'rgba(16,28,45,0.55)' }}>
-                Public title now: <span className="font-semibold" style={{ color: GOLD }}>{effectivePublicTitle}</span>
+                Título no site agora: <span className="font-semibold" style={{ color: GOLD }}>{effectivePublicTitle}</span>
               </p>
               <p className="mt-1" style={{ color: 'rgba(16,28,45,0.4)' }}>
-                Original Airbnb title: <span style={{ color: 'rgba(16,28,45,0.65)' }}>{originalAirbnbTitle}</span>
+                Título original no Airbnb: <span style={{ color: 'rgba(16,28,45,0.65)' }}>{originalAirbnbTitle}</span>
               </p>
               {displayTitleDirty && (
-                <p className="mt-1" style={{ color: '#8a641f' }}>Unsaved title change — leave the field to save.</p>
+                <p className="mt-1" style={{ color: '#8a641f' }}>Alteração não salva — clique fora do campo para salvar.</p>
               )}
             </div>
           </div>
@@ -343,11 +264,11 @@ function ContentTab({ unit, api, onChanged }: { unit: FullUnit; api: ReturnType<
 
           {/* Description */}
           <div className="md:col-span-2">
-            <label className={stLbl}>Marketing Description</label>
+            <label className={stLbl}>Descrição (em inglês, aparece no site)</label>
             <textarea value={description} onChange={(e) => setDescription(e.target.value)}
               onBlur={() => description !== (unit.description || '') && save({ description: description || null })}
               className={`${stFld} resize-none leading-relaxed`} rows={6}
-              placeholder="Detailed description of the apartment, space, location…" />
+              placeholder="Descrição do apartamento, espaço, localização…" />
             <p className="font-body text-[10px] mt-1.5" style={{ color: 'rgba(16,28,45,0.35)' }}>{description.length} characters</p>
           </div>
 
@@ -361,7 +282,7 @@ function ContentTab({ unit, api, onChanged }: { unit: FullUnit; api: ReturnType<
 
           {/* Square footage */}
           <div>
-            <label className={stLbl}>Area (sq ft)</label>
+            <label className={stLbl}>Área (sq ft)</label>
             <div className="relative">
               <input type="number" min={0} value={squareFeet} onChange={(e) => setSquareFeet(e.target.value)}
                 onBlur={() => {
@@ -372,7 +293,7 @@ function ContentTab({ unit, api, onChanged }: { unit: FullUnit; api: ReturnType<
               <span className="absolute right-4 top-1/2 -translate-y-1/2 font-body text-sm font-semibold" style={{ color: 'rgba(16,28,45,0.35)' }}>ft²</span>
             </div>
             {squareFeet !== '' && parseInt(squareFeet, 10) < 0 && (
-              <p className="font-body text-[10px] mt-1" style={{ color: '#ba1a1a' }}>Area cannot be negative.</p>
+              <p className="font-body text-[10px] mt-1" style={{ color: '#ba1a1a' }}>A área não pode ser negativa.</p>
             )}
           </div>
         </div>
@@ -430,7 +351,7 @@ function RoomsTab({ unit, api, onChanged }: { unit: FullUnit; api: ReturnType<ty
   return (
     <div className="max-w-2xl space-y-8">
       <div className="flex items-center gap-4">
-        <p className="font-display text-headline-sm text-primary">Divisões e capacidade</p>
+        <p className="font-display text-headline-sm text-primary">Cômodos e capacidade</p>
         <SaveStatus s={status} error={lastError} />
       </div>
       <p className="font-body text-sm text-on-surface-variant -mt-4">
@@ -441,7 +362,7 @@ function RoomsTab({ unit, api, onChanged }: { unit: FullUnit; api: ReturnType<ty
         {numField('Hóspedes máximos', maxGuests, setMaxGuests, () => nf(maxGuests, unit.maxGuests) && save({ maxGuests: n(maxGuests) }))}
         {numField('Quartos (bedrooms)', bedrooms, setBedrooms, () => nf(bedrooms, unit.bedrooms) && save({ bedrooms: n(bedrooms) }).then(onChanged))}
         {numField('Camas (beds)', beds, setBeds, () => nf(beds, unit.beds) && save({ beds: n(beds) }))}
-        {numField('Casas de banho', bathrooms, setBathrooms, () => nf(bathrooms, unit.bathrooms) && save({ bathrooms: n(bathrooms) }).then(onChanged))}
+        {numField('Banheiros', bathrooms, setBathrooms, () => nf(bathrooms, unit.bathrooms) && save({ bathrooms: n(bathrooms) }).then(onChanged))}
         {numField('Ensuites', ensuite, setEnsuite, () => nf(ensuite, unit.ensuiteBathrooms) && save({ ensuiteBathrooms: n(ensuite) }).then(onChanged))}
         {numField('WCs', wc, setWc, () => nf(wc, unit.wcCount) && save({ wcCount: n(wc) }).then(onChanged))}
         {numField('Piso', floor, setFloor, () => nf(floor, unit.floor) && save({ floor: n(floor) }))}
@@ -451,7 +372,7 @@ function RoomsTab({ unit, api, onChanged }: { unit: FullUnit; api: ReturnType<ty
         <input type="checkbox" checked={hasLift}
           onChange={(e) => { setHasLift(e.target.checked); save({ hasLift: e.target.checked }); }}
           className="w-4 h-4 accent-[#C5A059]" />
-        <span className="font-body text-sm text-on-surface">Edifício tem elevador</span>
+        <span className="font-body text-sm text-on-surface">O prédio tem elevador</span>
       </label>
 
       <div className="border-t border-outline-variant/20 pt-6">
@@ -464,616 +385,8 @@ function RoomsTab({ unit, api, onChanged }: { unit: FullUnit; api: ReturnType<ty
           ))}
         </div>
         <p className="font-body text-[10px] text-on-surface-variant/40 mt-3">
-          As categorias dinâmicas (Bedroom 1, Bathroom 1, etc.) são geradas com base nos valores acima. Guarde os valores e recarregue para ver as categorias atualizadas.
+          As categorias dinâmicas (Bedroom 1, Bathroom 1, etc.) são geradas com base nos valores acima. Salve os valores e recarregue para ver as categorias atualizadas.
         </p>
-      </div>
-    </div>
-  );
-}
-
-// ── Pure helper: build category → url[] map from saved + Airbnb photos ─
-function buildCategoryMap(
-  savedPhotos: Photo[],
-  airbnbUrls: string[],
-  dynamicCats: string[],
-): Record<string, string[]> {
-  const cats: Record<string, string[]> = { '': [] };
-  for (const cat of dynamicCats) cats[cat] = [];
-
-  const savedSorted = [...savedPhotos].sort((a, b) => a.displayOrder - b.displayOrder);
-  const savedUrls = new Set<string>();
-  for (const p of savedSorted) {
-    const cat = p.roomCategory || '';
-    if (!cats[cat]) cats[cat] = [];
-    cats[cat].push(p.url);
-    savedUrls.add(p.url);
-  }
-  for (const url of airbnbUrls) {
-    if (!savedUrls.has(url)) cats[''].push(url);
-  }
-  return cats;
-}
-
-// ══════════════════════════════════════════════════════════════════
-// TAB: Photos — drag or select to categorise (auto-save on each change)
-// ══════════════════════════════════════════════════════════════════
-function PhotosTabUnit({ unit, api, onChanged }: { unit: FullUnit; api: ReturnType<typeof useApi>; onChanged: () => void }) {
-  const dynamicCats = useMemo(() => getDynamicCategories(unit), [unit.bedrooms, unit.bathrooms, unit.ensuiteBathrooms, unit.wcCount]);
-  const airbnbUrls = useMemo(() => getListingMedia(unit.unitSlug)?.gallery || [], [unit.unitSlug]);
-
-  const [catMap, setCatMap] = useState<Record<string, string[]>>(() =>
-    buildCategoryMap(unit.photos, airbnbUrls, dynamicCats)
-  );
-  const [saving, setSaving] = useState<Set<string>>(new Set());
-  const [lastError, setLastError] = useState('');
-  const [orderDirty, setOrderDirty] = useState(false);
-  const [orderStatus, setOrderStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
-  const [dragging, setDragging] = useState<string | null>(null);
-  const [dragOver, setDragOver] = useState<string | null>(null);
-  const customCatsKey = `mcrh_custom_cats_${unit.unitSlug}`;
-  const [hiddenUrls, setHiddenUrls] = useState<Set<string>>(
-    () => new Set(unit.photos.filter((p) => p.hidden).map((p) => p.url))
-  );
-
-  const [customCats, setCustomCats] = useState<string[]>(() => {
-    try { return JSON.parse(localStorage.getItem(customCatsKey) || '[]'); } catch { return []; }
-  });
-  const [newCatName, setNewCatName] = useState('');
-  const [catFilter, setCatFilter] = useState<string | null>(null);
-  const [selected, setSelected] = useState<Set<string>>(new Set());
-  const [bulkTargetCat, setBulkTargetCat] = useState('');
-
-  // url -> Photo record (only urls already saved as MediaAsset rows have an id/isPrimary)
-  const photoByUrl = useMemo(() => new Map(unit.photos.map((p) => [p.url, p])), [unit.photos]);
-
-  function toggleSelected(url: string) {
-    setSelected((prev) => { const next = new Set(prev); next.has(url) ? next.delete(url) : next.add(url); return next; });
-  }
-
-  async function setCover(url: string) {
-    const photo = photoByUrl.get(url);
-    if (!photo) return;
-    setSaving((prev) => new Set([...prev, url]));
-    try {
-      await api(`/admin/photos/${photo.id}`, { method: 'PATCH', body: JSON.stringify({ isPrimary: true }) });
-      onChanged();
-    } catch (e) {
-      setLastError(e instanceof Error ? e.message : 'Erro ao definir capa');
-    } finally {
-      setSaving((prev) => { const next = new Set(prev); next.delete(url); return next; });
-    }
-  }
-
-  const [uploading, setUploading] = useState(false);
-  async function uploadPhoto(file: File) {
-    setUploading(true);
-    try {
-      const { base64, type } = await fileToBase64(file);
-      await api(`/admin/units/${unit.unitSlug}/photos`, { method: 'POST', body: JSON.stringify({ dataBase64: base64, contentType: type, alt: unit.unitName }) });
-      onChanged();
-    } catch (e) {
-      setLastError(e instanceof Error ? e.message : 'Erro ao enviar foto');
-    } finally {
-      setUploading(false);
-    }
-  }
-
-  function bulkMoveToCategory() {
-    if (selected.size === 0 || !bulkTargetCat) return;
-    const toCat = bulkTargetCat === '__uncat__' ? '' : bulkTargetCat;
-    for (const url of selected) moveToCategory(url, toCat);
-    setSelected(new Set());
-    setBulkTargetCat('');
-  }
-
-  const allCats = useMemo(
-    () => [...dynamicCats, ...customCats.filter((c) => !dynamicCats.includes(c))],
-    [dynamicCats, customCats],
-  );
-
-  function addCustomCat() {
-    const name = newCatName.trim();
-    if (!name || allCats.includes(name)) return;
-    const next = [...customCats, name];
-    setCustomCats(next);
-    localStorage.setItem(customCatsKey, JSON.stringify(next));
-    setCatMap((prev) => ({ ...prev, [name]: [] }));
-    setNewCatName('');
-  }
-
-  const stateKey = unit.unitSlug + '|' + unit.photos.map((p) => p.id + p.roomCategory + p.displayOrder).join(',');
-  useEffect(() => {
-    setCatMap(buildCategoryMap(unit.photos, airbnbUrls, dynamicCats));
-    setHiddenUrls(new Set(unit.photos.filter((p) => p.hidden).map((p) => p.url)));
-    setOrderDirty(false);
-  }, [stateKey]); // eslint-disable-line react-hooks/exhaustive-deps
-
-  const totalPhotos = useMemo(() => (Object.values(catMap) as string[][]).reduce((s, arr) => s + arr.length, 0), [catMap]);
-  const uncatCount = (catMap[''] as string[] | undefined)?.length ?? 0;
-
-  const visibleCats = useMemo((): string[] => {
-    const keys: string[] = ['', ...allCats];
-    for (const k of Object.keys(catMap)) if (!keys.includes(k)) keys.push(k);
-    return keys.filter((k) => k === '' || ((catMap[k] as string[] | undefined)?.length ?? 0) > 0 || allCats.includes(k));
-  }, [catMap, allCats]);
-
-  // Auto-save a single photo's category/hidden change
-  async function saveOne(url: string, toCat: string, order: number, hidden?: boolean) {
-    setSaving((prev) => new Set([...prev, url]));
-    setLastError('');
-    try {
-      await api(`/admin/units/${unit.unitSlug}/photos/references`, {
-        method: 'POST',
-        body: JSON.stringify({ assignments: [{ url, roomCategory: toCat || null, displayOrder: order, alt: unit.unitName, hidden: hidden ?? hiddenUrls.has(url) }] }),
-      });
-      onChanged();
-    } catch (e) {
-      setLastError(e instanceof Error ? e.message : 'Erro ao salvar');
-    } finally {
-      setSaving((prev) => { const next = new Set(prev); next.delete(url); return next; });
-    }
-  }
-
-  function toggleHidden(url: string, cat: string) {
-    const nowHidden = !hiddenUrls.has(url);
-    setHiddenUrls((prev) => { const next = new Set(prev); nowHidden ? next.add(url) : next.delete(url); return next; });
-    const order = (catMap[cat] as string[] | undefined)?.indexOf(url) ?? 0;
-    saveOne(url, cat, order, nowHidden);
-  }
-
-  // Save current order for a whole category (after ◀ ▶)
-  async function saveOrder() {
-    setOrderStatus('saving');
-    const assignments: { url: string; roomCategory: string | null; displayOrder: number; alt: string }[] = [];
-    for (const [cat, urls] of Object.entries(catMap) as [string, string[]][]) {
-      urls.forEach((url, i) => assignments.push({ url, roomCategory: cat || null, displayOrder: i, alt: unit.unitName }));
-    }
-    try {
-      await api(`/admin/units/${unit.unitSlug}/photos/references`, {
-        method: 'POST', body: JSON.stringify({ assignments }),
-      });
-      setOrderStatus('saved'); setOrderDirty(false); setTimeout(() => setOrderStatus('idle'), 1500);
-      onChanged();
-    } catch (e) {
-      setLastError(e instanceof Error ? e.message : 'Erro ao salvar ordem');
-      setOrderStatus('error');
-    }
-  }
-
-  function moveToCategory(url: string, toCat: string) {
-    const newOrder = (catMap[toCat] as string[] | undefined)?.length ?? 0;
-    setCatMap((prev) => {
-      const next: Record<string, string[]> = {};
-      for (const [k, arr] of Object.entries(prev) as [string, string[]][]) next[k] = arr.filter((u) => u !== url);
-      if (!next[toCat]) next[toCat] = [];
-      next[toCat] = [...next[toCat], url];
-      return next;
-    });
-    saveOne(url, toCat, newOrder);
-  }
-
-  function moveWithin(url: string, cat: string, dir: -1 | 1) {
-    setCatMap((prev) => {
-      const arr = [...((prev[cat] as string[] | undefined) || [])];
-      const idx = arr.indexOf(url);
-      const swap = idx + dir;
-      if (idx === -1 || swap < 0 || swap >= arr.length) return prev;
-      [arr[idx], arr[swap]] = [arr[swap], arr[idx]];
-      return { ...prev, [cat]: arr };
-    });
-    setOrderDirty(true);
-  }
-
-  return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="flex items-start justify-between gap-4 flex-wrap">
-        <div>
-          <h2 className="font-display text-2xl font-bold text-navy">Fotos</h2>
-          <p className="font-body text-xs text-on-surface-variant mt-0.5">
-            {totalPhotos} foto{totalPhotos !== 1 ? 's' : ''} · arraste ou use o seletor em cada foto
-          </p>
-          {lastError && (
-            <p className="font-body text-xs text-red-600 mt-1 max-w-md">{lastError}</p>
-          )}
-        </div>
-        {orderDirty && (
-          <button
-            onClick={saveOrder}
-            disabled={orderStatus === 'saving'}
-            className="shrink-0 px-4 py-2 font-body text-[11px] uppercase tracking-[0.15em] text-white transition-all disabled:opacity-60"
-            style={{ background: GOLD }}
-          >
-            {orderStatus === 'saving' ? 'Salvando…' : orderStatus === 'saved' ? '✓ Ordem salva' : 'Salvar ordem'}
-          </button>
-        )}
-      </div>
-
-      {saving.size > 0 && (
-        <div className="flex items-center gap-2 px-3 py-2 rounded border border-outline-variant/20 bg-surface-container/40">
-          <span className="font-body text-[11px] text-on-surface-variant/70" style={{ color: GOLD }}>
-            Salvando {saving.size} foto{saving.size !== 1 ? 's' : ''}…
-          </span>
-        </div>
-      )}
-
-      {uncatCount > 0 && (
-        <div className="px-4 py-3 rounded-lg border border-amber-200 bg-amber-50/60">
-          <span className="font-body text-sm text-amber-700">
-            ⚠ {uncatCount} foto{uncatCount !== 1 ? 's' : ''} sem categoria — use o seletor ou arraste para uma secção abaixo
-          </span>
-        </div>
-      )}
-
-      {totalPhotos === 0 && (
-        <div className="border border-dashed border-outline-variant/40 rounded-xl px-6 py-16 text-center">
-          <p className="font-body text-sm text-on-surface-variant/60">Nenhuma foto encontrada para este apartamento.</p>
-        </div>
-      )}
-
-      {/* Category filter chips */}
-      <div className="flex flex-wrap items-center gap-2">
-        <span className="font-body text-[10px] uppercase tracking-[0.15em] text-on-surface-variant/60 shrink-0">Filtrar:</span>
-        <button
-          onClick={() => setCatFilter(null)}
-          className="px-2.5 py-1 rounded-full font-body text-[10px] uppercase tracking-widest transition-colors"
-          style={catFilter === null ? { background: NAVY, color: '#fff' } : { border: '1px solid rgba(0,0,0,0.15)', color: 'rgba(0,0,0,0.5)' }}
-        >
-          Todas
-        </button>
-        <button
-          onClick={() => setCatFilter('')}
-          className="px-2.5 py-1 rounded-full font-body text-[10px] uppercase tracking-widest transition-colors"
-          style={catFilter === '' ? { background: '#92400e', color: '#fff' } : { border: '1px solid rgba(0,0,0,0.15)', color: 'rgba(0,0,0,0.5)' }}
-        >
-          Sem categoria ({uncatCount})
-        </button>
-        {allCats.map((c) => (
-          <button
-            key={c}
-            onClick={() => setCatFilter(c)}
-            className="px-2.5 py-1 rounded-full font-body text-[10px] uppercase tracking-widest transition-colors"
-            style={catFilter === c ? { background: GOLD, color: '#fff' } : { border: '1px solid rgba(0,0,0,0.15)', color: 'rgba(0,0,0,0.5)' }}
-          >
-            {c} ({(catMap[c] as string[] | undefined)?.length ?? 0})
-          </button>
-        ))}
-      </div>
-
-      {/* Bulk selection bar */}
-      {selected.size > 0 && (
-        <div className="flex items-center gap-3 px-4 py-2.5 rounded-lg border" style={{ borderColor: GOLD, background: 'rgba(197,160,89,0.08)' }}>
-          <span className="font-body text-xs text-on-surface">{selected.size} selecionada{selected.size !== 1 ? 's' : ''}</span>
-          <select
-            value={bulkTargetCat}
-            onChange={(e) => setBulkTargetCat(e.target.value)}
-            className="bg-surface border border-outline-variant/30 font-body text-[11px] text-on-surface-variant py-1 px-2 rounded-sm"
-          >
-            <option value="">Mover para…</option>
-            <option value="__uncat__">— sem categoria —</option>
-            {allCats.map((c) => <option key={c} value={c}>{c}</option>)}
-          </select>
-          <button
-            onClick={bulkMoveToCategory}
-            disabled={!bulkTargetCat}
-            className="px-3 py-1 font-body text-[10px] uppercase tracking-[0.15em] text-white disabled:opacity-40"
-            style={{ background: GOLD }}
-          >
-            Aplicar
-          </button>
-          <button onClick={() => setSelected(new Set())} className="font-body text-[10px] uppercase tracking-widest text-on-surface-variant/60 hover:text-on-surface-variant ml-auto">
-            Limpar seleção
-          </button>
-        </div>
-      )}
-
-      {/* Add custom category */}
-      <div className="flex items-center gap-3 pb-2 border-b border-outline-variant/20">
-        <span className="font-body text-[10px] uppercase tracking-[0.15em] text-on-surface-variant shrink-0">Nova categoria</span>
-        <input
-          value={newCatName}
-          onChange={(e) => setNewCatName(e.target.value)}
-          onKeyDown={(e) => e.key === 'Enter' && addCustomCat()}
-          placeholder="Ex: Bedroom 4, Estúdio, Varanda Sul…"
-          className="flex-1 bg-transparent border-b border-outline-variant/40 py-1 font-body text-sm text-on-surface focus:outline-none focus:border-[#C5A059] transition-colors"
-        />
-        <button
-          onClick={addCustomCat}
-          disabled={!newCatName.trim() || allCats.includes(newCatName.trim())}
-          className="shrink-0 px-4 py-1.5 font-body text-[11px] uppercase tracking-[0.15em] text-white disabled:opacity-40 transition-opacity"
-          style={{ background: GOLD }}
-        >
-          Adicionar
-        </button>
-      </div>
-
-      {/* Category sections — each is a drop zone */}
-      {visibleCats.filter((cat) => catFilter === null || cat === catFilter).map((cat: string) => {
-        const catPhotos = (catMap[cat] as string[] | undefined) ?? [];
-        const isOver = dragOver === cat;
-
-        return (
-          <div key={cat || '_uncat'}>
-            <div
-              onDragOver={(e) => { e.preventDefault(); setDragOver(cat); }}
-              onDragLeave={(e) => { if (!e.currentTarget.contains(e.relatedTarget as Node)) setDragOver(null); }}
-              onDrop={(e) => {
-                e.preventDefault();
-                setDragOver(null);
-                const url = e.dataTransfer.getData('text/plain');
-                if (url) moveToCategory(url, cat);
-              }}
-              className={`rounded-xl transition-all duration-150 ${
-                isOver ? 'ring-2 ring-primary/50 bg-primary/5' : dragging ? 'ring-1 ring-outline-variant/30' : ''
-              }`}
-            >
-              <div className="flex items-center gap-3 px-3 py-2.5">
-                <h3 className="font-body text-[11px] uppercase tracking-[0.15em]" style={{ color: cat ? NAVY : '#92400e' }}>
-                  {cat || 'Sem categoria'}
-                </h3>
-                <span className="font-body text-[10px] text-on-surface-variant/50">{catPhotos.length}</span>
-                {catPhotos.length > 0 && (
-                  <button
-                    onClick={() => setSelected((prev) => {
-                      const allIn = catPhotos.every((u) => prev.has(u));
-                      const next = new Set(prev);
-                      catPhotos.forEach((u) => allIn ? next.delete(u) : next.add(u));
-                      return next;
-                    })}
-                    className="font-body text-[9px] uppercase tracking-widest text-on-surface-variant/40 hover:text-on-surface-variant transition-colors"
-                  >
-                    {catPhotos.every((u) => selected.has(u)) ? 'Desmarcar todas' : 'Selecionar todas'}
-                  </button>
-                )}
-                <div className="flex-1 h-px bg-outline-variant/20" />
-                {dragging && (
-                  <span className="font-body text-[9px] uppercase tracking-widest"
-                    style={{ color: isOver ? GOLD : 'rgba(0,0,0,0.2)' }}>
-                    {isOver ? '↓ Soltar aqui' : 'Soltar aqui'}
-                  </span>
-                )}
-              </div>
-
-              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6 px-3 pb-4 min-h-[40px]">
-                {catPhotos.map((url, i) => (
-                  <DragTile
-                    key={url}
-                    url={url}
-                    cat={cat}
-                    index={i}
-                    total={catPhotos.length}
-                    isDragging={dragging === url}
-                    isSaving={saving.has(url)}
-                    isHidden={hiddenUrls.has(url)}
-                    isPrimary={photoByUrl.get(url)?.isPrimary ?? false}
-                    canSetCover={!!photoByUrl.get(url)?.id}
-                    categories={allCats}
-                    selectable
-                    isSelected={selected.has(url)}
-                    onToggleSelected={() => toggleSelected(url)}
-                    onDragStart={() => setDragging(url)}
-                    onDragEnd={() => { setDragging(null); setDragOver(null); }}
-                    onMoveLeft={() => moveWithin(url, cat, -1)}
-                    onMoveRight={() => moveWithin(url, cat, 1)}
-                    onRemove={() => moveToCategory(url, '')}
-                    onCategoryChange={(newCat) => moveToCategory(url, newCat)}
-                    onToggleHidden={() => toggleHidden(url, cat)}
-                    onSetCover={() => setCover(url)}
-                  />
-                ))}
-
-                {catPhotos.length === 0 && (
-                  <div className={`col-span-full h-16 rounded-lg flex items-center justify-center border border-dashed transition-colors ${
-                    isOver ? 'border-primary/50' : 'border-outline-variant/25'
-                  }`}>
-                    <span className="font-body text-xs" style={{ color: isOver ? GOLD : 'rgba(0,0,0,0.2)' }}>
-                      {isOver ? 'Soltar para adicionar' : 'Arraste fotos aqui'}
-                    </span>
-                  </div>
-                )}
-
-                {/* Upload a new photo — lands uncategorized; drag it into a category afterwards */}
-                <label
-                  className={`aspect-[4/3] rounded-xl border-2 border-dashed border-outline-variant/40 flex flex-col items-center justify-center gap-1 cursor-pointer transition-colors hover:border-[#C5A059] ${uploading ? 'opacity-50 pointer-events-none' : ''}`}
-                  title="Adicionar foto"
-                >
-                  <span className="text-xl" style={{ color: GOLD }}>＋</span>
-                  <span className="font-body text-[9px] uppercase tracking-widest text-on-surface-variant/60">
-                    {uploading ? 'Enviando…' : 'Adicionar foto'}
-                  </span>
-                  <input
-                    type="file"
-                    accept="image/*"
-                    className="hidden"
-                    onChange={(e) => { const f = e.target.files?.[0]; if (f) uploadPhoto(f); e.target.value = ''; }}
-                  />
-                </label>
-              </div>
-            </div>
-          </div>
-        );
-      })}
-    </div>
-  );
-}
-
-// ══════════════════════════════════════════════════════════════════
-// TAB: Photo Tour (preview + category stats)
-// ══════════════════════════════════════════════════════════════════
-function PhotoTourTab({ unit }: { unit: FullUnit }) {
-  const dynamicCats = useMemo(() => getDynamicCategories(unit), [unit.bedrooms, unit.bathrooms, unit.ensuiteBathrooms, unit.wcCount]);
-  const sortedPhotos = useMemo(() => [...unit.photos].sort((a, b) => a.displayOrder - b.displayOrder), [unit.photos]);
-
-  const catGroups = useMemo(() => {
-    const map = new Map<string, Photo[]>();
-    for (const p of sortedPhotos) {
-      const cat = p.roomCategory || '';
-      if (!map.has(cat)) map.set(cat, []);
-      map.get(cat)!.push(p);
-    }
-    // Order: dynamic first, then extras
-    const ordered: [string, Photo[]][] = [];
-    const seen = new Set<string>();
-    for (const cat of dynamicCats) {
-      if (map.has(cat)) { ordered.push([cat, map.get(cat)!]); seen.add(cat); }
-    }
-    for (const [cat, photos] of map.entries()) {
-      if (!seen.has(cat)) ordered.push([cat, photos]);
-    }
-    return ordered;
-  }, [sortedPhotos, dynamicCats]);
-
-  const uncatCount = sortedPhotos.filter((p) => !p.roomCategory).length;
-  const sectionCount = catGroups.filter(([cat]) => cat !== '').length;
-  const catCount = sortedPhotos.filter((p) => p.roomCategory).length;
-
-  return (
-    <div className="space-y-8">
-      <div>
-        <p className="font-display text-headline-sm text-primary mb-1">Photo Tour — pré-visualização</p>
-        <p className="font-body text-sm text-on-surface-variant">
-          Como as fotos serão agrupadas no Photo Tour público. Para atribuir categorias, use a aba "Fotos".
-        </p>
-      </div>
-
-      <div className="grid grid-cols-3 gap-4">
-        <div className="border border-outline-variant/20 rounded-xl shadow-sm p-4 text-center">
-          <p className="font-display text-3xl text-primary">{sectionCount}</p>
-          <p className="font-body text-[10px] uppercase tracking-widest text-on-surface-variant/60 mt-1">Secções</p>
-        </div>
-        <div className="border border-outline-variant/20 rounded-xl shadow-sm p-4 text-center">
-          <p className="font-display text-3xl text-primary">{catCount}</p>
-          <p className="font-body text-[10px] uppercase tracking-widest text-on-surface-variant/60 mt-1">Fotos categorizadas</p>
-        </div>
-        <div className="rounded-lg p-4 text-center border"
-          style={{ borderColor: uncatCount > 0 ? '#fbbf24' : '#e2e8f0' }}>
-          <p className="font-display text-3xl" style={{ color: uncatCount > 0 ? '#d97706' : '#3f7d5b' }}>{uncatCount}</p>
-          <p className="font-body text-[10px] uppercase tracking-widest text-on-surface-variant/60 mt-1">Sem categoria</p>
-        </div>
-      </div>
-
-      {uncatCount > 0 && (
-        <div className="flex items-center gap-2 px-4 py-3 rounded-lg border border-amber-200 bg-amber-50/60">
-          <span className="font-body text-sm text-amber-700">
-            ⚠ {uncatCount} foto{uncatCount !== 1 ? 's' : ''} sem categoria não aparecer{uncatCount !== 1 ? 'ão' : 'á'} no Photo Tour público.
-            Classifique-as na aba "Fotos".
-          </span>
-        </div>
-      )}
-
-      {catGroups.length === 0 && (
-        <p className="font-body text-sm text-on-surface-variant">Nenhuma foto carregada ainda.</p>
-      )}
-
-      {catGroups.map(([cat, photos]) => (
-        <div key={cat || '_uncat'} className="space-y-3">
-          <div className="flex items-center gap-3">
-            <h3 className="font-body text-[11px] uppercase tracking-[0.15em]" style={{ color: cat ? NAVY : '#92400e' }}>
-              {cat || 'Sem categoria (não publicado)'}
-            </h3>
-            <span className="font-body text-[10px] text-on-surface-variant/50">{photos.length} foto{photos.length !== 1 ? 's' : ''}</span>
-            <div className="flex-1 h-px bg-outline-variant/20" />
-          </div>
-          <div className="flex flex-wrap gap-2">
-            {photos.map((p) => (
-              <div key={p.id} className="relative group">
-                <img src={p.url} alt={p.alt || ''} className="w-20 h-20 object-cover rounded" />
-                {p.isPrimary && (
-                  <div className="absolute top-0.5 left-0.5 font-body text-[7px] uppercase tracking-widest text-white px-1 py-0.5 rounded"
-                    style={{ background: GOLD }}>Capa</div>
-                )}
-              </div>
-            ))}
-          </div>
-        </div>
-      ))}
-    </div>
-  );
-}
-
-// ══════════════════════════════════════════════════════════════════
-// TAB: Reviews
-// ══════════════════════════════════════════════════════════════════
-type ReviewRow = {
-  id: string; propertySlug: string; name: string | null; date: string | null;
-  text: string | null; rating: number; published: boolean;
-  displayOrder: number; avatarUrl: string | null; sourceReviewId: string | null;
-};
-
-function ReviewsTabUnit({ unit, api }: { unit: FullUnit; api: ReturnType<typeof useApi> }) {
-  const [reviews, setReviews] = useState<ReviewRow[]>([]);
-  const [loading, setLoading] = useState(true);
-
-  const load = useCallback(async () => {
-    setLoading(true);
-    try {
-      const d = await api(`/admin/reviews?property=${unit.unitSlug}`);
-      setReviews(Array.isArray(d) ? d : []);
-    } finally { setLoading(false); }
-  }, [api, unit.unitSlug]);
-
-  useEffect(() => { load(); }, [load]);
-
-  async function add() {
-    await api('/admin/reviews', {
-      method: 'POST',
-      body: JSON.stringify({ propertySlug: unit.unitSlug, name: 'Nome', date: 'Mês AAAA', text: '', rating: 5, displayOrder: reviews.length + 1 }),
-    });
-    load();
-  }
-
-  async function update(id: string, patch: Partial<ReviewRow>) {
-    await api(`/admin/reviews/${id}`, { method: 'PATCH', body: JSON.stringify(patch) });
-    setReviews((prev) => prev.map((r) => (r.id === id ? { ...r, ...patch } : r)));
-  }
-
-  async function remove(id: string) {
-    if (!window.confirm('Remover este review?')) return;
-    await api(`/admin/reviews/${id}`, { method: 'DELETE' });
-    setReviews((prev) => prev.filter((r) => r.id !== id));
-  }
-
-  return (
-    <div className="max-w-3xl space-y-6">
-      <div className="flex items-center justify-between">
-        <p className="font-display text-headline-sm text-primary">Reviews</p>
-        <span className="font-body text-xs text-on-surface-variant">
-          {loading ? 'carregando…' : `${reviews.length} review${reviews.length !== 1 ? 's' : ''}`}
-        </span>
-      </div>
-
-      <div className="space-y-4">
-        {reviews.map((r) => (
-          <div key={r.id} className="border border-outline-variant/30 rounded-xl shadow-sm p-4 grid gap-3" style={{ opacity: r.published ? 1 : 0.55 }}>
-            <div className="flex items-center gap-3 flex-wrap">
-              <input value={r.name || ''} placeholder="Nome do hóspede" onChange={(e) => update(r.id, { name: e.target.value })} className={`${fld} flex-1 min-w-0`} />
-              <input value={r.date || ''} placeholder="Mês AAAA" onChange={(e) => update(r.id, { date: e.target.value })} className={`${fld} w-28`} />
-              <input type="number" value={r.rating} min={1} max={5} step={0.1} title="Nota"
-                onChange={(e) => update(r.id, { rating: Number(e.target.value) })} className={`${fld} w-16`} />
-            </div>
-            <textarea value={r.text || ''} placeholder="Texto do review…" rows={3}
-              onChange={(e) => update(r.id, { text: e.target.value })} className={`${fld} resize-none`} />
-            <div className="flex items-center gap-3">
-              {r.avatarUrl
-                ? <img src={r.avatarUrl} alt={r.name || ''} className="w-9 h-9 rounded-full object-cover shrink-0" />
-                : <div className="w-9 h-9 rounded-full bg-outline-variant/20 shrink-0" />}
-              <input value={r.avatarUrl || ''} placeholder="URL do avatar"
-                onChange={(e) => update(r.id, { avatarUrl: e.target.value })} className={`${fld} flex-1`} />
-            </div>
-            <div className="flex items-center gap-4">
-              <button onClick={() => update(r.id, { published: !r.published })}
-                className="font-body text-[10px] uppercase tracking-[0.12em] text-on-surface-variant/70">
-                {r.published ? '● Publicado' : '○ Oculto'}
-              </button>
-              <button onClick={() => remove(r.id)} className="font-body text-[10px] uppercase tracking-[0.12em] text-red-500 ml-auto">
-                Remover
-              </button>
-            </div>
-          </div>
-        ))}
-        <button onClick={add} className="font-body text-[10px] uppercase tracking-[0.15em]" style={{ color: GOLD }}>
-          + Adicionar review
-        </button>
       </div>
     </div>
   );
@@ -1083,19 +396,19 @@ function ReviewsCanonicalLink({ unit }: { unit: FullUnit }) {
   return (
     <div className="max-w-3xl space-y-6">
       <div>
-        <p className="font-display text-headline-sm text-primary">Reviews</p>
+        <p className="font-display text-headline-sm text-primary">Avaliações</p>
         <p className="font-body text-sm text-on-surface-variant mt-1">
-          Review management is centralised in the Reviews workspace.
+          As avaliações são gerenciadas na página Avaliações.
         </p>
       </div>
       <div className="grid grid-cols-2 gap-4">
         <div className="border border-outline-variant/20 rounded-xl shadow-sm p-5">
           <p className="font-display text-3xl text-primary">{unit.reviewsCount}</p>
-          <p className="font-body text-[10px] uppercase tracking-widest text-on-surface-variant/60 mt-1">Published reviews</p>
+          <p className="font-body text-[10px] uppercase tracking-widest text-on-surface-variant/60 mt-1">Avaliações publicadas</p>
         </div>
         <div className="border border-outline-variant/20 rounded-xl shadow-sm p-5">
           <p className="font-display text-3xl text-primary">{unit.avgRating != null ? unit.avgRating.toFixed(2) : '—'}</p>
-          <p className="font-body text-[10px] uppercase tracking-widest text-on-surface-variant/60 mt-1">Average rating</p>
+          <p className="font-body text-[10px] uppercase tracking-widest text-on-surface-variant/60 mt-1">Nota média</p>
         </div>
       </div>
       <Link
@@ -1103,7 +416,7 @@ function ReviewsCanonicalLink({ unit }: { unit: FullUnit }) {
         className="inline-flex items-center px-5 py-2.5 font-body text-[11px] uppercase tracking-[0.15em] border transition-colors"
         style={{ borderColor: GOLD, color: GOLD }}
       >
-        Manage this apartment’s reviews →
+        Gerenciar as avaliações deste apartamento →
       </Link>
     </div>
   );
@@ -1154,7 +467,7 @@ function BookingTab({ unit, api }: { unit: FullUnit; api: ReturnType<typeof useA
 
       <p className="font-body text-xs text-on-surface-variant/50 border-t border-outline-variant/20 pt-4">
         Os feeds iCal são sincronizados automaticamente para bloquear datas no calendário de disponibilidade.
-        Use o separador "Disponibilidade" no admin principal para forçar sincronização manual.
+        Use a página "Disponibilidade" do admin para forçar uma sincronização manual.
       </p>
     </div>
   );
@@ -1219,7 +532,7 @@ function SettingsTab({ unit, api, onChanged }: { unit: FullUnit; api: ReturnType
     } catch (saveError) {
       setFeatured(previous);
       setFeaturedStatus('error');
-      setFeaturedError(saveError instanceof Error ? saveError.message : 'Erro ao guardar destaques');
+      setFeaturedError(saveError instanceof Error ? saveError.message : 'Erro ao salvar destaques');
     }
   }
 
@@ -1261,7 +574,7 @@ function SettingsTab({ unit, api, onChanged }: { unit: FullUnit; api: ReturnType
       {/* Homepage featured placement — intentionally remains SiteContent['home.featured']. */}
       <div className="border border-outline-variant/20 rounded-xl shadow-sm p-5 space-y-4">
         <div className="flex items-center gap-4">
-          <p className={lbl}>Featured on home</p>
+          <p className={lbl}>Em destaque na Home</p>
           <SaveStatus s={featuredStatus} error={featuredError} />
         </div>
         <div className="flex items-center justify-between gap-4 flex-wrap">
@@ -1380,7 +693,7 @@ function SettingsTab({ unit, api, onChanged }: { unit: FullUnit; api: ReturnType
       <div className="border-t border-outline-variant/20 pt-6 space-y-2 text-on-surface-variant/50">
         <p className="font-body text-[10px] uppercase tracking-[0.12em] font-semibold">Informações (só leitura)</p>
         <p className="font-body text-xs">Slug: <code className="font-mono">{unit.unitSlug}</code></p>
-        <p className="font-body text-xs">Edifício: <code className="font-mono">{unit.propertySlug}</code></p>
+        <p className="font-body text-xs">Prédio: <code className="font-mono">{unit.propertySlug}</code></p>
         <p className="font-body text-xs">
           Airbnb listado: <span style={{ color: unit.airbnbListed ? '#3f7d5b' : '#ef4444' }}>
             {unit.airbnbListed ? 'Sim' : 'Não (verificação automática diária)'}
@@ -1427,10 +740,10 @@ export default function AdminApartment() {
   const tabs: { id: ApartmentTab; label: string }[] = [
     { id: 'overview', label: 'Resumo' },
     { id: 'content', label: 'Conteúdo' },
-    { id: 'rooms', label: 'Divisões' },
+    { id: 'rooms', label: 'Cômodos' },
     { id: 'photos', label: 'Fotos' },
     { id: 'photo-tour', label: 'Photo Tour' },
-    { id: 'reviews', label: 'Reviews' },
+    { id: 'reviews', label: 'Avaliações' },
     { id: 'booking', label: 'Reservas' },
     { id: 'settings', label: 'Configurações' },
   ];
@@ -1444,7 +757,7 @@ export default function AdminApartment() {
       navItems={ADMIN_NAV_ITEMS}
       activeId="apartments"
       breadcrumbs={[
-        { label: 'Apartments', onClick: () => navigate('/admin/apartments') },
+        { label: 'Apartamentos', onClick: () => navigate('/admin/apartments') },
         { label: unit ? unit.unitName : (unitSlug || '') },
       ]}
       rightSlot={
@@ -1472,7 +785,7 @@ export default function AdminApartment() {
             </h2>
             {unit.updatedAt && (
               <p className="font-body text-[10px] uppercase tracking-widest mt-1" style={{ color: 'rgba(16,28,45,0.4)' }}>
-                Last updated {new Date(unit.updatedAt).toLocaleString('pt-BR', { dateStyle: 'medium', timeStyle: 'short' })}
+                Atualizado em {new Date(unit.updatedAt).toLocaleString('pt-BR', { dateStyle: 'medium', timeStyle: 'short' })}
               </p>
             )}
           </div>

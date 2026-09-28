@@ -37,19 +37,19 @@ type BulkResult = {
 };
 
 const BULK_ACTION_LABELS: Record<BulkAction, string> = {
-  show: 'Show selected',
-  hide: 'Hide selected',
-  feature: 'Add to featured',
-  unfeature: 'Remove from featured',
+  show: 'Publicar selecionados',
+  hide: 'Ocultar selecionados',
+  feature: 'Destacar na Home',
+  unfeature: 'Tirar do destaque',
 };
 
 function formatUpdatedAt(value?: string) {
   if (!value) return { label: '—', title: 'No update date available' };
   const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return { label: '—', title: 'Invalid update date' };
+  if (Number.isNaN(date.getTime())) return { label: '—', title: 'Data inválida' };
   return {
-    label: date.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }),
-    title: date.toLocaleString('en-GB'),
+    label: date.toLocaleDateString('pt-BR', { day: '2-digit', month: 'short', year: 'numeric' }),
+    title: date.toLocaleString('pt-BR'),
   };
 }
 
@@ -58,7 +58,7 @@ function VisiToggle({ checked, disabled, onChange }: { checked: boolean; disable
   return (
     <label
       className={`relative inline-flex items-center ${disabled ? 'cursor-wait opacity-50' : 'cursor-pointer'}`}
-      title={disabled ? 'Saving visibility…' : checked ? 'Visible — click to hide' : 'Hidden — click to publish'}
+      title={disabled ? 'Salvando…' : checked ? 'Visível — clique para ocultar' : 'Oculto — clique para publicar'}
     >
       <input type="checkbox" className="sr-only peer" checked={checked} disabled={disabled} onChange={onChange} />
       <div
@@ -88,7 +88,7 @@ function Pagination({ page, pageCount, total, pageSize, onPage }: {
       style={{ background: `${NAVY}08`, borderColor: `${NAVY}08` }}
     >
       <p className="font-body text-xs" style={{ color: `${NAVY}60` }}>
-        Showing <span className="font-bold">{from}–{to}</span> of {total} apartments
+        Mostrando <span className="font-bold">{from}–{to}</span> de {total} apartamentos
       </p>
       <div className="flex items-center gap-2">
         <button
@@ -153,13 +153,13 @@ function ApartmentsList() {
         api('/admin/units'),
         api('/admin/site'),
       ]);
-      if (!Array.isArray(unitsData?.units)) throw new Error('Invalid apartments response');
+      if (!Array.isArray(unitsData?.units)) throw new Error('Resposta inválida do servidor');
       setUnits(unitsData.units);
 
       const featured = siteData?.content?.['home.featured'];
       setFeaturedSlugs(Array.isArray(featured) ? featured.filter((slug): slug is string => typeof slug === 'string') : []);
     } catch (error) {
-      setLoadError(error instanceof Error ? error.message : 'Failed to load apartments');
+      setLoadError(error instanceof Error ? error.message : 'Falha ao carregar os apartamentos');
     } finally {
       setLoading(false);
     }
@@ -244,7 +244,7 @@ function ApartmentsList() {
         ...prev,
         [unit.unitSlug]: {
           status: 'error',
-          error: error instanceof Error ? error.message : 'Failed to update visibility',
+          error: error instanceof Error ? error.message : 'Falha ao alterar a visibilidade',
         },
       }));
     }
@@ -283,7 +283,7 @@ function ApartmentsList() {
           } catch (error) {
             return {
               unit,
-              error: error instanceof Error ? error.message : 'Failed to update visibility',
+              error: error instanceof Error ? error.message : 'Falha ao alterar a visibilidade',
             };
           }
         }));
@@ -352,7 +352,7 @@ function ApartmentsList() {
             });
           }, 2000);
         } catch (error) {
-          const message = error instanceof Error ? error.message : 'Failed to update featured apartments';
+          const message = error instanceof Error ? error.message : 'Falha ao alterar os destaques';
           const failures = selectedUnits.map((unit) => ({
             unitSlug: unit.unitSlug,
             unitName: unit.unitName,
@@ -379,15 +379,15 @@ function ApartmentsList() {
     <AdminShell
       navItems={ADMIN_NAV_ITEMS}
       activeId="apartments"
-      breadcrumbs={[{ label: 'Admin' }, { label: 'Apartments' }]}
+      breadcrumbs={[{ label: 'Admin' }, { label: 'Apartamentos' }]}
     >
       <div style={{ background: CREAM, minHeight: '100%' }} className="-mx-4 md:-mx-10 -mt-10 px-4 md:px-10 pt-10 pb-12">
 
         {/* Page header */}
         <div className="mb-10">
           <div>
-            <h2 className="font-headline text-4xl mb-1" style={{ color: NAVY }}>Apartments</h2>
-            <p className="font-body text-sm" style={{ color: `${NAVY}60` }}>Manage and monitor your serviced luxury residences.</p>
+            <h2 className="font-headline text-4xl mb-1" style={{ color: NAVY }}>Apartamentos</h2>
+            <p className="font-body text-sm" style={{ color: `${NAVY}60` }}>Visibilidade, destaque na Home e status no Airbnb de cada apartamento.</p>
           </div>
         </div>
 
@@ -398,7 +398,7 @@ function ApartmentsList() {
             <input
               value={query}
               onChange={(e) => setQuery(e.target.value)}
-              placeholder="Search by name, property, or ID…"
+              placeholder="Buscar por nome, prédio ou ID…"
               className="w-full pl-10 pr-4 py-2.5 rounded-lg border font-body text-sm focus:outline-none focus:ring-1 transition-colors"
               style={{ background: `${CREAM}80`, borderColor: `${NAVY}12`, color: NAVY }}
             />
@@ -410,7 +410,7 @@ function ApartmentsList() {
               className="rounded-lg border text-sm px-4 py-2.5 font-body focus:outline-none focus:ring-1 transition-colors"
               style={{ background: `${CREAM}80`, borderColor: `${NAVY}12`, color: `${NAVY}B0` }}
             >
-              <option value="all">All Properties</option>
+              <option value="all">Todos os prédios</option>
               {propertyOptions.map(({ slug, name }) => (
                 <option key={slug} value={slug}>{name}</option>
               ))}
@@ -421,9 +421,9 @@ function ApartmentsList() {
               className="rounded-lg border text-sm px-4 py-2.5 font-body focus:outline-none focus:ring-1 transition-colors"
               style={{ background: `${CREAM}80`, borderColor: `${NAVY}12`, color: `${NAVY}B0` }}
             >
-              <option value="all">Visibility</option>
-              <option value="visible">Published</option>
-              <option value="hidden">Hidden</option>
+              <option value="all">Visibilidade</option>
+              <option value="visible">Publicados</option>
+              <option value="hidden">Ocultos</option>
             </select>
           </div>
           {(query || groupFilter !== 'all' || visiFilter !== 'all') && (
@@ -432,7 +432,7 @@ function ApartmentsList() {
               className="font-body text-sm font-semibold hover:underline transition-all"
               style={{ color: GOLD }}
             >
-              Clear filters
+              Limpar filtros
             </button>
           )}
         </div>
@@ -442,9 +442,9 @@ function ApartmentsList() {
             className="sticky top-0 z-20 mb-6 flex items-center gap-3 flex-wrap px-5 py-4 rounded-xl text-white shadow-lg"
             style={{ background: NAVY }}
             role="region"
-            aria-label="Bulk apartment actions"
+            aria-label="Ações em lote"
           >
-            <span className="font-body text-sm font-semibold mr-2">{selectedSlugs.size} selected</span>
+            <span className="font-body text-sm font-semibold mr-2">{selectedSlugs.size} selecionado(s)</span>
             {(['show', 'hide', 'feature', 'unfeature'] as const).map((action) => (
               <button
                 key={action}
@@ -462,7 +462,7 @@ function ApartmentsList() {
               onClick={() => setSelectedSlugs(new Set())}
               className="ml-auto font-body text-xs text-white/60 hover:text-white disabled:opacity-40"
             >
-              Clear selection
+              Limpar seleção
             </button>
           </div>
         )}
@@ -476,7 +476,7 @@ function ApartmentsList() {
             aria-live="polite"
           >
             <p className="font-semibold">
-              {BULK_ACTION_LABELS[bulkResult.action]}: {bulkResult.succeeded} updated, {bulkResult.failures.length} failed.
+              {BULK_ACTION_LABELS[bulkResult.action]}: {bulkResult.succeeded} atualizado(s), {bulkResult.failures.length} com erro.
             </p>
             {bulkResult.failures.length > 0 && (
               <ul className="mt-2 space-y-1">
@@ -494,15 +494,15 @@ function ApartmentsList() {
         <div className="bg-white rounded-xl shadow-sm overflow-hidden" style={{ border: `1px solid ${NAVY}08` }}>
           {loadError ? (
             <div className="px-6 py-12 text-center">
-              <ErrorState message={`Failed to load apartments: ${loadError}`} />
+              <ErrorState message={`Falha ao carregar os apartamentos: ${loadError}`} />
             </div>
           ) : loading ? (
             <div className="flex items-center justify-center py-24 font-body text-sm" style={{ color: `${NAVY}40` }}>
-              Loading…
+              Carregando…
             </div>
           ) : filtered.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-24 gap-2">
-              <p className="font-body text-sm" style={{ color: `${NAVY}40` }}>No apartments match the current filters.</p>
+              <p className="font-body text-sm" style={{ color: `${NAVY}40` }}>Nenhum apartamento com esses filtros.</p>
             </div>
           ) : (
             <>
@@ -519,18 +519,18 @@ function ApartmentsList() {
                           checked={allPageSelected}
                           disabled={bulkPending}
                           onChange={togglePageSelection}
-                          aria-label={allPageSelected ? 'Deselect apartments on this page' : 'Select apartments on this page'}
+                          aria-label={allPageSelected ? 'Desmarcar os apartamentos desta página' : 'Selecionar os apartamentos desta página'}
                           className="w-4 h-4 accent-[#C5A059]"
                         />
                       </th>
-                      <th className="px-4 py-4 w-14">Photo</th>
-                      <th className="px-4 py-4">Name</th>
-                      <th className="px-4 py-4">Building</th>
-                      <th className="px-4 py-4 text-center">Visibility</th>
-                      <th className="px-4 py-4 text-center">Featured</th>
+                      <th className="px-4 py-4 w-14">Foto</th>
+                      <th className="px-4 py-4">Nome</th>
+                      <th className="px-4 py-4">Prédio</th>
+                      <th className="px-4 py-4 text-center">Visível</th>
+                      <th className="px-4 py-4 text-center">Destaque</th>
                       <th className="px-4 py-4 text-center">Airbnb</th>
-                      <th className="px-4 py-4">Updated</th>
-                      <th className="px-4 py-4 text-right">Actions</th>
+                      <th className="px-4 py-4">Atualizado</th>
+                      <th className="px-4 py-4 text-right">Ações</th>
                     </tr>
                   </thead>
                   <tbody className="font-body text-sm divide-y" style={{ color: NAVY, borderColor: `${NAVY}08` }}>
@@ -606,8 +606,8 @@ function ApartmentsList() {
                             <div className="flex flex-col items-center gap-1" aria-live="polite">
                               <span
                                 className="inline-flex items-center justify-center"
-                                title={isFeatured ? 'Featured on homepage' : 'Not featured on homepage'}
-                                aria-label={isFeatured ? 'Featured on homepage' : 'Not featured on homepage'}
+                                title={isFeatured ? 'Em destaque na Home' : 'Fora do destaque'}
+                                aria-label={isFeatured ? 'Em destaque na Home' : 'Fora do destaque'}
                               >
                                 <Star
                                   size={17}
@@ -625,15 +625,15 @@ function ApartmentsList() {
                           <td className="px-4 py-4 text-center">
                             {unit.airbnbListed === false ? (
                               <span className="px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider bg-red-50 text-red-700">
-                                Inactive
+                                Inativo
                               </span>
                             ) : unit.airbnbListed === true ? (
                               <span className="px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider bg-emerald-100 text-emerald-800">
-                                Active
+                                Ativo
                               </span>
                             ) : (
                               <span className="px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider bg-gray-100 text-gray-500">
-                                Unknown
+                                Sem dados
                               </span>
                             )}
                           </td>
@@ -651,7 +651,7 @@ function ApartmentsList() {
                                 target="_blank"
                                 rel="noopener noreferrer"
                                 className="p-1.5 rounded transition-colors"
-                                title="View on site"
+                                title="Ver no site"
                                 style={{ color: `${NAVY}50` }}
                                 onMouseEnter={(e) => ((e.currentTarget as HTMLElement).style.color = GOLD)}
                                 onMouseLeave={(e) => ((e.currentTarget as HTMLElement).style.color = `${NAVY}50`)}
@@ -661,7 +661,7 @@ function ApartmentsList() {
                               <button
                                 onClick={() => navigate(`/admin/apartments/${unit.unitSlug}`)}
                                 className="p-1.5 rounded transition-colors"
-                                title="Edit"
+                                title="Editar"
                                 style={{ color: `${NAVY}50` }}
                                 onMouseEnter={(e) => (e.currentTarget.style.color = GOLD)}
                                 onMouseLeave={(e) => (e.currentTarget.style.color = `${NAVY}50`)}
@@ -692,11 +692,11 @@ function ApartmentsList() {
 
       <ConfirmDialog
         open={bulkAction !== null}
-        title={bulkAction ? BULK_ACTION_LABELS[bulkAction] : 'Bulk action'}
+        title={bulkAction ? BULK_ACTION_LABELS[bulkAction] : 'Ação em lote'}
         message={bulkAction
-          ? `${BULK_ACTION_LABELS[bulkAction]} for ${selectedSlugs.size} apartment${selectedSlugs.size === 1 ? '' : 's'}? This changes what guests can see on the public site.`
+          ? `${BULK_ACTION_LABELS[bulkAction]}: ${selectedSlugs.size} apartamento(s)? Isso muda o que os hóspedes veem no site.`
           : ''}
-        confirmLabel={bulkPending ? 'Applying…' : 'Apply changes'}
+        confirmLabel={bulkPending ? 'Aplicando…' : 'Aplicar'}
         onConfirm={() => void applyBulkAction()}
         onCancel={() => { if (!bulkPending) setBulkAction(null); }}
       />

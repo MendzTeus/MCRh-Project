@@ -125,7 +125,7 @@ function ReviewForm({
       </div>
 
       <div>
-        <label className={labelClass}>Owner slug</label>
+        <label className={labelClass}>Apartamento ou prédio (slug)</label>
         <input
           value={draft.ownerSlug}
           onChange={(event) => setDraft({ ...draft, ownerSlug: event.target.value })}
@@ -133,7 +133,7 @@ function ReviewForm({
           disabled={ownerLocked}
           required
           className={`${controlClass} w-full disabled:opacity-60`}
-          placeholder="Apartment or property slug"
+          placeholder="Slug do apartamento ou do prédio"
         />
         <datalist id="review-owner-options">
           {ownerOptions.map((option) => <option key={option.slug} value={option.slug}>{option.label}</option>)}
@@ -142,16 +142,16 @@ function ReviewForm({
 
       <div className="grid grid-cols-1 md:grid-cols-[1fr_180px_100px] gap-4">
         <div>
-          <label className={labelClass}>Guest name</label>
+          <label className={labelClass}>Nome do hóspede</label>
           <input
             value={draft.name}
             onChange={(event) => setDraft({ ...draft, name: event.target.value })}
             className={`${controlClass} w-full`}
-            placeholder="Guest name"
+            placeholder="Nome do hóspede"
           />
         </div>
         <div>
-          <label className={labelClass}>Date</label>
+          <label className={labelClass}>Data</label>
           <input
             value={draft.date}
             onChange={(event) => setDraft({ ...draft, date: event.target.value })}
@@ -160,7 +160,7 @@ function ReviewForm({
           />
         </div>
         <div>
-          <label className={labelClass}>Rating</label>
+          <label className={labelClass}>Nota</label>
           <input
             type="number"
             min={1}
@@ -174,19 +174,19 @@ function ReviewForm({
       </div>
 
       <div>
-        <label className={labelClass}>Review</label>
+        <label className={labelClass}>Texto da avaliação</label>
         <textarea
           value={draft.text}
           onChange={(event) => setDraft({ ...draft, text: event.target.value })}
           rows={4}
           className={`${controlClass} w-full resize-y`}
-          placeholder="Review text…"
+          placeholder="Texto da avaliação…"
         />
       </div>
 
       <div className={`grid grid-cols-1 ${includeSourceId ? 'md:grid-cols-2' : ''} gap-4`}>
         <div>
-          <label className={labelClass}>Avatar URL</label>
+          <label className={labelClass}>URL da foto do hóspede</label>
           <input
             value={draft.avatarUrl}
             onChange={(event) => setDraft({ ...draft, avatarUrl: event.target.value })}
@@ -196,12 +196,12 @@ function ReviewForm({
         </div>
         {includeSourceId && (
           <div>
-            <label className={labelClass}>Airbnb sourceReviewId</label>
+            <label className={labelClass}>ID da avaliação no Airbnb</label>
             <input
               value={draft.sourceReviewId}
               onChange={(event) => setDraft({ ...draft, sourceReviewId: event.target.value })}
               className={`${controlClass} w-full`}
-              placeholder="Airbnb review ID"
+              placeholder="ID da avaliação no Airbnb"
             />
           </div>
         )}
@@ -209,7 +209,7 @@ function ReviewForm({
 
       <div className="flex items-center justify-end gap-3">
         <button type="button" onClick={onCancel} className="px-4 py-2 font-body text-xs uppercase tracking-widest text-navy/60">
-          Cancel
+          Cancelar
         </button>
         <button
           type="submit"
@@ -217,7 +217,7 @@ function ReviewForm({
           className="px-5 py-2 font-body text-xs uppercase tracking-widest border disabled:opacity-50"
           style={{ borderColor: GOLD, color: GOLD }}
         >
-          {busy ? 'Saving…' : 'Save review'}
+          {busy ? 'Salvando…' : 'Salvar avaliação'}
         </button>
       </div>
     </form>
@@ -275,7 +275,7 @@ function ReviewsPage() {
       setUnits(Array.isArray(unitData?.units) ? unitData.units : []);
       setSelected(new Set());
     } catch (loadError) {
-      setError(loadError instanceof Error ? loadError.message : 'Failed to load reviews');
+      setError(loadError instanceof Error ? loadError.message : 'Falha ao carregar as avaliações');
     } finally {
       setLoading(false);
     }
@@ -395,7 +395,7 @@ function ReviewsPage() {
       setCreateDraft(emptyDraft(scopeOwner));
       await load();
     } catch (createError) {
-      setError(createError instanceof Error ? createError.message : 'Failed to create review');
+      setError(createError instanceof Error ? createError.message : 'Falha ao criar a avaliação');
     } finally {
       setBusy(false);
     }
@@ -436,7 +436,7 @@ function ReviewsPage() {
       setEditingId(null);
       await load();
     } catch (editError) {
-      setError(editError instanceof Error ? editError.message : 'Failed to update review');
+      setError(editError instanceof Error ? editError.message : 'Falha ao atualizar a avaliação');
     } finally {
       setBusy(false);
     }
@@ -454,7 +454,7 @@ function ReviewsPage() {
     } catch (toggleError) {
       setReviews((previous) => previous.map((item) =>
         item.id === review.id ? { ...item, published: review.published } : item));
-      setError(toggleError instanceof Error ? toggleError.message : 'Failed to update visibility');
+      setError(toggleError instanceof Error ? toggleError.message : 'Falha ao alterar a visibilidade');
     }
   }
 
@@ -472,7 +472,7 @@ function ReviewsPage() {
         selected.has(review.id) ? { ...review, published } : review));
       setSelected(new Set());
     } catch (bulkError) {
-      setError(bulkError instanceof Error ? bulkError.message : 'Bulk visibility update failed');
+      setError(bulkError instanceof Error ? bulkError.message : 'Falha ao alterar a visibilidade em lote');
       await load();
     } finally {
       setBusy(false);
@@ -491,7 +491,7 @@ function ReviewsPage() {
       if (editingId && ids.includes(editingId)) setEditingId(null);
       setConfirmTarget(null);
     } catch (deleteError) {
-      setError(deleteError instanceof Error ? deleteError.message : 'Failed to delete review');
+      setError(deleteError instanceof Error ? deleteError.message : 'Falha ao excluir a avaliação');
       setConfirmTarget(null);
       await load();
     } finally {
@@ -502,7 +502,7 @@ function ReviewsPage() {
   function readImportFile(event: ChangeEvent<HTMLInputElement>) {
     const file = event.target.files?.[0];
     if (!file) return;
-    file.text().then(setImportHtml).catch(() => setImportMessage('Failed to read HTML file.'));
+    file.text().then(setImportHtml).catch(() => setImportMessage('Não foi possível ler o arquivo HTML.'));
   }
 
   async function importReviews() {
@@ -510,12 +510,12 @@ function ReviewsPage() {
     setError('');
     const owner = importOwner.trim();
     if (!owner) {
-      setImportMessage('Choose an apartment or property owner first.');
+      setImportMessage('Escolha primeiro o apartamento ou prédio.');
       return;
     }
     const parsed = parseAirbnbReviews(importHtml);
     if (!parsed.length) {
-      setImportMessage('No Airbnb reviews were found in this HTML.');
+      setImportMessage('Nenhuma avaliação do Airbnb encontrada neste HTML.');
       return;
     }
     setBusy(true);
@@ -524,11 +524,11 @@ function ReviewsPage() {
         method: 'POST',
         body: JSON.stringify({ propertySlug: owner, reviews: parsed }),
       });
-      setImportMessage(`${result.added} imported · ${result.skipped} duplicate${result.skipped === 1 ? '' : 's'} skipped`);
+      setImportMessage(`${result.added} importada(s) · ${result.skipped} duplicada(s) ignorada(s)`);
       setImportHtml('');
       await load();
     } catch (importError) {
-      setImportMessage(importError instanceof Error ? importError.message : 'Import failed');
+      setImportMessage(importError instanceof Error ? importError.message : 'A importação falhou');
     } finally {
       setBusy(false);
     }
@@ -540,7 +540,7 @@ function ReviewsPage() {
     <AdminShell
       navItems={ADMIN_NAV_ITEMS}
       activeId="reviews"
-      breadcrumbs={[{ label: 'Reviews' }, ...(scopeOwner ? [{ label: scopeLabel }] : [])]}
+      breadcrumbs={[{ label: 'Avaliações' }, ...(scopeOwner ? [{ label: scopeLabel }] : [])]}
     >
       <div
         className="-mx-4 md:-mx-10 -mt-10 px-4 md:px-8 pt-8 pb-6 mb-8"
@@ -548,15 +548,15 @@ function ReviewsPage() {
       >
         <div className="flex items-end justify-between gap-4 flex-wrap">
           <div>
-            <h2 className="font-display text-3xl font-bold mb-1" style={{ color: NAVY }}>Guest Reviews</h2>
+            <h2 className="font-display text-3xl font-bold mb-1" style={{ color: NAVY }}>Avaliações</h2>
             <p className="font-body text-sm" style={{ color: `${NAVY}70` }}>
-              {reviews.length} reviews · avg {averageRating} ★
+              {reviews.length} avaliações · média {averageRating} ★
             </p>
             {scopeOwner && (
               <p className="font-body text-xs mt-1" style={{ color: GOLD }}>
-                {scopeKind === 'unit' ? 'Apartment' : 'Property'}: {scopeLabel} ({scopeOwner})
+                {scopeKind === 'unit' ? 'Apartamento' : 'Prédio'}: {scopeLabel} ({scopeOwner})
                 {' · '}
-                <Link to="/admin/reviews" className="underline">clear scope</Link>
+                <Link to="/admin/reviews" className="underline">ver todas</Link>
               </p>
             )}
           </div>
@@ -566,14 +566,14 @@ function ReviewsPage() {
               className="flex items-center gap-2 px-4 py-2.5 font-body text-[11px] uppercase tracking-widest border"
               style={{ borderColor: NAVY, color: NAVY }}
             >
-              <Upload size={14} /> Import Airbnb
+              <Upload size={14} /> Importar do Airbnb
             </button>
             <button
               onClick={() => { setCreateOpen(true); setImportOpen(false); setEditingId(null); setCreateDraft(emptyDraft(scopeOwner)); }}
               className="flex items-center gap-2 px-4 py-2.5 font-body text-[11px] uppercase tracking-widest border"
               style={{ borderColor: GOLD, color: GOLD }}
             >
-              <Plus size={14} /> Create review
+              <Plus size={14} /> Nova avaliação
             </button>
           </div>
         </div>
@@ -587,7 +587,7 @@ function ReviewsPage() {
 
       {createOpen && (
         <ReviewForm
-          title="Create review"
+          title="Nova avaliação"
           draft={createDraft}
           setDraft={setCreateDraft}
           ownerOptions={ownerOptions}
@@ -601,7 +601,7 @@ function ReviewsPage() {
 
       {editingId && (
         <ReviewForm
-          title="Edit review"
+          title="Editar avaliação"
           draft={editDraft}
           setDraft={setEditDraft}
           ownerOptions={ownerOptions}
@@ -617,24 +617,24 @@ function ReviewsPage() {
         <div className="bg-white border border-navy/10 rounded-xl p-6 mb-6 space-y-4 shadow-sm">
           <div className="flex items-start justify-between gap-4">
             <div>
-              <h3 className="font-display text-2xl font-semibold text-navy">Import Airbnb HTML</h3>
+              <h3 className="font-display text-2xl font-semibold text-navy">Importar HTML do Airbnb</h3>
               <p className="font-body text-xs text-navy/50 mt-1">
-                Paste copied Airbnb review HTML. Existing sourceReviewId values are skipped for this owner.
+                Cole o HTML copiado das avaliações do Airbnb. Avaliações já importadas para este apartamento são ignoradas.
               </p>
             </div>
             <Link to="/admin?tab=coletor" className="font-body text-[10px] uppercase tracking-widest underline" style={{ color: GOLD }}>
-              Open advanced collector/CSV →
+              Abrir o coletor avançado (CSV) →
             </Link>
           </div>
           <div>
-            <label className={labelClass}>Owner slug</label>
+            <label className={labelClass}>Apartamento ou prédio (slug)</label>
             <input
               value={importOwner}
               onChange={(event) => setImportOwner(event.target.value)}
               list="review-owner-options"
               disabled={Boolean(scopeOwner)}
               className={`${controlClass} w-full disabled:opacity-60`}
-              placeholder="Apartment or property slug"
+              placeholder="Slug do apartamento ou do prédio"
             />
           </div>
           <textarea
@@ -642,7 +642,7 @@ function ReviewsPage() {
             onChange={(event) => setImportHtml(event.target.value)}
             rows={7}
             className={`${controlClass} w-full resize-y font-mono text-xs`}
-            placeholder="Paste Airbnb review HTML…"
+            placeholder="Cole aqui o HTML das avaliações do Airbnb…"
           />
           <div className="flex items-center gap-3 flex-wrap">
             <input type="file" accept=".html,text/html" onChange={readImportFile} className="font-body text-xs text-navy/60" />
@@ -652,7 +652,7 @@ function ReviewsPage() {
               className="px-4 py-2 font-body text-[11px] uppercase tracking-widest border disabled:opacity-50"
               style={{ borderColor: GOLD, color: GOLD }}
             >
-              {busy ? 'Importing…' : 'Import reviews'}
+              {busy ? 'Importando…' : 'Importar avaliações'}
             </button>
             {importMessage && <span className="font-body text-xs text-navy/60">{importMessage}</span>}
           </div>
@@ -665,33 +665,33 @@ function ReviewsPage() {
           <input
             value={search}
             onChange={(event) => setSearch(event.target.value)}
-            placeholder="Search guest, content, owner or source ID…"
+            placeholder="Buscar por hóspede, texto, apartamento ou ID…"
             className={`${controlClass} pl-9 w-full`}
           />
         </div>
 
         {!scopeOwner && (
           <select value={filterOwner} onChange={(event) => setFilterOwner(event.target.value)} className={controlClass}>
-            <option value="">All Owners</option>
+            <option value="">Todos os apartamentos</option>
             {ownerOptions.map((option) => <option key={option.slug} value={option.slug}>{option.label}</option>)}
           </select>
         )}
 
         <select value={filterRating} onChange={(event) => setFilterRating(event.target.value)} className={controlClass}>
-          <option value="">All Ratings</option>
+          <option value="">Todas as notas</option>
           {[5, 4, 3, 2, 1].map((rating) => <option key={rating} value={String(rating)}>{rating} ★</option>)}
         </select>
 
         <select value={filterSource} onChange={(event) => setFilterSource(event.target.value)} className={controlClass}>
-          <option value="">All Sources</option>
+          <option value="">Todas as origens</option>
           <option value="airbnb">Airbnb</option>
           <option value="manual">Manual</option>
         </select>
 
         <select value={filterVisibility} onChange={(event) => setFilterVisibility(event.target.value)} className={controlClass}>
-          <option value="">All Visibility</option>
-          <option value="published">Published</option>
-          <option value="hidden">Hidden</option>
+          <option value="">Todas</option>
+          <option value="published">Publicadas</option>
+          <option value="hidden">Ocultas</option>
         </select>
 
         {hasFilter && (
@@ -700,38 +700,38 @@ function ReviewsPage() {
             className="flex items-center gap-1.5 font-body text-xs px-3 py-2.5 rounded-lg border hover:bg-red-50"
             style={{ borderColor: `${NAVY}20`, color: `${NAVY}70` }}
           >
-            <X size={12} /> Clear
+            <X size={12} /> Limpar
           </button>
         )}
       </div>
 
       {selected.size > 0 && (
         <div className="sticky top-0 z-20 mb-5 flex items-center gap-3 flex-wrap px-4 py-3 text-white shadow-lg" style={{ background: NAVY }}>
-          <span className="font-body text-sm">{selected.size} selected</span>
+          <span className="font-body text-sm">{selected.size} selecionada(s)</span>
           <button disabled={busy} onClick={() => bulkSetPublished(true)} className="font-body text-xs px-3 py-1.5 border border-white/30 disabled:opacity-50">
-            Publish
+            Publicar
           </button>
           <button disabled={busy} onClick={() => bulkSetPublished(false)} className="font-body text-xs px-3 py-1.5 border border-white/30 disabled:opacity-50">
-            Hide
+            Ocultar
           </button>
           <button
             disabled={busy}
             onClick={() => setConfirmTarget({ kind: 'bulk' })}
             className="font-body text-xs px-3 py-1.5 border border-red-300 text-red-200 disabled:opacity-50"
           >
-            Delete
+            Excluir
           </button>
-          <button onClick={() => setSelected(new Set())} className="ml-auto font-body text-xs text-white/60">Clear selection</button>
+          <button onClick={() => setSelected(new Set())} className="ml-auto font-body text-xs text-white/60">Limpar seleção</button>
         </div>
       )}
 
-      <p className="font-body text-xs mb-4" style={{ color: `${NAVY}50` }}>{filtered.length} of {reviews.length} reviews</p>
+      <p className="font-body text-xs mb-4" style={{ color: `${NAVY}50` }}>{filtered.length} de {reviews.length} avaliações</p>
 
       <div className="bg-white rounded-xl shadow-sm overflow-hidden" style={{ border: '1px solid rgba(16,28,45,0.05)' }}>
         {loading ? (
-          <div className="px-6 py-16 text-center font-body text-sm text-navy/50">Loading reviews…</div>
+          <div className="px-6 py-16 text-center font-body text-sm text-navy/50">Carregando avaliações…</div>
         ) : filtered.length === 0 ? (
-          <div className="px-6 py-16 text-center font-body text-sm text-navy/50">No reviews found.</div>
+          <div className="px-6 py-16 text-center font-body text-sm text-navy/50">Nenhuma avaliação encontrada.</div>
         ) : (
           <>
             <div
@@ -742,10 +742,10 @@ function ReviewsPage() {
                 type="checkbox"
                 checked={allFilteredSelected}
                 onChange={toggleAllFiltered}
-                aria-label="Select all filtered reviews"
+                aria-label="Selecionar todas as avaliações filtradas"
                 className="accent-[#C5A059]"
               />
-              {['Guest', 'Content', 'Owner', 'Source', 'Visibility', 'Actions'].map((heading) => (
+              {['Hóspede', 'Texto', 'Apartamento', 'Origem', 'Visível', 'Ações'].map((heading) => (
                 <span key={heading} className="font-label text-[10px] font-bold uppercase tracking-widest" style={{ color: `${NAVY}50` }}>
                   {heading}
                 </span>
@@ -762,13 +762,13 @@ function ReviewsPage() {
                         type="checkbox"
                         checked={selected.has(review.id)}
                         onChange={() => toggleSelected(review.id)}
-                        aria-label={`Select review by ${review.name || 'Unknown'}`}
+                        aria-label={`Selecionar avaliação de ${review.name || 'Sem nome'}`}
                         className="accent-[#C5A059]"
                       />
                       <div className="flex items-center gap-3 min-w-0">
                         <Avatar name={review.name} url={review.avatarUrl} />
                         <div className="min-w-0">
-                          <p className="font-body text-sm font-semibold truncate text-navy">{review.name || 'Unknown'}</p>
+                          <p className="font-body text-sm font-semibold truncate text-navy">{review.name || 'Sem nome'}</p>
                           <Stars rating={review.rating} />
                           <p className="font-body text-[10px] text-navy/40">{review.date || '—'}</p>
                         </div>
@@ -785,21 +785,21 @@ function ReviewsPage() {
                           ? { background: '#E8F5E9', color: '#2E7D32' }
                           : { background: `${NAVY}10`, color: `${NAVY}70` }}
                       >
-                        {review.published ? 'Published' : 'Hidden'}
+                        {review.published ? 'Publicada' : 'Oculta'}
                       </span>
                       <div className="flex items-center gap-1 justify-end">
-                        <button onClick={() => startEdit(review)} title="Edit" className="p-2 rounded-lg hover:bg-gray-100">
+                        <button onClick={() => startEdit(review)} title="Editar" className="p-2 rounded-lg hover:bg-gray-100">
                           <Pencil size={14} style={{ color: `${NAVY}60` }} />
                         </button>
-                        <button onClick={() => toggleVisibility(review)} title={review.published ? 'Hide' : 'Publish'} className="p-2 rounded-lg hover:bg-gray-100">
+                        <button onClick={() => toggleVisibility(review)} title={review.published ? 'Ocultar' : 'Publicar'} className="p-2 rounded-lg hover:bg-gray-100">
                           {review.published ? <EyeOff size={14} /> : <Eye size={14} />}
                         </button>
                         {unit && (
-                          <button onClick={() => navigate(`/admin/apartments/${unit.unitSlug}`)} title="Open apartment" className="p-2 rounded-lg hover:bg-gray-100">
+                          <button onClick={() => navigate(`/admin/apartments/${unit.unitSlug}`)} title="Abrir apartamento" className="p-2 rounded-lg hover:bg-gray-100">
                             <ExternalLink size={14} />
                           </button>
                         )}
-                        <button onClick={() => setConfirmTarget({ kind: 'single', id: review.id })} title="Delete" className="p-2 rounded-lg hover:bg-red-50">
+                        <button onClick={() => setConfirmTarget({ kind: 'single', id: review.id })} title="Excluir" className="p-2 rounded-lg hover:bg-red-50">
                           <Trash2 size={14} className="text-red-400" />
                         </button>
                       </div>
@@ -811,12 +811,12 @@ function ReviewsPage() {
                           type="checkbox"
                           checked={selected.has(review.id)}
                           onChange={() => toggleSelected(review.id)}
-                          aria-label={`Select review by ${review.name || 'Unknown'}`}
+                          aria-label={`Selecionar avaliação de ${review.name || 'Sem nome'}`}
                           className="mt-2 accent-[#C5A059]"
                         />
                         <Avatar name={review.name} url={review.avatarUrl} />
                         <div className="flex-1 min-w-0">
-                          <p className="font-body text-sm font-semibold text-navy">{review.name || 'Unknown'}</p>
+                          <p className="font-body text-sm font-semibold text-navy">{review.name || 'Sem nome'}</p>
                           <Stars rating={review.rating} />
                           <p className="font-body text-xs mt-2 line-clamp-3 text-navy/70">{review.text || '—'}</p>
                           <p className="font-body text-[11px] mt-2 text-navy/50">{ownerLabel(review.propertySlug)}</p>
@@ -843,11 +843,11 @@ function ReviewsPage() {
 
       <ConfirmDialog
         open={confirmTarget !== null}
-        title={confirmTarget?.kind === 'bulk' ? 'Delete selected reviews' : 'Delete review'}
+        title={confirmTarget?.kind === 'bulk' ? 'Excluir avaliações selecionadas' : 'Excluir avaliação'}
         message={confirmTarget?.kind === 'bulk'
-          ? `Delete ${selected.size} selected review${selected.size === 1 ? '' : 's'}? This cannot be undone.`
-          : 'Delete this review? This cannot be undone.'}
-        confirmLabel="Delete"
+          ? `Excluir ${selected.size} avaliação(ões) selecionada(s)? Não dá para desfazer.`
+          : 'Excluir esta avaliação? Não dá para desfazer.'}
+        confirmLabel="Excluir"
         onConfirm={confirmDelete}
         onCancel={() => setConfirmTarget(null)}
       />

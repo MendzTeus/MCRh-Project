@@ -107,7 +107,7 @@ export function PhotosTab({ units, api, onChanged }: { units: Unit[]; api: Retur
       markSaved();
     } catch (moveError) {
       setStatus('error');
-      setError(moveError instanceof Error ? moveError.message : 'Erro ao guardar ordem');
+      setError(moveError instanceof Error ? moveError.message : 'Erro ao salvar ordem');
     } finally {
       setPending(item, false);
     }
@@ -146,7 +146,7 @@ export function PhotosTab({ units, api, onChanged }: { units: Unit[]; api: Retur
       markSaved();
     } catch (bulkError) {
       setStatus('error');
-      setError(bulkError instanceof Error ? bulkError.message : 'Erro ao guardar categorias');
+      setError(bulkError instanceof Error ? bulkError.message : 'Erro ao salvar categorias');
     } finally {
       withIds.forEach((item) => setPending(item, false));
     }
@@ -155,7 +155,7 @@ export function PhotosTab({ units, api, onChanged }: { units: Unit[]; api: Retur
   async function editAlt(item: MediaItem) {
     const next = window.prompt('Alt text:', item.alt || '');
     if (next === null || next === (item.alt || '')) return;
-    await patchPhoto(item, { alt: next || null }, 'Erro ao guardar texto alternativo');
+    await patchPhoto(item, { alt: next || null }, 'Erro ao salvar texto alternativo');
   }
 
   async function removePhoto(item: MediaItem) {
@@ -179,13 +179,13 @@ export function PhotosTab({ units, api, onChanged }: { units: Unit[]; api: Retur
     <div className="max-w-5xl space-y-8">
       <div>
         <h2 className="font-display text-headline-md text-primary mb-1">Gestão de fotos</h2>
-        <p className="font-body text-sm text-on-surface-variant">Selecione um edifício e apartamento. As fotos são separadas por divisão e aparecem assim no Photo Tour público.</p>
+        <p className="font-body text-sm text-on-surface-variant">Selecione um prédio e um apartamento. As fotos são separadas por cômodo e aparecem assim no Photo Tour público.</p>
       </div>
 
       {/* Building + apartment selector */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
         <div>
-          <label className={label}>Edifício / coleção</label>
+          <label className={label}>Prédio / coleção</label>
           <select
             value={selectedPropertySlug}
             onChange={(e) => { setSelectedPropertySlug(e.target.value); setSelectedUnitSlug(''); }}
@@ -214,7 +214,7 @@ export function PhotosTab({ units, api, onChanged }: { units: Unit[]; api: Retur
       </div>
 
       {!selectedPropertySlug && (
-        <p className="font-body text-sm text-on-surface-variant/50">Selecione um edifício para continuar.</p>
+        <p className="font-body text-sm text-on-surface-variant/50">Selecione um prédio para continuar.</p>
       )}
 
       {selectedPropertySlug && !currentUnit && (
@@ -241,7 +241,7 @@ export function PhotosTab({ units, api, onChanged }: { units: Unit[]; api: Retur
                 onClick={() => fileRef.current?.click()}
                 className="px-5 py-2 font-body text-[11px] uppercase tracking-[0.15em] border border-outline-variant/50 text-on-surface-variant hover:border-[#C5A059] hover:text-[#C5A059] transition-colors"
               >
-                + Upload fotos
+                + Enviar fotos
               </button>
               <input
                 ref={fileRef} type="file" accept="image/*" multiple className="hidden"
@@ -287,10 +287,10 @@ export function PhotosTab({ units, api, onChanged }: { units: Unit[]; api: Retur
           {sortedPhotos.length === 0 && (
             <div className="border border-dashed border-outline-variant/40 rounded-xl px-6 py-12 text-center">
               <p className="font-body text-sm text-on-surface-variant/60">
-                Nenhuma foto. Clique em "+ Upload fotos" para começar.
+                Nenhuma foto. Clique em "+ Enviar fotos" para começar.
               </p>
               <p className="font-body text-xs text-on-surface-variant/40 mt-2">
-                As fotos do Airbnb só aparecem no Photo Tour após serem carregadas aqui.
+                As fotos do Airbnb só aparecem no Photo Tour depois de enviadas aqui.
               </p>
             </div>
           )}
@@ -304,11 +304,11 @@ export function PhotosTab({ units, api, onChanged }: { units: Unit[]; api: Retur
             onMove={(_, item, category, direction) => moveCategoryPhoto(item, direction, category)}
             onMoveToGroup={(_, item, category) => {
               if ((item.roomCategory || '') !== category) {
-                patchPhoto(item, { roomCategory: category || null }, 'Erro ao guardar categoria');
+                patchPhoto(item, { roomCategory: category || null }, 'Erro ao salvar categoria');
               }
             }}
             onCategoryChange={(_, item, category) =>
-              patchPhoto(item, { roomCategory: category || null }, 'Erro ao guardar categoria')}
+              patchPhoto(item, { roomCategory: category || null }, 'Erro ao salvar categoria')}
             onToggleHidden={(_, item) =>
               patchPhoto(item, { hidden: !item.hidden }, 'Erro ao alterar visibilidade')}
             onSetPrimary={(_, item) =>

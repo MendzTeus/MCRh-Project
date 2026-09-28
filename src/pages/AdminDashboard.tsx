@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Building2, Star, ArrowRight, UserSearch, TrendingUp, Plus } from 'lucide-react';
+import { Building2, Star, ArrowRight, UserSearch, TrendingUp } from 'lucide-react';
 import { AdminShell } from '../components/admin/AdminShell';
 import { ADMIN_NAV_ITEMS } from '../components/admin/adminNavigation';
 import { useApi } from '../hooks/useAdminApi';
@@ -21,9 +21,9 @@ type Lead = {
   status: 'new' | 'contacted' | 'closed'; createdAt: string;
 };
 const LEAD_STATUS_STYLE: Record<Lead['status'], { label: string; color: string; bg: string }> = {
-  new:       { label: 'New',       color: GOLD,      bg: `${GOLD}18` },
-  contacted: { label: 'Contacted', color: '#1565C0', bg: '#EDF5FF' },
-  closed:    { label: 'Closed',    color: `${NAVY}70`, bg: `${NAVY}10` },
+  new:       { label: 'Novo',        color: GOLD,      bg: `${GOLD}18` },
+  contacted: { label: 'Respondido',  color: '#1565C0', bg: '#EDF5FF' },
+  closed:    { label: 'Encerrado',   color: `${NAVY}70`, bg: `${NAVY}10` },
 };
 
 // ── Stars ────────────────────────────────────────────────────────────
@@ -60,66 +60,6 @@ function StatCard({
         <p className="font-headline text-4xl font-bold" style={{ color: accent ? GOLD : NAVY }}>{value}</p>
       </div>
       <p className="font-body text-xs font-semibold" style={{ color: subColor ?? `${NAVY}40` }}>{sub}</p>
-    </div>
-  );
-}
-
-// ── Occupancy line chart (static decorative) ─────────────────────────
-const CHART_POINTS = [
-  { label: 'JAN', pct: 62 }, { label: 'FEB', pct: 68 }, { label: 'MAR', pct: 74 },
-  { label: 'APR', pct: 85 }, { label: 'MAY', pct: 91 }, { label: 'JUN', pct: 79 },
-  { label: 'JUL', pct: 88 },
-];
-
-function OccupancyChart() {
-  const W = 600; const H = 160; const PAD = 16;
-  const xs = CHART_POINTS.map((_, i) => PAD + (i / (CHART_POINTS.length - 1)) * (W - PAD * 2));
-  const ys = CHART_POINTS.map((p) => H - PAD - (p.pct / 100) * (H - PAD * 2));
-  const line = xs.map((x, i) => `${i === 0 ? 'M' : 'L'}${x},${ys[i]}`).join(' ');
-  const area = `${line} L${xs[xs.length - 1]},${H} L${xs[0]},${H} Z`;
-
-  return (
-    <div className="bg-white p-8 rounded-xl shadow-sm mb-8" style={{ border: `1px solid ${NAVY}08` }}>
-      <div className="flex justify-between items-center mb-6">
-        <div>
-          <h4 className="font-headline text-xl font-bold" style={{ color: NAVY }}>Occupancy Trends</h4>
-          <p className="font-body text-sm mt-0.5" style={{ color: `${NAVY}40` }}>
-            Monthly performance across all boutique properties
-          </p>
-        </div>
-        <div className="flex gap-2">
-          <button className="px-3 py-1 font-body text-xs font-bold rounded border" style={{ borderColor: `${NAVY}12`, color: `${NAVY}50` }}>Yearly</button>
-          <button className="px-3 py-1 font-body text-xs font-bold rounded" style={{ background: NAVY, color: 'white' }}>Monthly</button>
-        </div>
-      </div>
-      <svg viewBox={`0 0 ${W} ${H + 24}`} className="w-full" style={{ overflow: 'visible' }}>
-        {/* Grid lines */}
-        {[25, 50, 75, 100].map((pct) => {
-          const y = H - PAD - (pct / 100) * (H - PAD * 2);
-          return <line key={pct} x1={PAD} y1={y} x2={W - PAD} y2={y} stroke={`${NAVY}08`} strokeWidth={1} />;
-        })}
-        {/* Area fill */}
-        <defs>
-          <linearGradient id="areaGrad" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor={GOLD} stopOpacity="0.15" />
-            <stop offset="100%" stopColor={GOLD} stopOpacity="0" />
-          </linearGradient>
-        </defs>
-        <path d={area} fill="url(#areaGrad)" />
-        {/* Line */}
-        <path d={line} fill="none" stroke={GOLD} strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round" />
-        {/* Dots */}
-        {xs.map((x, i) => (
-          <circle key={i} cx={x} cy={ys[i]} r={4} fill={GOLD} stroke="white" strokeWidth={2} />
-        ))}
-        {/* X labels */}
-        {CHART_POINTS.map((p, i) => (
-          <text key={i} x={xs[i]} y={H + 20} textAnchor="middle"
-            className="font-label" fontSize={10} fill={`${NAVY}50`} fontWeight={700}>
-            {p.label}
-          </text>
-        ))}
-      </svg>
     </div>
   );
 }
@@ -167,16 +107,16 @@ function Dashboard() {
     <AdminShell
       navItems={ADMIN_NAV_ITEMS}
       activeId="dashboard"
-      breadcrumbs={[{ label: 'Admin' }, { label: 'Dashboard' }]}
+      breadcrumbs={[{ label: 'Admin' }, { label: 'Painel' }]}
     >
       <div style={{ background: CREAM, minHeight: '100%' }} className="-mx-4 md:-mx-10 -mt-10 px-4 md:px-10 pt-10 pb-12">
 
         {/* Page header */}
         <div className="flex justify-between items-end mb-8">
           <div>
-            <h2 className="font-headline text-4xl font-bold" style={{ color: NAVY }}>Dashboard</h2>
+            <h2 className="font-headline text-4xl font-bold" style={{ color: NAVY }}>Painel</h2>
             <p className="font-body text-sm mt-1" style={{ color: `${NAVY}50` }}>
-              Welcome back. Here is what's happening with your properties today.
+              Resumo do que precisa de atenção no site hoje.
             </p>
           </div>
           <button
@@ -184,8 +124,8 @@ function Dashboard() {
             className="flex items-center gap-2 px-5 py-2.5 rounded-lg font-body font-semibold text-sm transition-all active:scale-95 shadow-md"
             style={{ background: GOLD, color: NAVY }}
           >
-            <Plus size={16} />
-            New Property
+            <Building2 size={16} />
+            Ver apartamentos
           </button>
         </div>
 
@@ -200,36 +140,33 @@ function Dashboard() {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
             <StatCard
               icon={Building2}
-              label="Total Apartments"
+              label="Apartamentos"
               value={totalUnits}
-              sub={`${visibleUnits} published · ${totalUnits - visibleUnits} hidden`}
+              sub={`${visibleUnits} publicados · ${totalUnits - visibleUnits} ocultos`}
             />
             <StatCard
               icon={UserSearch}
-              label="Pending Leads"
+              label="Leads sem resposta"
               value={pendingLeads ?? '—'}
               accent
-              sub={pendingLeads != null && pendingLeads > 0 ? 'Needs immediate response' : 'No pending leads'}
+              sub={pendingLeads != null && pendingLeads > 0 ? 'Precisam de resposta' : 'Nenhum pendente'}
               subColor={pendingLeads != null && pendingLeads > 0 ? '#d97706' : undefined}
             />
             <StatCard
               icon={Star}
-              label="Recent Reviews"
+              label="Avaliações publicadas"
               value={publishedReviews.length > 0 ? `${publishedReviews.length} ⭐ ${avgRating}` : '—'}
-              sub={publishedReviews.length > 0 ? 'Based on self-managed units' : 'No reviews yet'}
+              sub={publishedReviews.length > 0 ? 'Média das notas publicadas' : 'Nenhuma avaliação ainda'}
             />
             <StatCard
               icon={TrendingUp}
-              label="Occupancy Rate"
+              label="Apartamentos publicados"
               value={`${visiblePct}%`}
-              sub="Based on self-managed units"
+              sub="Visíveis no site agora"
               subColor={visiblePct >= 80 ? '#16a34a' : visiblePct >= 50 ? GOLD : '#dc2626'}
             />
           </div>
         )}
-
-        {/* Occupancy line chart */}
-        <OccupancyChart />
 
         {/* Bottom grid */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
@@ -240,20 +177,20 @@ function Dashboard() {
             style={{ border: `1px solid ${NAVY}08` }}
           >
             <div className="p-6 flex justify-between items-center border-b" style={{ borderColor: `${NAVY}08` }}>
-              <h4 className="font-headline text-xl font-bold" style={{ color: NAVY }}>Recent Leads</h4>
+              <h4 className="font-headline text-xl font-bold" style={{ color: NAVY }}>Leads recentes</h4>
               <button
                 onClick={() => navigate('/admin/leads')}
                 className="flex items-center gap-1 font-body text-xs font-bold uppercase tracking-wider transition-colors hover:underline"
                 style={{ color: GOLD }}
               >
-                View all <ArrowRight size={12} />
+                Ver todos <ArrowRight size={12} />
               </button>
             </div>
             <div className="overflow-x-auto flex-1">
               <table className="w-full text-left">
                 <thead>
                   <tr style={{ background: `${NAVY}06` }}>
-                    {['Lead Name', 'Enquiry about', 'Status', 'Date'].map((h) => (
+                    {['Nome', 'Assunto', 'Status', 'Data'].map((h) => (
                       <th key={h} className="px-6 py-4 font-label text-[10px] font-bold uppercase tracking-widest" style={{ color: `${NAVY}40` }}>
                         {h}
                       </th>
@@ -262,11 +199,11 @@ function Dashboard() {
                 </thead>
                 <tbody className="divide-y divide-[#101c2d]/[0.06]">
                   {loading ? (
-                    <tr><td colSpan={4} className="px-6 py-10 text-center font-body text-sm" style={{ color: `${NAVY}30` }}>Loading…</td></tr>
+                    <tr><td colSpan={4} className="px-6 py-10 text-center font-body text-sm" style={{ color: `${NAVY}30` }}>Carregando…</td></tr>
                   ) : leads === null ? (
-                    <tr><td colSpan={4} className="px-6 py-10 text-center font-body text-sm" style={{ color: '#b91c1c' }}>Could not load leads.</td></tr>
+                    <tr><td colSpan={4} className="px-6 py-10 text-center font-body text-sm" style={{ color: '#b91c1c' }}>Não foi possível carregar os leads.</td></tr>
                   ) : recentLeads.length === 0 ? (
-                    <tr><td colSpan={4} className="px-6 py-10 text-center font-body text-sm" style={{ color: `${NAVY}40` }}>No leads yet.</td></tr>
+                    <tr><td colSpan={4} className="px-6 py-10 text-center font-body text-sm" style={{ color: `${NAVY}40` }}>Nenhum lead ainda.</td></tr>
                   ) : (
                     recentLeads.map((lead) => {
                       const st = LEAD_STATUS_STYLE[lead.status] ?? LEAD_STATUS_STYLE.new;
@@ -282,7 +219,7 @@ function Dashboard() {
                               style={{ background: st.bg, color: st.color }}>{st.label}</span>
                           </td>
                           <td className="px-6 py-4 font-body text-xs" style={{ color: `${NAVY}60` }}>
-                            {new Date(lead.createdAt).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })}
+                            {new Date(lead.createdAt).toLocaleDateString('pt-BR', { day: 'numeric', month: 'short' })}
                           </td>
                         </tr>
                       );
@@ -296,18 +233,18 @@ function Dashboard() {
           {/* Reviews feed */}
           <div className="bg-white rounded-xl shadow-sm flex flex-col" style={{ border: `1px solid ${NAVY}08` }}>
             <div className="p-6 border-b" style={{ borderColor: `${NAVY}08` }}>
-              <h4 className="font-headline text-xl font-bold" style={{ color: NAVY }}>Guest Reviews</h4>
+              <h4 className="font-headline text-xl font-bold" style={{ color: NAVY }}>Avaliações recentes</h4>
             </div>
             <div className="p-6 space-y-6 flex-1 overflow-y-auto" style={{ maxHeight: 480 }}>
               {recentReviews.length === 0 ? (
                 <p className="font-body text-sm text-center py-8" style={{ color: `${NAVY}30` }}>
-                  {loading ? 'Loading…' : 'No reviews yet.'}
+                  {loading ? 'Carregando…' : 'Nenhuma avaliação ainda.'}
                 </p>
               ) : (
                 recentReviews.slice(0, 4).map((r, i) => {
                   const initials = (r.name || '?').split(' ').map((w) => w[0]).slice(0, 2).join('').toUpperCase();
                   const dateStr = r.date
-                    ? new Date(r.date).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })
+                    ? new Date(r.date).toLocaleDateString('pt-BR', { day: 'numeric', month: 'short' })
                     : '–';
                   return (
                     <div key={r.id} className="space-y-3">
@@ -324,7 +261,7 @@ function Dashboard() {
                             </div>
                           )}
                           <div>
-                            <p className="font-body text-sm font-bold" style={{ color: NAVY }}>{r.name || 'Anonymous'}</p>
+                            <p className="font-body text-sm font-bold" style={{ color: NAVY }}>{r.name || 'Anônimo'}</p>
                             <Stars rating={r.rating} />
                           </div>
                         </div>
@@ -351,12 +288,6 @@ function Dashboard() {
           </div>
         </div>
 
-        {/* Footer */}
-        <footer className="mt-12 pt-6 border-t text-center" style={{ borderColor: `${NAVY}08` }}>
-          <p className="font-body text-xs uppercase tracking-widest" style={{ color: `${NAVY}25` }}>
-            MCRh Boutique Property Management
-          </p>
-        </footer>
       </div>
     </AdminShell>
   );
