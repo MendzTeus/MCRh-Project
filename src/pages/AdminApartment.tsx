@@ -1361,7 +1361,10 @@ function SettingsTab({ unit, api, onChanged }: { unit: FullUnit; api: ReturnType
             )}
           </div>
         </div>
-        <p className="font-body text-[10px] text-on-surface-variant/40">Use Google Maps para obter as coordenadas exatas.</p>
+        <p className="font-body text-[10px] text-on-surface-variant/60">
+          Posicionam o pin no mapa "The Neighborhood" da página deste apartamento. Vazio = usa o pin do prédio (Content → Mapa).
+          Use o Google Maps para obter as coordenadas exatas (clique com o botão direito no local).
+        </p>
       </div>
 
       {/* Internal notes */}

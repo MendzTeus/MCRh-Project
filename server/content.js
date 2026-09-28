@@ -7,7 +7,7 @@ const router = express.Router();
 // VISIBLE (admin toggle) AND still LISTED on Airbnb (daily auto-check). With
 // their photos ordered.
 router.get('/units', async (_req, res) => {
-  const [unitsResult, mediaResult, reviewsResult, hiddenResult] = await Promise.all([
+  const [unitsResult, mediaResult, reviewsResult, hiddenResult, coordsResult] = await Promise.all([
     supabase
       .from('Unit')
       .select('unitSlug, unitName, displayTitle, propertySlug, propertyName, suppliedSpecs, postcode, airbnbUrl, description, squareFeet, displayOrder, maxGuests')
@@ -24,6 +24,9 @@ router.get('/units', async (_req, res) => {
         : r),
     supabase.from('Review').select('propertySlug, rating').eq('published', true),
     supabase.from('Unit').select('unitSlug').or('visible.eq.false,airbnbListed.eq.false'),
+    // Admin-set map coordinates (migration 002). Queried on their own so a
+    // missing column can only drop the coordinates, never the unit list.
+    supabase.from('Unit').select('unitSlug, latitude, longitude'),
   ]);
 
   if (unitsResult.error) return res.status(500).json({ error: unitsResult.error.message });
@@ -37,6 +40,14 @@ router.get('/units', async (_req, res) => {
     if (r.rating > 0) (ratingsBySlug[r.propertySlug] ||= []).push(r.rating);
   });
 
+  const coordsBySlug = {};
+  if (coordsResult.error) console.warn('[content/units] coordinates unavailable:', coordsResult.error.message);
+  (coordsResult.data || []).forEach((c) => {
+    if (Number.isFinite(c.latitude) && Number.isFinite(c.longitude)) {
+      coordsBySlug[c.unitSlug] = { latitude: c.latitude, longitude: c.longitude };
+    }
+  });
+
   const result = (unitsResult.data || []).map((u) => {
     const photos = byUnit[u.unitSlug] || [];
     const primary = photos.find((p) => p.isPrimary) || photos[0];
@@ -44,7 +55,8 @@ router.get('/units', async (_req, res) => {
     const avgRating = ratings.length
       ? (ratings.reduce((s, n) => s + n, 0) / ratings.length).toFixed(2)
       : null;
-    return { ...u, primaryImage: primary?.url || null, photos, avgRating };
+    const coords = coordsBySlug[u.unitSlug] || { latitude: null, longitude: null };
+    return { ...u, ...coords, primaryImage: primary?.url || null, photos, avgRating };
   });
 
   // Explicit list of hidden slugs so the site knows exactly what to remove

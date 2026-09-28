@@ -75,12 +75,14 @@ function FieldHeader({ label, custom, state, onRestore }: { label: string; custo
 }
 
 /** Single-line or multi-line text. Shows exactly what the site shows today. */
-export function ContentTextField({ def, saved, onSave }: {
+export function ContentTextField({ def, saved, onSave, fallback: fallbackOverride }: {
   def: Extract<ContentFieldDef, { kind: 'text' | 'textarea' }>;
   saved: unknown;
   onSave: SaveContent;
+  /** Built-in value when it doesn't come from SITE_DEFAULTS (e.g. properties.ts). */
+  fallback?: string;
 }) {
-  const fallback = typeof SITE_DEFAULTS[def.key] === 'string' ? (SITE_DEFAULTS[def.key] as string) : '';
+  const fallback = fallbackOverride ?? (typeof SITE_DEFAULTS[def.key] === 'string' ? (SITE_DEFAULTS[def.key] as string) : '');
   // Same rule as the public text() helper: empty/non-string → built-in default.
   const custom = typeof saved === 'string' && saved.length > 0;
   const effective = custom ? (saved as string) : fallback;
@@ -125,12 +127,14 @@ const isBlankRow = (row: Row, columns: ListColumn[]) => columns.every((c) => !(r
 const sameRows = (a: unknown, b: unknown) => JSON.stringify(a) === JSON.stringify(b);
 
 /** Editable list of rows (stats, links, bullets…). Starts from what the site shows. */
-export function ContentListField({ def, saved, onSave }: {
+export function ContentListField({ def, saved, onSave, fallback: fallbackOverride }: {
   def: Extract<ContentFieldDef, { kind: 'list' }>;
   saved: unknown;
   onSave: SaveContent;
+  /** Built-in rows when they don't come from SITE_DEFAULTS (e.g. properties.ts). */
+  fallback?: Row[];
 }) {
-  const fallback = (Array.isArray(SITE_DEFAULTS[def.key]) ? SITE_DEFAULTS[def.key] : []) as Row[];
+  const fallback = fallbackOverride ?? ((Array.isArray(SITE_DEFAULTS[def.key]) ? SITE_DEFAULTS[def.key] : []) as Row[]);
   // Same rule as the public list() helper: any saved array wins, even empty.
   const custom = Array.isArray(saved);
   const effective = (custom ? saved : fallback) as Row[];

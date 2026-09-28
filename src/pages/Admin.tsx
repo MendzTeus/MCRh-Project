@@ -6,6 +6,7 @@ import { ROOM_CATEGORIES } from '../components/PhotoTour';
 import { useApi, fileToBase64 } from '../hooks/useAdminApi';
 import { ContentEditor } from '../components/admin/content/ContentEditor';
 import type { SaveContent } from '../components/admin/content/ContentFields';
+import { PropertyContentFields } from '../components/admin/content/PropertyContentFields';
 import { AdminShell } from '../components/admin/AdminShell';
 import { ConfirmDialog } from '../components/admin/AdminUI';
 import { ADMIN_NAV_ITEMS, getAdminNavPath, getLegacyAdminTab } from '../components/admin/adminNavigation';
@@ -195,68 +196,6 @@ function PropertyField({
   );
 }
 
-// Collection-level SiteContent fields (property.<slug>.*). Module-level so
-// they keep their state across parent renders.
-type SiteSave = SaveContent;
-
-function useFieldStatus() {
-  const [s, setS] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
-  const run = (p: Promise<unknown>) => {
-    setS('saving');
-    p.then(() => { setS('saved'); setTimeout(() => setS('idle'), 1500); }).catch(() => setS('error'));
-  };
-  return [s, run] as const;
-}
-
-function SF({ k, title, textarea, site, save }: { k: string; title: string; textarea?: boolean; site: SiteData; save: SiteSave }) {
-  const [v, setV] = useState(String(site.content[k] ?? ''));
-  const [s, run] = useFieldStatus();
-  const commit = () => { if (v !== String(site.content[k] ?? '')) run(save(k, v)); };
-  return (
-    <div>
-      <div className="flex items-center justify-between"><label className={label}>{title}</label><Status s={s} /></div>
-      {textarea ? <textarea value={v} onChange={(e) => setV(e.target.value)} onBlur={commit} rows={3} className={`${field} resize-none`} /> : <input value={v} onChange={(e) => setV(e.target.value)} onBlur={commit} className={field} />}
-    </div>
-  );
-}
-
-function SpecsField({ slug, site, save }: { slug: string; site: SiteData; save: SiteSave }) {
-  const k = `property.${slug}.specs`;
-  const init = (site.content[k] as { maxGuests?: number; bedrooms?: number; beds?: number; bathrooms?: number }) ?? {};
-  const [v, setV] = useState({ maxGuests: String(init.maxGuests ?? ''), bedrooms: String(init.bedrooms ?? ''), beds: String(init.beds ?? ''), bathrooms: String(init.bathrooms ?? '') });
-  const [s, run] = useFieldStatus();
-  const commit = () => run(save(k, { maxGuests: Number(v.maxGuests), bedrooms: Number(v.bedrooms), beds: Number(v.beds), bathrooms: Number(v.bathrooms) }));
-  const inp = (fld: keyof typeof v, pl: string) => (
-    <div key={fld}><label className={label}>{pl}</label><input type="number" value={v[fld]} onChange={(e) => setV({ ...v, [fld]: e.target.value })} onBlur={commit} className={field} /></div>
-  );
-  return (
-    <div>
-      <div className="flex items-center justify-between mb-2"><label className={label}>Specs (números)</label><Status s={s} /></div>
-      <div className="grid grid-cols-4 gap-3">{inp('maxGuests','Hóspedes')}{inp('bedrooms','Quartos')}{inp('beds','Camas')}{inp('bathrooms','Banheiros')}</div>
-    </div>
-  );
-}
-
-function LE({ k, title, cols, blank, site, save }: { k: string; title: string; cols: { key: string; label: string; wide?: boolean }[]; blank: Record<string, string>; site: SiteData; save: SiteSave }) {
-  const [rows, setRows] = useState<Record<string, string>[]>(Array.isArray(site.content[k]) ? (site.content[k] as Record<string, string>[]) : []);
-  const [s, run] = useFieldStatus();
-  const commit = (next: Record<string, string>[]) => { setRows(next); run(save(k, next)); };
-  return (
-    <div>
-      <div className="flex items-center justify-between mb-2"><label className={label}>{title}</label><Status s={s} /></div>
-      <div className="space-y-2">
-        {rows.map((row, i) => (
-          <div key={i} className="flex gap-2 items-end">
-            {cols.map((c) => <div key={c.key} style={{ flex: c.wide ? 3 : 1 }}><input value={row[c.key] ?? ''} placeholder={c.label} onChange={(e) => setRows(rows.map((r, j) => j === i ? { ...r, [c.key]: e.target.value } : r))} onBlur={() => commit(rows)} className={field} /></div>)}
-            <button onClick={() => commit(rows.filter((_, j) => j !== i))} className="text-on-surface-variant/50 hover:text-red-500 pb-1.5 text-sm">✕</button>
-          </div>
-        ))}
-        <button onClick={() => setRows([...rows, { ...blank }])} className="font-body text-[10px] uppercase tracking-[0.15em] text-[#C5A059] mt-1">+ Adicionar</button>
-      </div>
-    </div>
-  );
-}
-
 function PropertiesTab({
   properties,
   site,
@@ -300,17 +239,8 @@ function PropertiesTab({
                   <PropertyField property={property} propertyField="eyebrow" title="Sobretítulo (eyebrow)" api={api} onChanged={onPropertyChanged} />
                   <PropertyField property={property} propertyField="neighborhoodTitle" title="Título do bairro" api={api} onChanged={onPropertyChanged} />
                 </div>
-                <p className="font-body text-[11px] px-3 py-2 rounded-md" style={{ background: '#fff7e6', color: '#8a5a00' }}>
-                  Headline, citação, specs, amenidades e distâncias abaixo ainda não aparecem no site — serão ligados na próxima fase.
-                </p>
-                <SF k={`property.${property.slug}.headline`} title="Headline" site={site} save={saveContent} />
                 <PropertyField property={property} propertyField="description" title="Descrição" textarea api={api} onChanged={onPropertyChanged} />
-                <SF k={`property.${property.slug}.quote`} title="Citação" textarea site={site} save={saveContent} />
-                <SpecsField slug={property.slug} site={site} save={saveContent} />
-                <LE k={`property.${property.slug}.amenities`} title="Amenidades" blank={{ item: '' }}
-                  cols={[{ key: 'item', label: 'Amenidade', wide: true }]} site={site} save={saveContent} />
-                <LE k={`property.${property.slug}.nearby`} title="Distâncias / Nearby" blank={{ location: '', time: '' }}
-                  cols={[{ key: 'location', label: 'Local', wide: true }, { key: 'time', label: 'Tempo' }]} site={site} save={saveContent} />
+                <PropertyContentFields slug={property.slug} content={site.content} onSave={saveContent} />
                 <UnitOrderEditor propertySlug={property.slug} api={api} />
                 <PropertyGalleryEditor slug={property.slug} api={api} />
                 <div className="border-t border-outline-variant/20 pt-5">

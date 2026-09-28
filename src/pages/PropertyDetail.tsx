@@ -6,7 +6,6 @@ import Lightbox from '../components/Lightbox';
 import PhotoTour, { type TourPhoto } from '../components/PhotoTour';
 import { getReviewsForProperty } from '../data/reviews';
 import { useReviews } from '../hooks/useReviews';
-import { getLocationsForProperty } from '../data/locations';
 import { getNearestPois } from '../data/pois';
 import PropertyMap from '../components/PropertyMap';
 import DateRangePicker, { formatShortDate } from '../components/DateRangePicker';
@@ -21,6 +20,8 @@ import { useUnitBlockedDates } from '../hooks/useUnitBlockedDates';
 import { useSiteContent, text } from '../hooks/useSiteContent';
 import { usePublicUnits } from '../hooks/usePublicUnits';
 import { usePublicProperties } from '../hooks/usePublicProperties';
+import { useMapLocations } from '../hooks/useMapLocations';
+import { applyPropertyContent, unitMapLocations } from '../lib/propertyContent';
 
 function normalizeSpecs(raw: string): string {
   const wordMap: Record<string, string> = {
@@ -127,6 +128,7 @@ export default function PropertyDetail() {
   // Central company contact (editable in SiteContent). WhatsApp is optional — its
   // option only shows once a number is configured; e-mail always works.
   const site = useSiteContent();
+  const allMapLocations = useMapLocations();
   const publicUnits = usePublicUnits();
   const publicProperties = usePublicProperties();
   const canonicalProperty = publicProperties.bySlug.get(property?.slug || '');
@@ -202,6 +204,8 @@ export default function PropertyDetail() {
   const [guests, setGuests] = useState(initialBookingParams.guests);
 
   if (!property || !unit) return null;
+  // Collection content as edited in the admin (Properties tab).
+  const editedProperty = applyPropertyContent(property, site.content);
 
   // Unit.displayTitle is canonical; scraped Airbnb content remains the fallback
   // for units that have no explicit public title.
@@ -216,8 +220,9 @@ export default function PropertyDetail() {
   const airbnbListingTitle = listingMedia?.title || unit.title || displayTitle;
   // Grouped collection routes (notably /properties/ancoats/:unit) still need
   // the amenities of the unit's actual building, not the parent collection.
-  const inventoryProperty = getPropertyBySlug(inventoryUnit?.propertySlug);
-  const propertyAmenities = inventoryProperty?.amenities || property.amenities;
+  const inventoryBuilding = getPropertyBySlug(inventoryUnit?.propertySlug);
+  const inventoryProperty = inventoryBuilding && applyPropertyContent(inventoryBuilding, site.content);
+  const propertyAmenities = inventoryProperty?.amenities || editedProperty.amenities;
   // 11 Chapel Walks has no lift. The static "chambers" presentation is shared
   // with building 9, so filter the shared amenity only for building 11 routes.
   const isChambersEleven = inventoryUnit?.propertySlug === 'chambers-11';
@@ -257,10 +262,10 @@ export default function PropertyDetail() {
   // Per-unit specs: admin suppliedSpecs string wins; otherwise use Airbnb scrape;
   // fall back to the property's own figures as last resort.
   const scrapedSpecs = getUnitSpecs(inventoryUnit?.unitSlug || id);
-  const specGuests = scrapedSpecs?.guests ?? property.maxGuests;
-  const specBedrooms = scrapedSpecs?.bedrooms ?? property.bedrooms;
-  const specBeds = scrapedSpecs?.beds ?? property.beds;
-  const specBaths = scrapedSpecs?.baths ?? property.bathrooms;
+  const specGuests = scrapedSpecs?.guests ?? editedProperty.maxGuests;
+  const specBedrooms = scrapedSpecs?.bedrooms ?? editedProperty.bedrooms;
+  const specBeds = scrapedSpecs?.beds ?? editedProperty.beds;
+  const specBaths = scrapedSpecs?.baths ?? editedProperty.bathrooms;
   // Admin description overrides the auto-generated fallback.
   const inventoryDescription = inventoryUnit
     ? `${canonicalProperty?.name || inventoryUnit.propertyName}, ${inventoryUnit.postcode}.`
@@ -286,7 +291,21 @@ export default function PropertyDetail() {
 
   // Neighborhood map data — the property's own pin(s) plus the nearest landmarks.
   // Memoised so the Leaflet map isn't torn down and rebuilt on every re-render.
-  const neighborhoodLocations = useMemo(() => getLocationsForProperty(property.slug), [property.slug]);
+  // The apartment's own building pin, at the apartment's admin-set coordinates
+  // when present (Apartments → map fields), else the building's map pin
+  // (Content → Mapa). Previously static defaults for the whole collection.
+  const buildingSlug = inventoryUnit?.propertySlug;
+  const unitLat = adminUnit?.latitude;
+  const unitLng = adminUnit?.longitude;
+  const neighborhoodLocations = useMemo(
+    () => unitMapLocations({
+      collectionSlug: property.slug,
+      buildingSlug,
+      locations: allMapLocations,
+      unitCoords: { latitude: unitLat, longitude: unitLng },
+    }),
+    [property.slug, buildingSlug, allMapLocations, unitLat, unitLng],
+  );
   const nearbyPois = useMemo(() => {
     const center = neighborhoodLocations[0]?.coordinates;
     return center ? getNearestPois(center, 5) : [];
@@ -299,7 +318,7 @@ export default function PropertyDetail() {
   // Wait for the admin-edited text so the page never flashes the built-in
   // copy first. If the API failed or has no row for this building, fall back
   // to the built-in text instead of rendering a blank page.
-  if (!publicProperties.loaded) return null;
+  if (!publicProperties.loaded || !site.loaded) return null;
   const pageText = canonicalProperty ?? property;
 
   return (
@@ -650,7 +669,7 @@ export default function PropertyDetail() {
           <PropertyMap locations={neighborhoodLocations} pois={nearbyPois} height="100%" />
         </div>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mt-12">
-          {property.distances.slice(0, 3).map((item, i) => (
+          {editedProperty.distances.slice(0, 3).map((item, i) => (
             <div key={i}>
               <h4 className="font-display text-headline-sm text-primary mb-2">{item.location}</h4>
               <p className="font-body text-body-md text-on-surface-variant">{item.time}</p>

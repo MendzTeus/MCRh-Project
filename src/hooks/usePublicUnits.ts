@@ -14,6 +14,9 @@ export type PublicUnit = {
   primaryImage: string | null;
   avgRating: string | null;
   displayOrder: number | null;
+  /** Admin-set map position for this apartment (null when not set). */
+  latitude?: number | null;
+  longitude?: number | null;
   photos: { id: string; url: string; alt: string | null; isPrimary: boolean; displayOrder: number; roomCategory: string | null; hidden?: boolean }[];
 };
 

@@ -135,3 +135,17 @@ não aparecem como pendentes na página nova de Leads nem no Dashboard.
 2. **Migration `004_enquiry_status.sql`** (opcional, pode ser dias depois):
    exportar a tabela `Enquiry` em CSV → rodar no projeto de teste → rodar em
    produção. Só limpa os valores antigos; nada muda na tela.
+
+### Fase 4 — Mapa e conteúdo das coleções
+
+Antes do deploy, ver o que já está salvo nos campos da aba Properties que passam
+a aparecer no site (SQL Editor, só leitura):
+
+```sql
+SELECT key, value, "updatedAt" FROM "SiteContent"
+WHERE key LIKE 'property.%' ORDER BY key;
+```
+
+Tudo que aparecer com `.headline`, `.amenities`, `.nearby` ou `.specs` vai para o
+site. Se algo estiver desatualizado, apagar a linha ou usar "Restaurar padrão" no
+admin depois do deploy.

@@ -17,6 +17,8 @@ import { useAvailability } from '../hooks/useAvailability';
 import { usePublicUnits } from '../hooks/usePublicUnits';
 import { usePublicProperties } from '../hooks/usePublicProperties';
 import { usePropertyPhotos } from '../hooks/usePropertyPhotos';
+import { useSiteContent } from '../hooks/useSiteContent';
+import { applyPropertyContent } from '../lib/propertyContent';
 import { Star } from 'lucide-react';
 const PropertyMap = lazy(() => import('../components/PropertyMap'));
 
@@ -75,6 +77,7 @@ export default function CollectionDetail() {
     availabilityUnitSlugs,
   );
   const publicProperties = usePublicProperties();
+  const site = useSiteContent();
   const canonicalProperty = publicProperties.bySlug.get(property?.slug || '');
   const propertyPhotos = usePropertyPhotos(property?.slug || '');
   const unitsRef = useRef<HTMLDivElement>(null);
@@ -150,8 +153,10 @@ export default function CollectionDetail() {
   // Wait for the admin-edited text so the page never flashes the built-in
   // copy first. If the API failed or has no row for this collection, fall back
   // to the built-in text instead of rendering a blank page.
-  if (!publicProperties.loaded) return null;
+  if (!publicProperties.loaded || !site.loaded) return null;
   const pageText = canonicalProperty ?? property;
+  // Headline, distances and guest limit as edited in the admin (Properties tab).
+  const edited = applyPropertyContent(property, site.content);
 
   const propertyDisplayName = pageText.name;
   const propertyDisplayArea = pageText.area || '';
@@ -172,9 +177,9 @@ export default function CollectionDetail() {
     <div className="animate-in fade-in duration-500">
       <Helmet>
         <title>{propertyDisplayName} | MCRh Manchester</title>
-        <meta name="description" content={`${property.headline} ${propertyDescription}`} />
+        <meta name="description" content={`${edited.headline} ${propertyDescription}`} />
         <meta property="og:title" content={`${propertyDisplayName} | MCRh Manchester`} />
-        <meta property="og:description" content={property.headline} />
+        <meta property="og:description" content={edited.headline} />
         {heroSrc && <meta property="og:image" content={heroSrc} />}
       </Helmet>
 
@@ -192,7 +197,7 @@ export default function CollectionDetail() {
           <div className="relative z-10 max-w-[1280px] mx-auto w-full">
             <span className="font-body text-label-caps text-secondary-container mb-4 block tracking-widest uppercase">{propertyDisplayArea}</span>
             <h1 className="font-display text-display-lg-mobile md:text-display-lg text-white mb-6 max-w-3xl leading-tight">{propertyDisplayName}</h1>
-            <p className="font-body text-body-lg text-white/80 max-w-2xl text-lg">{property.headline}</p>
+            <p className="font-body text-body-lg text-white/80 max-w-2xl text-lg">{edited.headline}</p>
           </div>
         </section>
       )}
@@ -202,13 +207,13 @@ export default function CollectionDetail() {
         <section className="pt-8 pb-4 px-margin-mobile md:px-margin-desktop max-w-[1280px] mx-auto">
           <span className="font-body text-label-caps text-secondary mb-2 block tracking-widest uppercase">{propertyDisplayArea}</span>
           <h1 className="font-display text-display-lg-mobile md:text-display-lg text-primary mb-4 max-w-3xl leading-tight">{propertyDisplayName}</h1>
-          <p className="font-body text-body-lg text-on-surface-variant max-w-2xl">{property.headline}</p>
+          <p className="font-body text-body-lg text-on-surface-variant max-w-2xl">{edited.headline}</p>
         </section>
       )}
 
       <AvailabilityWidget
         propertyName={propertyDisplayName}
-        maxGuests={property.maxGuests}
+        maxGuests={edited.maxGuests}
         floating={!hasGallery}
         mode="availability"
         onDatesChange={(ci, co) => { setCheckIn(ci); setCheckOut(co); }}
@@ -313,7 +318,7 @@ export default function CollectionDetail() {
             <h2 className="font-display text-headline-md md:text-display-lg text-primary mb-8">{propertyNeighborhoodTitle}</h2>
 
             <div className="space-y-6">
-              {property.distances.map((item, i) => (
+              {edited.distances.map((item, i) => (
                 <div key={i} className="flex justify-between items-end border-b border-outline-variant/30 pb-2">
                   <span className="font-body text-body-lg text-primary">{item.location}</span>
                   <span className="font-body text-label-caps text-on-surface-variant uppercase tracking-widest">{item.time}</span>
