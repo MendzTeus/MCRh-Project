@@ -9,7 +9,7 @@ aprovada antes da próxima. Regras combinadas:
   Claude só LÊ a produção; toda gravação é SQL/script revisado, com backup,
   rodado pelo dono do site.
 - Credenciais nunca no chat. (Em 2026-09-28 as variáveis do ambiente apontavam
-  para a PRODUÇÃO — projeto `stoh…`; o dono removeu a chave.)
+  para a PRODUÇÃO — projeto `stoh…`; recomendado remover/trocar essa chave.)
 - Admin em português do Brasil.
 
 ## Concluídas (na branch, aguardando deploy)
