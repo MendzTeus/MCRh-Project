@@ -1,6 +1,6 @@
 # Operação — mcrh.co.uk
 
-Guia para mexer no projeto com o site em produção. Itens marcados **[A PREENCHER]**
+Guia para mexer no projeto com o site em produção. Itens marcados como **não confirmado**
 dependem de informação que ainda não está no repositório.
 
 ## 1. Rodar localmente
@@ -25,10 +25,15 @@ npm test        # vitest — não precisa de banco, usa credenciais fictícias
 npm run build
 ```
 
-## 3. Banco de teste (recomendado)
+## 3. Banco de teste (obrigatório para gravações)
+
+**Decisão:** gravações, migrations e uploads são testados só num projeto Supabase
+separado, exclusivo para testes. Até ele existir, contra produção só se faz leitura
+(ex.: `npm run check:leads`) e testes automáticos com dados fictícios — nunca
+gravar em produção a partir de um ambiente de desenvolvimento.
 
 O `.env` com as credenciais de produção faz o admin local gravar no site real.
-Para testar gravações:
+Para montar o banco de teste:
 
 1. Criar um segundo projeto no Supabase (plano grátis).
 2. Recriar o schema (seção 4) e rodar as migrations de `database/migrations/`.
@@ -51,8 +56,10 @@ order by table_name, ordinal_position;
 
 ## 5. Backup antes de migrations
 
-- [ ] Confirmar o plano do Supabase e se há backup diário / Point-in-Time Recovery
-      (Dashboard → Database → Backups). **[A PREENCHER]**
+- [ ] **Ainda não confirmado — não assumir que existe.** Verificar o plano do Supabase
+      e se há backup diário / Point-in-Time Recovery (Dashboard → Database → Backups).
+      Enquanto não estiver confirmado, toda migration que altera dados exige um export
+      CSV manual das tabelas afetadas antes de rodar.
 - [ ] Antes de uma migration que altera dados: exportar as tabelas afetadas em CSV.
 - Regras das migrations:
   - só aditivas (`ADD COLUMN IF NOT EXISTS`, nunca `DROP`/`RENAME` no mesmo deploy);
@@ -62,8 +69,26 @@ order by table_name, ordinal_position;
 
 ## 6. Deploy
 
-**[A PREENCHER]** Como o código chega ao mcrh.co.uk (merge no `main` publica sozinho?
-Docker em VPS? Qual host?) e onde ficam os logs.
+**Merge no `main` NÃO publica.** Não há GitHub Actions nem webhook de deploy. O deploy
+é manual, na VPS:
+
+1. Atualizar o código na VPS para o commit desejado do `main`.
+2. Build da imagem com o `Dockerfile` do repositório → `mcrh-website:preview`.
+3. Atualizar o serviço Docker Swarm `mcrh-website-preview` com a nova imagem.
+
+O `main` do GitHub corresponde ao que está publicado — manter assim: só publicar
+commits que estão no `main`.
+
+Recomendação (ainda não aplicada): marcar cada build também com o hash do commit,
+para saber exatamente o que está no ar e poder voltar para uma versão anterior:
+
+```bash
+SHA=$(git rev-parse --short HEAD)
+docker build -t mcrh-website:$SHA -t mcrh-website:preview .
+docker service update --image mcrh-website:$SHA mcrh-website-preview
+```
+
+Logs: `docker service logs -f mcrh-website-preview` (nginx + API no mesmo container).
 
 Checklist por deploy:
 - [ ] PR revisado, `lint` + `test` + `build` verdes.
@@ -74,8 +99,11 @@ Checklist por deploy:
 
 ## 7. Rollback
 
-1. `git revert <commit>` no `main` e publicar de novo.
-2. Migrations são aditivas, então o código anterior continua funcionando com o
+1. Mais rápido: `docker service rollback mcrh-website-preview` (volta para a imagem
+   anterior do serviço, se ela ainda existir na VPS). Com builds marcados pelo hash
+   do commit, também dá para `docker service update --image mcrh-website:<sha-anterior> mcrh-website-preview`.
+2. Depois, `git revert <commit>` no `main` para o repositório continuar igual ao site.
+3. Migrations são aditivas, então o código anterior continua funcionando com o
    banco novo — não é preciso desfazer a migration.
 
 ## 8. Monitoramento
