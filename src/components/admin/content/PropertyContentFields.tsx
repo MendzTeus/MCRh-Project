@@ -1,37 +1,42 @@
 import { useState } from 'react';
 import { getPropertyBySlug } from '../../../data/properties';
-import { propertyContentKeys, type PropertySpecsOverride } from '../../../lib/propertyContent';
+import { readAmenities, readNearby } from '../../../lib/propertyContent';
+import type { useApi } from '../../../hooks/useAdminApi';
+import type { AdminProperty } from '../sections/shared';
 import { ContentListField, ContentTextField, SaveStatus, inputClass, type SaveContent, type SaveState } from './ContentFields';
 
-const SPEC_FIELDS: { key: keyof PropertySpecsOverride; label: string }[] = [
+type Api = ReturnType<typeof useApi>;
+type SpecKey = 'maxGuests' | 'bedrooms' | 'beds' | 'bathrooms';
+
+const SPEC_FIELDS: { key: SpecKey; label: string }[] = [
   { key: 'maxGuests', label: 'Hóspedes (máx.)' },
   { key: 'bedrooms', label: 'Quartos' },
   { key: 'beds', label: 'Camas' },
   { key: 'bathrooms', label: 'Banheiros' },
 ];
 
-// Blank or 0 = "use the site's number"; only positive whole numbers are stored.
-function SpecsEditor({ storageKey, saved, defaults, onSave }: {
-  storageKey: string;
-  saved: unknown;
-  defaults: Required<PropertySpecsOverride>;
-  onSave: SaveContent;
+// Blank = use the site's number (NULL column); only whole numbers 1–50 are stored.
+function SpecsEditor({ property, defaults, patch }: {
+  property: AdminProperty;
+  defaults: Record<SpecKey, number>;
+  patch: (fields: Record<string, unknown>) => Promise<void>;
 }) {
-  const initial = (saved && typeof saved === 'object' ? saved : {}) as PropertySpecsOverride;
-  const [draft, setDraft] = useState<Record<string, string>>(() =>
-    Object.fromEntries(SPEC_FIELDS.map(({ key }) => [key, (initial[key] ?? 0) > 0 ? String(initial[key]) : ''])));
+  const saved = (key: SpecKey) => (typeof property[key] === 'number' && (property[key] as number) > 0 ? String(property[key]) : '');
+  const [draft, setDraft] = useState<Record<SpecKey, string>>(() =>
+    Object.fromEntries(SPEC_FIELDS.map(({ key }) => [key, saved(key)])) as Record<SpecKey, string>);
   const [state, setState] = useState<SaveState>({ kind: 'idle' });
-  const custom = SPEC_FIELDS.some(({ key }) => (initial[key] ?? 0) > 0);
+  const custom = SPEC_FIELDS.some(({ key }) => saved(key) !== '');
 
-  const commit = (next: Record<string, string>) => {
-    const value: PropertySpecsOverride = {};
-    for (const { key } of SPEC_FIELDS) {
-      const n = Number(next[key]);
-      if (Number.isInteger(n) && n > 0) value[key] = n;
+  const commit = (key: SpecKey) => {
+    if (draft[key] === saved(key)) return;
+    const n = Number(draft[key]);
+    const value = draft[key].trim() === '' ? null : n;
+    if (value !== null && !(Number.isInteger(n) && n >= 1 && n <= 50)) {
+      setState({ kind: 'error', message: 'use um número inteiro de 1 a 50' });
+      return;
     }
-    if (JSON.stringify(value) === JSON.stringify(Object.fromEntries(SPEC_FIELDS.filter(({ key }) => (initial[key] ?? 0) > 0).map(({ key }) => [key, initial[key]])))) return;
     setState({ kind: 'saving' });
-    onSave(storageKey, Object.keys(value).length ? value : undefined)
+    patch({ [key]: value })
       .then(() => setState({ kind: 'saved' }))
       .catch((err: Error) => setState({ kind: 'error', message: err.message }));
   };
@@ -50,37 +55,57 @@ function SpecsEditor({ storageKey, saved, defaults, onSave }: {
         {SPEC_FIELDS.map(({ key, label }) => (
           <div key={key}>
             <p className="font-body text-[10px] text-on-surface-variant mb-1">{label}</p>
-            <input type="number" min={1} value={draft[key]} placeholder={String(defaults[key])}
+            <input type="number" min={1} max={50} value={draft[key]} placeholder={String(defaults[key])}
               onChange={(e) => setDraft({ ...draft, [key]: e.target.value })}
-              onBlur={() => commit(draft)} className={inputClass} />
+              onBlur={() => commit(key)} className={inputClass} />
           </div>
         ))}
       </div>
       <p className="font-body text-[11px] text-on-surface-variant/60 mt-1">
-        Usados quando o apartamento não tem os números do Airbnb, e o número de hóspedes limita a busca da coleção. Vazio = número atual (em cinza).
+        Usados quando o apartamento não tem os números do Airbnb; o número de hóspedes limita a busca da coleção. Vazio = número atual (em cinza).
       </p>
     </div>
   );
 }
 
 /**
- * Collection/building content that lives in SiteContent (`property.<slug>.*`)
- * and overrides the built-in data from properties.ts on the public pages.
+ * Building/collection content stored on the Property row (headline, amenities,
+ * distances, specs). Each field shows what the site shows today; NULL columns
+ * fall back to the built-in data in properties.ts.
  */
-export function PropertyContentFields({ slug, content, onSave }: { slug: string; content: Record<string, unknown>; onSave: SaveContent }) {
-  const builtIn = getPropertyBySlug(slug);
+export function PropertyContentFields({ property, api, onChanged }: {
+  property: AdminProperty;
+  api: Api;
+  onChanged: (property: AdminProperty) => void;
+}) {
+  const builtIn = getPropertyBySlug(property.slug);
   if (!builtIn) return null;
-  const keys = propertyContentKeys(slug);
+
+  const patch = async (fields: Record<string, unknown>) => {
+    const res = await api(`/admin/properties/${encodeURIComponent(property.slug)}`, { method: 'PATCH', body: JSON.stringify(fields) });
+    onChanged(res.property);
+  };
+  // Adapter so the generic content fields (key/value, undefined = restore) can
+  // write Property columns. Lists are converted to the stored shapes.
+  const save: SaveContent = (key, value) => {
+    if (key === 'amenities') {
+      const rows = value as { item: string }[] | undefined;
+      return patch({ amenities: rows ? rows.map((r) => r.item) : null });
+    }
+    return patch({ [key]: value === undefined ? null : value });
+  };
+  const amenities = readAmenities(property.amenities);
+  const nearby = readNearby(property.nearby);
 
   return (
     <div className="grid gap-5">
-      <ContentTextField def={{ kind: 'textarea', key: keys.headline, label: 'Headline', hint: 'Frase abaixo do nome, no topo da página da coleção.' }}
-        saved={content[keys.headline]} onSave={onSave} fallback={builtIn.headline} />
-      <ContentListField def={{ kind: 'list', key: keys.amenities, label: 'Amenidades', columns: [{ key: 'item', label: 'Amenidade', wide: true }], hint: 'Mostradas na página de cada apartamento deste prédio.' }}
-        saved={content[keys.amenities]} onSave={onSave} fallback={builtIn.amenities.map((item) => ({ item }))} />
-      <ContentListField def={{ kind: 'list', key: keys.nearby, label: 'Distâncias', columns: [{ key: 'location', label: 'Local', wide: true }, { key: 'time', label: 'Tempo (ex.: 5 min walk)' }], hint: 'Seção "The Neighborhood" da coleção e dos apartamentos (os 3 primeiros).' }}
-        saved={content[keys.nearby]} onSave={onSave} fallback={builtIn.distances.map((d) => ({ location: d.location, time: d.time }))} />
-      <SpecsEditor storageKey={keys.specs} saved={content[keys.specs]} onSave={onSave}
+      <ContentTextField def={{ kind: 'textarea', key: 'headline', label: 'Headline', hint: 'Frase abaixo do nome, no topo da página da coleção.' }}
+        saved={property.headline} onSave={save} fallback={builtIn.headline} />
+      <ContentListField def={{ kind: 'list', key: 'amenities', label: 'Amenidades', columns: [{ key: 'item', label: 'Amenidade', wide: true }], hint: 'Mostradas na página de cada apartamento deste prédio.' }}
+        saved={amenities?.map((item) => ({ item }))} onSave={save} fallback={builtIn.amenities.map((item) => ({ item }))} />
+      <ContentListField def={{ kind: 'list', key: 'nearby', label: 'Distâncias', columns: [{ key: 'location', label: 'Local', wide: true }, { key: 'time', label: 'Tempo (ex.: 5 min walk)' }], hint: 'Seção "The Neighborhood" da coleção e dos apartamentos (os 3 primeiros).' }}
+        saved={nearby} onSave={save} fallback={builtIn.distances.map((d) => ({ location: d.location, time: d.time }))} />
+      <SpecsEditor property={property} patch={patch}
         defaults={{ maxGuests: builtIn.maxGuests, bedrooms: builtIn.bedrooms, beds: builtIn.beds, bathrooms: builtIn.bathrooms }} />
     </div>
   );

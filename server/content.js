@@ -1,5 +1,6 @@
 const express = require('express');
 const { supabase } = require('./db');
+const { PUBLIC_SELECT, PUBLIC_SELECT_LEGACY, selectWithFallback } = require('./propertyFields');
 
 const router = express.Router();
 
@@ -79,15 +80,13 @@ router.get('/site', async (_req, res) => {
   res.json({ content: contentMap, images: imageMap });
 });
 
-// Canonical public building content. The five editable fields live only on
-// Property; static properties.ts data remains responsible for media, amenities,
-// specs and other non-canonical presentation data.
+// Canonical public building content (see server/propertyFields.js). NULL
+// columns mean "use the built-in value" from properties.ts.
 router.get('/properties', async (_req, res) => {
-  const { data, error } = await supabase
-    .from('Property')
-    .select('slug, name, area, eyebrow, neighborhoodTitle, description')
-    .order('displayOrder')
-    .order('name');
+  const { data, error } = await selectWithFallback(
+    (select) => supabase.from('Property').select(select).order('displayOrder').order('name'),
+    PUBLIC_SELECT, PUBLIC_SELECT_LEGACY,
+  );
   if (error) return res.status(500).json({ error: error.message });
   res.json(data || []);
 });

@@ -7,6 +7,14 @@ export type PublicPropertyFields = {
   eyebrow: string | null;
   neighborhoodTitle: string | null;
   description: string;
+  // Optional canonical content — null/absent = use the built-in properties.ts value.
+  headline?: string | null;
+  amenities?: unknown;
+  nearby?: unknown;
+  maxGuests?: number | null;
+  bedrooms?: number | null;
+  beds?: number | null;
+  bathrooms?: number | null;
 };
 
 type PublicPropertiesState = {

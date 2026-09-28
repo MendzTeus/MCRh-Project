@@ -102,43 +102,27 @@ router.post('/login', loginThrottle, (req, res) => {
 // Everything below requires a valid admin token.
 router.use(requireAdmin);
 
-const EDITABLE_PROPERTY_FIELDS = ['name', 'area', 'eyebrow', 'neighborhoodTitle', 'description'];
-const PROPERTY_SELECT = 'slug, name, area, eyebrow, neighborhoodTitle, description, displayOrder, updatedAt';
+const { ADMIN_SELECT, ADMIN_SELECT_LEGACY, selectWithFallback, validatePropertyPatch } = require('./propertyFields');
 
 // ── Canonical building content ──────────────────────────────────────
 router.get('/properties', async (_req, res) => {
-  const { data, error } = await supabase
-    .from('Property')
-    .select(PROPERTY_SELECT)
-    .order('displayOrder')
-    .order('name');
+  const { data, error } = await selectWithFallback(
+    (select) => supabase.from('Property').select(select).order('displayOrder').order('name'),
+    ADMIN_SELECT, ADMIN_SELECT_LEGACY,
+  );
   if (error) return res.status(500).json({ error: error.message });
   res.json({ properties: data || [] });
 });
 
 router.patch('/properties/:slug', async (req, res) => {
-  const patch = {};
-  for (const field of EDITABLE_PROPERTY_FIELDS) {
-    if (field in (req.body || {})) patch[field] = req.body[field];
-  }
-  if (!Object.keys(patch).length) return res.status(400).json({ error: 'No editable fields' });
-
-  for (const [field, value] of Object.entries(patch)) {
-    if (typeof value !== 'string') {
-      return res.status(400).json({ error: `${field} must be a string` });
-    }
-  }
-  if (!patch.name?.trim() && 'name' in patch) {
-    return res.status(400).json({ error: 'name cannot be empty' });
-  }
+  const { patch, error: invalid } = validatePropertyPatch(req.body);
+  if (invalid) return res.status(400).json({ error: invalid });
 
   patch.updatedAt = new Date().toISOString();
-  const { data, error } = await supabase
-    .from('Property')
-    .update(patch)
-    .eq('slug', req.params.slug)
-    .select(PROPERTY_SELECT)
-    .maybeSingle();
+  const { data, error } = await selectWithFallback(
+    (select) => supabase.from('Property').update(patch).eq('slug', req.params.slug).select(select).maybeSingle(),
+    ADMIN_SELECT, ADMIN_SELECT_LEGACY,
+  );
   if (error) return res.status(500).json({ error: error.message });
   if (!data) return res.status(404).json({ error: 'Property not found' });
   res.json({ property: data });

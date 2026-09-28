@@ -6,16 +6,17 @@ import { buildMapLocations } from '../data/locations';
 const ancoats = getPropertyBySlug('ancoats')!;
 
 describe('applyPropertyContent', () => {
-  it('returns the built-in data untouched when nothing is saved', () => {
-    expect(applyPropertyContent(ancoats, {})).toEqual(ancoats);
+  it('returns the built-in data untouched when there is no row or only NULLs', () => {
+    expect(applyPropertyContent(ancoats, undefined)).toEqual(ancoats);
+    expect(applyPropertyContent(ancoats, { headline: null, amenities: null, nearby: null, maxGuests: null })).toEqual(ancoats);
   });
 
-  it('applies saved headline, amenities, distances and specs', () => {
+  it('applies headline, amenities, distances and specs from the Property row', () => {
     const out = applyPropertyContent(ancoats, {
-      'property.ancoats.headline': 'New headline',
-      'property.ancoats.amenities': [{ item: 'Gym' }, { item: 'Parking' }],
-      'property.ancoats.nearby': [{ location: 'Piccadilly', time: '5 min walk' }],
-      'property.ancoats.specs': { maxGuests: 6, bedrooms: 3, beds: 0, bathrooms: NaN },
+      headline: 'New headline',
+      amenities: ['Gym', 'Parking'],
+      nearby: [{ location: 'Piccadilly', time: '5 min walk' }],
+      maxGuests: 6, bedrooms: 3, beds: 0, bathrooms: null,
     });
     expect(out.headline).toBe('New headline');
     expect(out.amenities).toEqual(['Gym', 'Parking']);
@@ -26,20 +27,19 @@ describe('applyPropertyContent', () => {
     expect(out.bathrooms).toBe(ancoats.bathrooms);
   });
 
+  it('accepts amenities stored as { item } objects too', () => {
+    expect(applyPropertyContent(ancoats, { amenities: [{ item: 'Gym' }] }).amenities).toEqual(['Gym']);
+  });
+
   it('ignores blank values so a half-filled form never blanks the page', () => {
     const out = applyPropertyContent(ancoats, {
-      'property.ancoats.headline': '   ',
-      'property.ancoats.amenities': [{ item: '' }],
-      'property.ancoats.nearby': [{ location: 'Somewhere', time: '' }],
+      headline: '   ',
+      amenities: [''],
+      nearby: [{ location: 'Somewhere', time: '' }],
     });
     expect(out.headline).toBe(ancoats.headline);
     expect(out.amenities).toEqual(ancoats.amenities);
     expect(out.distances).toEqual(ancoats.distances);
-  });
-
-  it('only reads keys for its own slug', () => {
-    const out = applyPropertyContent(ancoats, { 'property.chambers.headline': 'Other' });
-    expect(out.headline).toBe(ancoats.headline);
   });
 });
 

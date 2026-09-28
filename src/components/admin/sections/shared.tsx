@@ -21,6 +21,14 @@ export type AdminProperty = {
   eyebrow: string | null;
   neighborhoodTitle: string | null;
   description: string;
+  // null = the site uses the built-in value from properties.ts
+  headline?: string | null;
+  amenities?: unknown;
+  nearby?: unknown;
+  maxGuests?: number | null;
+  bedrooms?: number | null;
+  beds?: number | null;
+  bathrooms?: number | null;
   displayOrder: number | null;
   updatedAt: string;
 };

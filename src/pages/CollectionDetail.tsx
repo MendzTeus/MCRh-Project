@@ -17,7 +17,6 @@ import { useAvailability } from '../hooks/useAvailability';
 import { usePublicUnits } from '../hooks/usePublicUnits';
 import { usePublicProperties } from '../hooks/usePublicProperties';
 import { usePropertyPhotos } from '../hooks/usePropertyPhotos';
-import { useSiteContent } from '../hooks/useSiteContent';
 import { applyPropertyContent } from '../lib/propertyContent';
 import { Star } from 'lucide-react';
 const PropertyMap = lazy(() => import('../components/PropertyMap'));
@@ -77,7 +76,6 @@ export default function CollectionDetail() {
     availabilityUnitSlugs,
   );
   const publicProperties = usePublicProperties();
-  const site = useSiteContent();
   const canonicalProperty = publicProperties.bySlug.get(property?.slug || '');
   const propertyPhotos = usePropertyPhotos(property?.slug || '');
   const unitsRef = useRef<HTMLDivElement>(null);
@@ -153,10 +151,10 @@ export default function CollectionDetail() {
   // Wait for the admin-edited text so the page never flashes the built-in
   // copy first. If the API failed or has no row for this collection, fall back
   // to the built-in text instead of rendering a blank page.
-  if (!publicProperties.loaded || !site.loaded) return null;
+  if (!publicProperties.loaded) return null;
   const pageText = canonicalProperty ?? property;
-  // Headline, distances and guest limit as edited in the admin (Properties tab).
-  const edited = applyPropertyContent(property, site.content);
+  // Headline, distances and guest limit as edited in the admin (Prédios).
+  const edited = applyPropertyContent(property, canonicalProperty);
 
   const propertyDisplayName = pageText.name;
   const propertyDisplayArea = pageText.area || '';

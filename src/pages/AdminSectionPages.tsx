@@ -51,17 +51,14 @@ export function AdminImagesPage() {
 
 export function AdminPropertiesPage() {
   const api = useAdminPageApi();
-  const site = useAdminSite(api);
   const props = useAdminProperties(api);
   return (
     <SectionPage id="properties" title="Prédios e coleções"
       description="Nome, descrição, amenidades, distâncias, galeria e ordem dos apartamentos de cada prédio.">
-      <AdminLoadState loaded={site.loaded && props.loaded} error={site.error || props.error} onRetry={() => { site.reload(); props.reload(); }}>
+      <AdminLoadState loaded={props.loaded} error={props.error} onRetry={props.reload}>
         <PropertiesTab
           properties={props.properties}
-          site={site.site}
           api={api}
-          saveContent={site.saveContent}
           onPropertyChanged={props.replaceProperty}
         />
       </AdminLoadState>

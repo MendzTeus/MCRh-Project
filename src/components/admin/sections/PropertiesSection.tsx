@@ -3,10 +3,9 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { getInventoryForProperty } from '../../../data/airbnbInventory';
 import { Link } from 'react-router-dom';
 import type { useApi } from '../../../hooks/useAdminApi';
-import type { SaveContent } from '../content/ContentFields';
 import { PropertyContentFields } from '../content/PropertyContentFields';
 import { MediaGrid, getMediaKey, useMediaMutations, type MediaItem, type MediaOwner } from '../media';
-import { GOLD, label, field, Status, type AdminProperty, type Photo, type SiteData, type Unit } from './shared';
+import { GOLD, label, field, Status, type AdminProperty, type Photo, type Unit } from './shared';
 
 // ── Properties tab ──────────────────────────────────────────────────
 type CanonicalPropertyField = 'name' | 'area' | 'eyebrow' | 'neighborhoodTitle' | 'description';
@@ -63,15 +62,11 @@ function PropertyField({
 
 export function PropertiesTab({
   properties,
-  site,
   api,
-  saveContent,
   onPropertyChanged,
 }: {
   properties: AdminProperty[];
-  site: SiteData;
   api: ReturnType<typeof useApi>;
-  saveContent: SaveContent;
   onPropertyChanged: (property: AdminProperty) => void;
 }) {
   const [open, setOpen] = useState<string>(properties[0]?.slug || '');
@@ -105,7 +100,7 @@ export function PropertiesTab({
                   <PropertyField property={property} propertyField="neighborhoodTitle" title="Título do bairro" api={api} onChanged={onPropertyChanged} />
                 </div>
                 <PropertyField property={property} propertyField="description" title="Descrição" textarea api={api} onChanged={onPropertyChanged} />
-                <PropertyContentFields slug={property.slug} content={site.content} onSave={saveContent} />
+                <PropertyContentFields property={property} api={api} onChanged={onPropertyChanged} />
                 <UnitOrderEditor propertySlug={property.slug} api={api} />
                 <PropertyGalleryEditor slug={property.slug} api={api} />
                 <div className="border-t border-outline-variant/20 pt-5">

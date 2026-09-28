@@ -204,8 +204,8 @@ export default function PropertyDetail() {
   const [guests, setGuests] = useState(initialBookingParams.guests);
 
   if (!property || !unit) return null;
-  // Collection content as edited in the admin (Properties tab).
-  const editedProperty = applyPropertyContent(property, site.content);
+  // Collection content as edited in the admin (Prédios).
+  const editedProperty = applyPropertyContent(property, canonicalProperty);
 
   // Unit.displayTitle is canonical; scraped Airbnb content remains the fallback
   // for units that have no explicit public title.
@@ -221,7 +221,7 @@ export default function PropertyDetail() {
   // Grouped collection routes (notably /properties/ancoats/:unit) still need
   // the amenities of the unit's actual building, not the parent collection.
   const inventoryBuilding = getPropertyBySlug(inventoryUnit?.propertySlug);
-  const inventoryProperty = inventoryBuilding && applyPropertyContent(inventoryBuilding, site.content);
+  const inventoryProperty = inventoryBuilding && applyPropertyContent(inventoryBuilding, publicProperties.bySlug.get(inventoryBuilding.slug));
   const propertyAmenities = inventoryProperty?.amenities || editedProperty.amenities;
   // 11 Chapel Walks has no lift. The static "chambers" presentation is shared
   // with building 9, so filter the shared amenity only for building 11 routes.
@@ -318,7 +318,7 @@ export default function PropertyDetail() {
   // Wait for the admin-edited text so the page never flashes the built-in
   // copy first. If the API failed or has no row for this building, fall back
   // to the built-in text instead of rendering a blank page.
-  if (!publicProperties.loaded || !site.loaded) return null;
+  if (!publicProperties.loaded) return null;
   const pageText = canonicalProperty ?? property;
 
   return (

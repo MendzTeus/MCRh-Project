@@ -1,56 +1,44 @@
 import type { NearbyPlace, Property } from '../data/properties';
 import { getLocationsForProperty, type MapLocation } from '../data/locations';
+import type { PublicPropertyFields } from '../hooks/usePublicProperties';
 
-// ── Collection content edited in the admin (SiteContent `property.<slug>.*`) ──
-// The static data in properties.ts stays the default; a saved, non-empty
-// admin value replaces it. Empty values (blank rows, 0/blank numbers) are
-// ignored so a half-filled form can never blank out part of a page.
-
-export type PropertySpecsOverride = { maxGuests?: number; bedrooms?: number; beds?: number; bathrooms?: number };
+// ── Collection content edited in the admin (Property table) ─────────────────
+// Headline, amenities, distances and specs live on the Property row. A NULL or
+// empty column means "use the built-in value" from properties.ts, so a blank
+// in the database can never blank out part of a page.
 
 const positiveInt = (n: unknown) => (typeof n === 'number' && Number.isInteger(n) && n > 0 ? n : undefined);
 const nonEmpty = (s: unknown) => (typeof s === 'string' && s.trim() ? s : undefined);
 
-export function propertyContentKeys(slug: string) {
-  return {
-    headline: `property.${slug}.headline`,
-    amenities: `property.${slug}.amenities`,
-    nearby: `property.${slug}.nearby`,
-    specs: `property.${slug}.specs`,
-  };
+/** Amenities are stored as a list of texts; older rows may hold `{ item }` objects. */
+export function readAmenities(value: unknown): string[] | undefined {
+  if (!Array.isArray(value)) return undefined;
+  const items = value
+    .map((v) => nonEmpty(typeof v === 'string' ? v : (v as { item?: unknown })?.item))
+    .filter((v): v is string => Boolean(v));
+  return items.length ? items : undefined;
 }
 
-export function applyPropertyContent(property: Property, content: Record<string, unknown>): Property {
-  const keys = propertyContentKeys(property.slug);
-  const next: Property = { ...property };
+export function readNearby(value: unknown): NearbyPlace[] | undefined {
+  if (!Array.isArray(value)) return undefined;
+  const rows = value
+    .map((r) => ({ location: nonEmpty((r as NearbyPlace)?.location), time: nonEmpty((r as NearbyPlace)?.time) }))
+    .filter((r): r is NearbyPlace => Boolean(r.location && r.time));
+  return rows.length ? rows : undefined;
+}
 
-  const headline = nonEmpty(content[keys.headline]);
-  if (headline) next.headline = headline;
-
-  const amenityRows = content[keys.amenities];
-  if (Array.isArray(amenityRows)) {
-    const amenities = amenityRows.map((r) => nonEmpty((r as { item?: unknown })?.item)).filter((a): a is string => Boolean(a));
-    if (amenities.length) next.amenities = amenities;
-  }
-
-  const nearbyRows = content[keys.nearby];
-  if (Array.isArray(nearbyRows)) {
-    const distances = nearbyRows
-      .map((r) => ({ location: nonEmpty((r as NearbyPlace)?.location), time: nonEmpty((r as NearbyPlace)?.time) }))
-      .filter((r): r is NearbyPlace => Boolean(r.location && r.time));
-    if (distances.length) next.distances = distances;
-  }
-
-  const specs = content[keys.specs];
-  if (specs && typeof specs === 'object') {
-    const s = specs as PropertySpecsOverride;
-    next.maxGuests = positiveInt(s.maxGuests) ?? next.maxGuests;
-    next.bedrooms = positiveInt(s.bedrooms) ?? next.bedrooms;
-    next.beds = positiveInt(s.beds) ?? next.beds;
-    next.bathrooms = positiveInt(s.bathrooms) ?? next.bathrooms;
-  }
-
-  return next;
+export function applyPropertyContent(property: Property, row?: Partial<PublicPropertyFields> | null): Property {
+  if (!row) return property;
+  return {
+    ...property,
+    headline: nonEmpty(row.headline) ?? property.headline,
+    amenities: readAmenities(row.amenities) ?? property.amenities,
+    distances: readNearby(row.nearby) ?? property.distances,
+    maxGuests: positiveInt(row.maxGuests) ?? property.maxGuests,
+    bedrooms: positiveInt(row.bedrooms) ?? property.bedrooms,
+    beds: positiveInt(row.beds) ?? property.beds,
+    bathrooms: positiveInt(row.bathrooms) ?? property.bathrooms,
+  };
 }
 
 // ── Map pin for one apartment page ──────────────────────────────────────────

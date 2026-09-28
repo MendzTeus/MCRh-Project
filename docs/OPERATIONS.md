@@ -136,16 +136,14 @@ não aparecem como pendentes na página nova de Leads nem no Dashboard.
    exportar a tabela `Enquiry` em CSV → rodar no projeto de teste → rodar em
    produção. Só limpa os valores antigos; nada muda na tela.
 
-### Fase 4 — Mapa e conteúdo das coleções
+### Fases 4 e 6 — Mapa e conteúdo dos prédios
 
-Antes do deploy, ver o que já está salvo nos campos da aba Properties que passam
-a aparecer no site (SQL Editor, só leitura):
+Headline, amenidades, distâncias e specs de cada prédio vêm das colunas da tabela
+`Property` (vazio/NULL = valor do código em `src/data/properties.ts`).
 
-```sql
-SELECT key, value, "updatedAt" FROM "SiteContent"
-WHERE key LIKE 'property.%' ORDER BY key;
-```
+1. **Antes do deploy**, rodar `database/migrations/005_property_canonical_content.sql`
+   (backup da tabela, coluna `nearby`, correção do "Lift access" de Wood Street).
+2. Deploy.
+3. Conferir `/properties/wood-street`: as amenidades não devem listar "Lift access".
 
-Tudo que aparecer com `.headline`, `.amenities`, `.nearby` ou `.specs` vai para o
-site. Se algo estiver desatualizado, apagar a linha ou usar "Restaurar padrão" no
-admin depois do deploy.
+Auditoria só de leitura (código × banco): `npx tsx scripts/audit-static-vs-db.ts`.
