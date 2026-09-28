@@ -96,8 +96,8 @@ function PropertiesMap({
         center: [53.479, -2.244], zoom: 13,
         zoomControl: false, scrollWheelZoom: true,
       });
-      L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
-        attribution: '© CARTO', maxZoom: 19,
+      L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '© OpenStreetMap contributors', maxZoom: 19,
       }).addTo(map);
 
       const makeIcon = (name: string, active = false) => L.divIcon({
