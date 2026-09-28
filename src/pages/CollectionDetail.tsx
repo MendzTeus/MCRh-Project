@@ -7,7 +7,8 @@ import MediaImage from '../components/MediaImage';
 import PhotoGallery from '../components/PhotoGallery';
 import { getInventoryForProperty } from '../data/airbnbInventory';
 import { getListingMedia } from '../data/listingMedia';
-import { getPropertyBySlug } from '../data/properties';
+import { resolveCollection } from '../lib/routeResolution';
+import NotFound from './NotFound';
 import { getLocationsForProperty } from '../data/locations';
 import { useMapLocations } from '../hooks/useMapLocations';
 import { getReviewsForProperty } from '../data/reviews';
@@ -51,7 +52,8 @@ function normalizeSpecs(raw: string): string {
 
 export default function CollectionDetail() {
   const { id } = useParams();
-  const property = getPropertyBySlug(id) || getPropertyBySlug('chambers');
+  // Unknown slugs render the 404 page (they used to silently show Chambers).
+  const property = resolveCollection(id);
   const [checkIn, setCheckIn] = useState('');
   const [checkOut, setCheckOut] = useState('');
   const [guests, setGuests] = useState(2);
@@ -92,15 +94,13 @@ export default function CollectionDetail() {
     [property?.slug, allLocations],
   );
 
-  if (!property) return null;
-
   // Hide apartments the admin has hidden; layer admin edits/photos over the rest.
   // When a property is wired to Airbnb inventory, show only its visible units —
   // if the admin has hidden them all (e.g. every listing paused), show none rather
   // than falling back to static cards. The static fallback is only for properties
   // that were never wired to Airbnb inventory at all.
   const inventoryUnits = wiredInventory.filter((unit) => !publicUnits.hidden.has(unit.unitSlug));
-  const collectionUnits = wiredInventory.length
+  const collectionUnits = !property ? [] : wiredInventory.length
     ? inventoryUnits.map((unit) => {
         const media = getListingMedia(unit.unitSlug);
         const o = publicUnits.overrides.get(unit.unitSlug);
@@ -145,13 +145,19 @@ export default function CollectionDetail() {
   const reviewSlugs = useMemo(() => sortedCollectionUnits.map((unit) => unit.slug), [sortedCollectionUnits]);
   const dbReviews = useReviews(reviewSlugs);
 
-  if (!publicProperties.loaded || !canonicalProperty) return null;
+  // All hooks run above this line, on every render.
+  if (!property) return <NotFound />;
+  // Wait for the admin-edited text so the page never flashes the built-in
+  // copy first. If the API failed or has no row for this collection, fall back
+  // to the built-in text instead of rendering a blank page.
+  if (!publicProperties.loaded) return null;
+  const pageText = canonicalProperty ?? property;
 
-  const propertyDisplayName = canonicalProperty.name;
-  const propertyDisplayArea = canonicalProperty.area || '';
-  const propertyEyebrow = canonicalProperty.eyebrow || '';
-  const propertyNeighborhoodTitle = canonicalProperty.neighborhoodTitle || '';
-  const propertyDescription = canonicalProperty.description;
+  const propertyDisplayName = pageText.name;
+  const propertyDisplayArea = pageText.area || '';
+  const propertyEyebrow = pageText.eyebrow || '';
+  const propertyNeighborhoodTitle = pageText.neighborhoodTitle || '';
+  const propertyDescription = pageText.description;
   // Prefer the real, admin-managed Airbnb reviews once loaded. Keep the static
   // set as a loading/empty-state fallback, matching the individual unit page.
   const reviews = dbReviews.loaded && dbReviews.reviews.length > 0

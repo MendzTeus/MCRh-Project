@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect, useMemo } from 'react';
-import { useParams, useSearchParams } from 'react-router-dom';
+import { Navigate, useParams, useSearchParams } from 'react-router-dom';
 import { Helmet } from 'react-helmet-async';
 import { Star, ChevronDown, BedDouble, Wifi, ChefHat, Coffee, Snowflake, Bath, ArrowRight, ArrowLeft, X, MessageCircle, Mail, Images } from 'lucide-react';
 import Lightbox from '../components/Lightbox';
@@ -14,6 +14,8 @@ import MediaImage from '../components/MediaImage';
 import { getInventoryUnit } from '../data/airbnbInventory';
 import { getListingMedia, getUnitGallery, getUnitFullGallery, getUnitSpecs, cleanListingTitle, isListingActive } from '../data/listingMedia';
 import { getPropertyBySlug, getUnitBySlug, type PropertyUnit } from '../data/properties';
+import { resolveCollection, resolveUnitRoute } from '../lib/routeResolution';
+import NotFound from './NotFound';
 import { useClickOutside } from '../hooks/useClickOutside';
 import { useUnitBlockedDates } from '../hooks/useUnitBlockedDates';
 import { useSiteContent, text } from '../hooks/useSiteContent';
@@ -98,7 +100,7 @@ export default function PropertyDetail() {
   const photoTourOpen = searchParams.get('modal') === 'photo-tour';
   const openPhotoTour = () => setSearchParams((p) => { const n = new URLSearchParams(p); n.set('modal', 'photo-tour'); return n; });
   const closePhotoTour = () => setSearchParams((p) => { const n = new URLSearchParams(p); n.delete('modal'); return n; });
-  const routedProperty = getPropertyBySlug(propertySlug);
+  const routedProperty = resolveCollection(propertySlug);
   const routedUnit = routedProperty?.units.find((item) => item.slug === id);
   const legacyUnit = getUnitBySlug(id);
   const property = routedProperty || legacyUnit?.property || getPropertyBySlug('chambers');
@@ -290,13 +292,21 @@ export default function PropertyDetail() {
     return center ? getNearestPois(center, 5) : [];
   }, [neighborhoodLocations]);
 
-  if (!publicProperties.loaded || !canonicalProperty) return null;
+  // All hooks run above this line, on every render.
+  const route = resolveUnitRoute(propertySlug, id);
+  if (route.kind === 'redirect') return <Navigate to={`${route.to}${window.location.search}`} replace />;
+  if (route.kind === 'notFound') return <NotFound />;
+  // Wait for the admin-edited text so the page never flashes the built-in
+  // copy first. If the API failed or has no row for this building, fall back
+  // to the built-in text instead of rendering a blank page.
+  if (!publicProperties.loaded) return null;
+  const pageText = canonicalProperty ?? property;
 
   return (
     <div className="animate-in fade-in duration-500">
       <Helmet>
-        <title>{displayTitle} — {canonicalProperty.name} | MCRh Manchester</title>
-        <meta name="description" content={`${unitDescription} ${unit.specs}. Located in ${canonicalProperty.area || ''}, Manchester.`} />
+        <title>{displayTitle} — {pageText.name} | MCRh Manchester</title>
+        <meta name="description" content={`${unitDescription} ${unit.specs}. Located in ${pageText.area || ''}, Manchester.`} />
         <meta property="og:title" content={`${displayTitle} | MCRh Manchester`} />
         <meta property="og:description" content={unitDescription} />
         {unitGallery[0] && <meta property="og:image" content={unitGallery[0]} />}
@@ -489,7 +499,7 @@ export default function PropertyDetail() {
             <h2 className="font-display text-headline-md text-primary mb-6">The Space</h2>
             <div className="font-body text-on-surface-variant text-body-lg space-y-6">
               <p>{unitDescription}</p>
-              <p>{canonicalProperty.description}</p>
+              <p>{pageText.description}</p>
               <p>{normalizeSpecs(adminSpecs || unit.specs)}{unit.squareFeet ? ` / ${unit.squareFeet}` : ''}</p>
             </div>
           </div>
