@@ -23,3 +23,12 @@ WHERE status IN ('novo', 'lido', 'arquivado');
 
 -- 3) Check: only new / contacted / closed should remain.
 SELECT status, count(*) FROM "Enquiry" GROUP BY status ORDER BY status;
+
+-- 4) Default for rows inserted without a status (the app always sends one,
+--    but keep the database consistent with the canonical vocabulary).
+ALTER TABLE "Enquiry" ALTER COLUMN status SET DEFAULT 'new';
+
+-- Schema notes (checked in production 2026-09-28):
+--   * no CHECK constraint on status — any value is accepted;
+--   * the unit column is lower-case "unitslug" (the app maps it to unitSlug);
+--   * the table was empty: the contact form had never saved an enquiry.

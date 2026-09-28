@@ -25,8 +25,11 @@ function storedValuesFor(status) {
   return [status, ...Object.keys(LEGACY_STATUS).filter((legacy) => LEGACY_STATUS[legacy] === status)];
 }
 
+// Also exposes the lower-case `unitslug` column as `unitSlug`, the name the
+// rest of the app uses.
 function normalizeLead(row) {
-  return { ...row, status: normalizeLeadStatus(row.status) };
+  const { unitslug, ...rest } = row;
+  return { ...rest, unitSlug: rest.unitSlug ?? unitslug ?? null, status: normalizeLeadStatus(row.status) };
 }
 
 module.exports = { LEAD_STATUSES, normalizeLeadStatus, storedValuesFor, normalizeLead };

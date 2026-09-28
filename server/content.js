@@ -200,19 +200,14 @@ async function createEnquiry(req, res) {
     checkIn: checkIn || null,
     checkOut: checkOut || null,
     guests: guestCount,
-    unitSlug: unitSlug || null,
+    // The production column is lower-case `unitslug` (schema checked 2026-09-28);
+    // writing `unitSlug` made every insert fail. Mapped back to unitSlug on read.
+    unitslug: unitSlug || null,
     source: source || null,
     status: 'new',
     createdAt: new Date().toISOString(),
   };
-  let { error } = await supabase.from('Enquiry').insert(row);
-  // The production schema isn't versioned yet. If a CHECK constraint still
-  // only allows the legacy Portuguese statuses (Postgres code 23514), save
-  // with the legacy value rather than lose the lead — the admin maps it back
-  // to "new" on read. Remove once migration 004 is applied everywhere.
-  if (error?.code === '23514') {
-    ({ error } = await supabase.from('Enquiry').insert({ ...row, status: 'novo' }));
-  }
+  const { error } = await supabase.from('Enquiry').insert(row);
   if (error) {
     console.error('[enquiries] insert failed:', error.message);
     return res.status(500).json({ error: 'Could not save enquiry' });

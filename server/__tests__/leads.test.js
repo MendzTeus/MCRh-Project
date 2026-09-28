@@ -71,6 +71,13 @@ describe('public enquiry submission', () => {
     expect(insert[1]).toMatchObject({ name: 'Jane Doe', email: 'jane@example.com', propertyName: 'Chambers', status: 'new' });
   });
 
+  it('writes the unit to the real (lower-case) unitslug column', async () => {
+    await post('/api/enquiries', { ...valid, unitSlug: 'chambers-9-1' });
+    const insert = calls.find(([op]) => op === 'insert');
+    expect(insert[1].unitslug).toBe('chambers-9-1');
+    expect(insert[1]).not.toHaveProperty('unitSlug');
+  });
+
   it('saves a valid enquiry at /api/content/enquiries too', async () => {
     const res = await post('/api/content/enquiries', valid);
     expect(res.status).toBe(201);
@@ -80,21 +87,6 @@ describe('public enquiry submission', () => {
     const res = await post('/api/enquiries', { ...valid, guests: 'lots' });
     expect(res.status).toBe(400);
     expect(calls.find(([op]) => op === 'insert')).toBeUndefined();
-  });
-
-  it('falls back to the legacy status if the database only accepts it', async () => {
-    const inserted = [];
-    supabase.from = () => ({
-      insert: async (row) => {
-        inserted.push(row.status);
-        return row.status === 'new'
-          ? { error: { code: '23514', message: 'violates check constraint' } }
-          : { error: null };
-      },
-    });
-    const res = await post('/api/enquiries', valid);
-    expect(res.status).toBe(201);
-    expect(inserted).toEqual(['new', 'novo']);
   });
 
   it('does not leak database errors to the public', async () => {
@@ -113,6 +105,13 @@ describe('admin leads API', () => {
     const res = await request(app).get('/api/admin/leads').set('Authorization', auth());
     expect(res.status).toBe(200);
     expect(res.body.map((l) => l.status)).toEqual(['new', 'contacted', 'closed']);
+  });
+
+  it('exposes the unitslug column as unitSlug', async () => {
+    nextResult = { data: [{ id: 'a', status: 'new', unitslug: 'chambers-9-1' }], error: null };
+    const res = await request(app).get('/api/admin/leads').set('Authorization', auth());
+    expect(res.body[0].unitSlug).toBe('chambers-9-1');
+    expect(res.body[0]).not.toHaveProperty('unitslug');
   });
 
   it('filters by status including legacy rows', async () => {
