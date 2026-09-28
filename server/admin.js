@@ -413,6 +413,13 @@ router.put('/content/:key', async (req, res) => {
   res.json({ ok: true });
 });
 
+// Remove a content override so the site falls back to its built-in default.
+router.delete('/content/:key', async (req, res) => {
+  const { error } = await supabase.from('SiteContent').delete().eq('key', req.params.key);
+  if (error) return res.status(500).json({ error: error.message });
+  res.json({ ok: true });
+});
+
 // Upload/replace the image for a named slot (base64 JSON body).
 router.post('/images/:slot', async (req, res) => {
   const { slot } = req.params;

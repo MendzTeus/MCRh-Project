@@ -1,0 +1,197 @@
+{
+  "about.hero.eyebrow": "Our Story",
+  "about.hero.title": "Redefining urban hospitality through design and discretion.",
+  "about.management.closing": "From our consultative approach to property management to our personalised guest experience service, we make sure our property management services exceed all expectations.",
+  "about.management.intro": "Based in the heart of Manchester, we provide comprehensive short-let property management services to clients across the city.",
+  "about.management.services": [
+    {
+      "item": "Interior and exterior design and refurbishment"
+    },
+    {
+      "item": "General property maintenance"
+    },
+    {
+      "item": "Property listing optimisation"
+    },
+    {
+      "item": "Guest communications management"
+    },
+    {
+      "item": "Professional housekeeping services"
+    },
+    {
+      "item": "Guest approval"
+    },
+    {
+      "item": "Guest check-in and check-out"
+    }
+  ],
+  "about.management.title": "Experts in property management",
+  "about.philosophy.p1": "We love what we do, and it shows — just look at our portfolio and reviews. With years of experience in the industry through Airbnb, our mission is to help landlords turn their investments into a profitable source of income, acting as the middleman and bringing a personal touch to the short-let market.",
+  "about.philosophy.p2": "Whether guests are staying for a short break or a long business engagement, or choose to make one of our fully furnished and managed properties their home in the city, we always aim to deliver memorable stays.",
+  "about.philosophy.p3": "Manchester has so much to offer — the city is booming, and more and more travellers and business visitors are coming to the city regularly. At MCRh, we know the city inside and out, so let us take care of your guests.",
+  "about.philosophy.title": "Who We Are",
+  "about.stays.p1": "We offer a wide selection of premier short-stay apartments located throughout central Manchester and the city centre.",
+  "about.stays.p2": "Whether you are coming to enjoy the vibrant city nightlife, immerse yourself in the heritage of our museums, galleries and architecture, watch a world-class football match, or fly in for business, we have the perfect place for you to stay.",
+  "about.stays.p3": "Take a tour of our first-class apartments to find the right one for you.",
+  "about.stays.title": "Exquisite short-stay apartments",
+  "brand.name": "MCRh",
+  "contact.address": "Chambers Building\nDeansgate\nManchester, M3 3EW\nUnited Kingdom",
+  "contact.email": "hello@mcrh.co.uk",
+  "contact.intro": "Whether you are looking to book an extended stay or discuss the management of your property, our team is at your disposal.",
+  "contact.phone": "",
+  "contact.whatsapp": "",
+  "design.approach.bullets": [
+    {
+      "item": "Market-driven aesthetic optimization"
+    },
+    {
+      "item": "Durable, high-yield material selection"
+    },
+    {
+      "item": "Complete turnkey furnishing solutions"
+    }
+  ],
+  "design.approach.eyebrow": "Our Approach",
+  "design.approach.p1": "We believe that a successful short-term rental is not merely decorated; it is meticulously designed to anticipate guest needs while offering a distinct aesthetic narrative.",
+  "design.approach.p2": "Our studio blends residential comfort with boutique hotel durability, ensuring your investment not only stands out in a crowded market but withstands the rigors of constant use.",
+  "design.approach.title": "Intentional Design for Hospitality",
+  "design.comparison.eyebrow": "Our Design Services",
+  "design.comparison.paragraph": "We create thoughtfully designed interiors for apartments and short-stay properties, combining style, comfort and functionality.",
+  "design.cta.ctaHref": "/contact?inquiry=design",
+  "design.cta.ctaLabel": "Enquire Now",
+  "design.cta.paragraph": "Book a consultation to discuss how our design studio can elevate your asset's nightly rate and occupancy.",
+  "design.cta.title": "Ready to transform your property?",
+  "design.hero.eyebrow": "MCRh Studio",
+  "design.hero.paragraph": "Crafting spaces that elevate the short-term rental experience. We design for longevity, functional elegance, and unforgettable guest impressions.",
+  "design.hero.title": "Interior Architecture & Design",
+  "footer.copyright": "MCRh Luxury Lettings. All rights reserved.",
+  "footer.links": [],
+  "footer.social": [],
+  "home.block.ancoats.cta": "Explore Details",
+  "home.block.ancoats.description": "Embrace the spirit of innovation in Ancoats. These residences lean into their industrial roots with polished concrete, exposed beams, and contemporary art, creating a dynamic yet refined living space for the modern traveler.",
+  "home.block.ancoats.eyebrow": "Ancoats District",
+  "home.block.ancoats.name": "Ancoats",
+  "home.block.ancoats.quote": "Industrial roots, contemporary luxury.",
+  "home.block.chambers.cta": "Book Now",
+  "home.block.chambers.description": "Experience the perfect blend of Manchester's rich industrial heritage and contemporary luxury. Located in the heart of the city, Chambers Residence offers a serene escape with bespoke furnishings, towering ceilings, and an atmosphere of curated calm.",
+  "home.block.chambers.eyebrow": "Featured Property",
+  "home.block.chambers.name": "Chambers Residence",
+  "home.block.john-dalton-st.cta": "Explore Details",
+  "home.block.john-dalton-st.description": "Set within a meticulously restored historic building, this residence celebrates architectural grandeur while providing uncompromising modern comfort. Expansive arched windows frame city views, while tactile brickwork and rich textiles create a deeply comforting environment.",
+  "home.block.john-dalton-st.eyebrow": "Heritage Collection",
+  "home.block.john-dalton-st.name": "John Dalton Street",
+  "home.block.john-dalton-st.quote": "A masterclass in urban sanctuary.",
+  "home.block.old-trafford.cta": "View Details",
+  "home.block.old-trafford.description": "A collection of spacious, tranquil retreats on the outskirts of the city bustle. Trafford properties are defined by their generous proportions, lush surroundings, and uncompromising commitment to elegant comfort.",
+  "home.block.old-trafford.eyebrow": "Trafford Exclusives",
+  "home.block.old-trafford.name": "Trafford",
+  "home.block.the-collective.cta": "Explore Details",
+  "home.block.the-collective.description": "An exclusive assortment of highly stylized and uniquely positioned properties. The Collective brings together the sharpest design, immersive aesthetics, and premier locations for the ultimate city escape.",
+  "home.block.the-collective.eyebrow": "Curated Experiences",
+  "home.block.the-collective.name": "The Collective",
+  "home.block.the-collective.quote": "The sharpest design, immersive aesthetics.",
+  "home.block.wood-street.cta": "View Details",
+  "home.block.wood-street.description": "Situated in a vibrant, historic quarter, Wood Street properties offer an unmatched blend of privacy and proximity to Manchester's cultural landmarks. Featuring tailored interiors, warm wood tones, and expansive natural light.",
+  "home.block.wood-street.eyebrow": "Wood Street Collection",
+  "home.block.wood-street.name": "Wood Street",
+  "home.featured": [],
+  "home.hero.ctaHref": "/properties",
+  "home.hero.ctaLabel": "Explore Properties",
+  "home.hero.subtitle": "The first choice for property rentals & hosting in Manchester.",
+  "home.hero.title": "Experts In Short-Term Lettings",
+  "home.map.title": "Discover Our Locations",
+  "home.stats": [
+    {
+      "value": "30+",
+      "label": "Properties"
+    },
+    {
+      "value": "500+",
+      "label": "Guest Reviews"
+    },
+    {
+      "value": "100%",
+      "label": "5-Star Stays"
+    },
+    {
+      "value": "7",
+      "label": "Neighbourhoods"
+    }
+  ],
+  "home.testimonials.eyebrow": "Testimonials",
+  "home.testimonials.title": "Guest Experiences",
+  "management.hero.eyebrow": "Complete Operations",
+  "management.hero.paragraph": "We handle every operational detail, from dynamic pricing algorithms to white-glove guest service, maximizing your return while liberating your time.",
+  "management.hero.title": "Effortless Yield Management",
+  "management.services.cards": [
+    {
+      "title": "Property Maintenance",
+      "desc": "We take care of any small maintenance issues and remain on call throughout your guest’s stay."
+    },
+    {
+      "title": "Professional Housekeeping",
+      "desc": "Cleaning is the backbone of our business and the foundation of a positive guest experience."
+    },
+    {
+      "title": "Guest Communication",
+      "desc": "We pride ourselves on providing five-star customer service and remain available to answer all guest enquiries."
+    },
+    {
+      "title": "Listing Optimisation",
+      "desc": "We manage your property’s online presence, optimise pricing and help maximise occupancy and profitability."
+    },
+    {
+      "title": "Guest Approval",
+      "desc": "All guest profiles are thoroughly reviewed before acceptance, helping ensure that only reliable guests stay in your property."
+    },
+    {
+      "title": "Guest Check-In",
+      "desc": "We provide every guest with clear arrival instructions and a warm, smooth welcome to their Manchester accommodation."
+    }
+  ],
+  "management.services.eyebrow": "Service Architecture",
+  "management.services.title": "Full-Cycle Property Management",
+  "nav.cta.href": "/properties",
+  "nav.cta.label": "Book Now",
+  "nav.links": [
+    {
+      "to": "/properties",
+      "label": "Properties"
+    },
+    {
+      "to": "/design-services",
+      "label": "Design Services"
+    },
+    {
+      "to": "/management-services",
+      "label": "Management Services"
+    },
+    {
+      "to": "/about",
+      "label": "About"
+    },
+    {
+      "to": "/contact",
+      "label": "Contact"
+    }
+  ],
+  "properties.title": "Find Property",
+  "seo.about.description": "MCRh was founded to bridge the gap between boutique hotels and short-term rentals. We manage a curated portfolio of design-led properties in Manchester.",
+  "seo.about.ogTitle": "About MCRh | Manchester Luxury Lettings",
+  "seo.about.title": "About | MCRh Manchester Short-Let Apartments",
+  "seo.contact.description": "Get in touch with MCRh — Manchester's premium short-let apartment specialists. Enquire about stays, management or design services.",
+  "seo.contact.title": "Contact | MCRh Manchester",
+  "seo.design.description": "MCRh Studio — interior architecture and design for short-term rental properties in Manchester. Turnkey furnishing, spatial planning and material selection.",
+  "seo.design.ogTitle": "MCRh Design Studio | Interior Architecture Manchester",
+  "seo.design.title": "Design Services | MCRh Interior Architecture Manchester",
+  "seo.home.description": "Premium short-term furnished apartments in Manchester — Chambers Residence, Ancoats, Wood Street, John Dalton Street and more. Book direct.",
+  "seo.home.ogDescription": "Premium short-term furnished apartments in Manchester city centre. Experts in short-term lettings.",
+  "seo.home.ogTitle": "MCRh | Luxury Short-Let Apartments in Manchester",
+  "seo.home.title": "MCRh | Luxury Short-Let Apartments in Manchester",
+  "seo.management.description": "Full-cycle short-term rental management in Manchester. Guest screening, 24/7 concierge, dynamic pricing, housekeeping and transparent reporting for property owners.",
+  "seo.management.ogTitle": "MCRh Property Management | Manchester Short-Let Experts",
+  "seo.management.title": "Management Services | MCRh Property Management Manchester",
+  "seo.properties.description": "Browse MCRh's curated portfolio of short-let apartments in Manchester.",
+  "seo.properties.title": "Properties | MCRh Manchester Short-Let Apartments"
+}

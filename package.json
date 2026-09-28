@@ -8,6 +8,7 @@
     "dev:api": "node --watch server/index.js",
     "dev:all": "node scripts/dev-all.mjs",
     "check:leads": "node scripts/check-leads.mjs",
+    "content:defaults": "node scripts/extract-site-defaults.mjs",
     "build": "vite build",
     "preview": "vite preview",
     "clean": "rm -rf dist server.js",

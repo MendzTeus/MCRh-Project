@@ -130,3 +130,20 @@ describe('admin leads API', () => {
     expect(calls).toContainEqual(['update', { status: 'contacted' }]);
   });
 });
+
+describe('admin content API', () => {
+  const auth = () => `Bearer ${signToken({ role: 'admin' })}`;
+
+  it('restores a key to the site default by deleting the override', async () => {
+    const res = await request(app).delete('/api/admin/content/home.hero.title').set('Authorization', auth());
+    expect(res.status).toBe(200);
+    expect(calls).toContainEqual(['from', 'SiteContent']);
+    expect(calls).toContainEqual(['delete']);
+    expect(calls).toContainEqual(['eq', 'key', 'home.hero.title']);
+  });
+
+  it('requires an admin token to restore', async () => {
+    const res = await request(app).delete('/api/admin/content/home.hero.title');
+    expect(res.status).toBe(401);
+  });
+});

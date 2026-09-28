@@ -2,9 +2,10 @@ import { useState, useEffect, useCallback, useRef, useMemo, type ReactNode } fro
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { Star } from 'lucide-react';
 import { getInventoryForProperty } from '../data/airbnbInventory';
-import { mapLocationDefaults } from '../data/locations';
 import { ROOM_CATEGORIES } from '../components/PhotoTour';
 import { useApi, fileToBase64 } from '../hooks/useAdminApi';
+import { ContentEditor } from '../components/admin/content/ContentEditor';
+import type { SaveContent } from '../components/admin/content/ContentFields';
 import { AdminShell } from '../components/admin/AdminShell';
 import { ConfirmDialog } from '../components/admin/AdminUI';
 import { ADMIN_NAV_ITEMS, getAdminNavPath, getLegacyAdminTab } from '../components/admin/adminNavigation';
@@ -84,22 +85,38 @@ function Status({ s }: { s: 'idle' | 'saving' | 'saved' | 'error' }) {
 }
 
 // ── Images tab ──────────────────────────────────────────────────────
-function ImagesTab({ site, api, onChanged }: { site: SiteData; api: ReturnType<typeof useApi>; onChanged: () => void }) {
+function ImagesTab({ site, api, onImageChanged }: { site: SiteData; api: ReturnType<typeof useApi>; onImageChanged: (slot: string, url: string | null) => void }) {
   const [busy, setBusy] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
   const refs = useRef<Record<string, HTMLInputElement | null>>({});
 
   async function upload(slot: string, file: File) {
     setBusy(slot);
+    setError(null);
     try {
       const { base64, type } = await fileToBase64(file);
-      await api(`/admin/images/${slot}`, { method: 'POST', body: JSON.stringify({ dataBase64: base64, contentType: type }) });
-      onChanged();
+      const res = await api(`/admin/images/${slot}`, { method: 'POST', body: JSON.stringify({ dataBase64: base64, contentType: type }) });
+      onImageChanged(slot, res.url);
+    } catch (err) {
+      setError(`Imagem não enviada: ${(err as Error).message}`);
+    } finally { setBusy(null); }
+  }
+
+  async function revert(slot: string) {
+    setBusy(slot);
+    setError(null);
+    try {
+      await api(`/admin/images/${slot}`, { method: 'DELETE' });
+      onImageChanged(slot, null);
+    } catch (err) {
+      setError(`Não foi possível reverter: ${(err as Error).message}`);
     } finally { setBusy(null); }
   }
 
   return (
     <div className="max-w-3xl">
       <p className="font-body text-body-md text-on-surface-variant mb-8">Troque as imagens de capa das páginas. Sem uma imagem definida aqui, o site usa a imagem padrão.</p>
+      {error && <p role="alert" className="mb-6 px-4 py-3 rounded-lg font-body text-sm" style={{ background: '#fef2f2', color: '#b91c1c', border: '1px solid #fecaca' }}>{error}</p>}
       <div className="divide-y divide-outline-variant/30 border border-outline-variant/30 rounded-xl overflow-hidden shadow-sm">
         {IMAGE_SLOTS.map((s) => {
           const current = site.images[s.slot];
@@ -114,299 +131,13 @@ function ImagesTab({ site, api, onChanged }: { site: SiteData; api: ReturnType<t
               </div>
               <div className="flex items-center gap-3">
                 <Btn gold onClick={() => refs.current[s.slot]?.click()} disabled={busy === s.slot}>{busy === s.slot ? 'Enviando…' : current ? 'Trocar' : 'Enviar'}</Btn>
-                {current && <Btn onClick={async () => { await api(`/admin/images/${s.slot}`, { method: 'DELETE' }); onChanged(); }}>Reverter</Btn>}
+                {current && <Btn onClick={() => revert(s.slot)} disabled={busy === s.slot}>Reverter</Btn>}
                 <input ref={(el) => { refs.current[s.slot] = el; }} type="file" accept="image/*" className="hidden" onChange={(e) => { const f = e.target.files?.[0]; if (f) upload(s.slot, f); e.target.value = ''; }} />
               </div>
             </div>
           );
         })}
       </div>
-    </div>
-  );
-}
-
-// ── Content tab ─────────────────────────────────────────────────────
-function ContentTab({ site, api, onChanged }: { site: SiteData; api: ReturnType<typeof useApi>; onChanged: () => void }) {
-  const save = useCallback((key: string, value: unknown) => api(`/admin/content/${key}`, { method: 'PUT', body: JSON.stringify({ value }) }).then(onChanged), [api, onChanged]);
-
-  function StringField({ k, title, textarea }: { k: string; title: string; textarea?: boolean }) {
-    const [v, setV] = useState(String(site.content[k] ?? ''));
-    const [s, setS] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
-    const commit = () => { if (v !== String(site.content[k] ?? '')) { setS('saving'); save(k, v).then(() => { setS('saved'); setTimeout(() => setS('idle'), 1500); }).catch(() => setS('error')); } };
-    return (
-      <div>
-        <div className="flex items-center justify-between"><label className={label}>{title}</label><Status s={s} /></div>
-        {textarea
-          ? <textarea value={v} onChange={(e) => setV(e.target.value)} onBlur={commit} rows={3} className={`${field} resize-none`} />
-          : <input value={v} onChange={(e) => setV(e.target.value)} onBlur={commit} className={field} />}
-      </div>
-    );
-  }
-
-  function ListEditor<T extends Record<string, string>>({ k, title, cols, blank }: { k: string; title: string; cols: { key: keyof T; label: string; wide?: boolean }[]; blank: T }) {
-    const [rows, setRows] = useState<T[]>(Array.isArray(site.content[k]) ? (site.content[k] as T[]) : []);
-    const [s, setS] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
-    const commit = (next: T[]) => { setRows(next); setS('saving'); save(k, next).then(() => { setS('saved'); setTimeout(() => setS('idle'), 1500); }).catch(() => setS('error')); };
-    return (
-      <div>
-        <div className="flex items-center justify-between mb-2"><label className={label}>{title}</label><Status s={s} /></div>
-        <div className="space-y-3">
-          {rows.map((row, i) => (
-            <div key={i} className="flex gap-3 items-end">
-              {cols.map((c) => (
-                <div key={String(c.key)} style={{ flex: c.wide ? 3 : 1 }}>
-                  <input value={row[c.key]} placeholder={c.label}
-                    onChange={(e) => setRows(rows.map((r, j) => j === i ? { ...r, [c.key]: e.target.value } : r))}
-                    onBlur={() => commit(rows)} className={field} />
-                </div>
-              ))}
-              <button onClick={() => commit(rows.filter((_, j) => j !== i))} className="text-on-surface-variant/50 hover:text-red-500 pb-1.5 text-sm">✕</button>
-            </div>
-          ))}
-          <button onClick={() => setRows([...rows, { ...blank }])} className="font-body text-[10px] uppercase tracking-[0.15em] text-[#C5A059] mt-1">+ Adicionar</button>
-        </div>
-      </div>
-    );
-  }
-
-  const Section = ({ title, subtitle, children }: { title: string; subtitle?: string; children: ReactNode }) => (
-    <section className="mb-14">
-      <div className="flex items-center gap-4 mb-1">
-        <h2 className="font-display text-headline-md text-primary whitespace-nowrap">{title}</h2>
-        <div className="flex-1 h-px" style={{ background: `${GOLD}55` }} />
-      </div>
-      {subtitle && <p className="font-body text-xs text-on-surface-variant/70 mb-5">{subtitle}</p>}
-      <div className={`grid gap-6 max-w-2xl${subtitle ? '' : ' mt-5'}`}>{children}</div>
-    </section>
-  );
-
-  // Titled card that groups related fields, so a long section reads as a few
-  // labelled blocks instead of one endless column of inputs.
-  const Group = ({ title, children }: { title: string; children: ReactNode }) => (
-    <div className="border border-outline-variant/30 rounded-xl shadow-sm p-5 space-y-4">
-      <p className="font-body text-label-caps tracking-widest uppercase text-xs" style={{ color: GOLD }}>{title}</p>
-      {children}
-    </div>
-  );
-
-  // Map pins editor — overrides lat/lng/postcode per pin (defaults come from
-  // locations.ts). Only overridden fields are stored under `map.locations`; an
-  // empty field falls back to the built-in default, so the map never breaks.
-  function MapPinsEditor() {
-    const raw = site.content['map.locations'];
-    const initial = (raw && typeof raw === 'object' ? raw : {}) as Record<string, { lat?: number; lng?: number; postcode?: string }>;
-    const [draft, setDraft] = useState(initial);
-    const [s, setS] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
-
-    const setField = (id: number, f: 'lat' | 'lng' | 'postcode', value: string) => {
-      const cur: { lat?: number; lng?: number; postcode?: string } = { ...(draft[String(id)] || {}) };
-      if (f === 'postcode') {
-        if (value.trim()) cur.postcode = value.trim(); else delete cur.postcode;
-      } else {
-        const n = parseFloat(value);
-        if (Number.isFinite(n)) cur[f] = n; else delete cur[f];
-      }
-      const next = { ...draft };
-      if (Object.keys(cur).length) next[String(id)] = cur; else delete next[String(id)];
-      setDraft(next);
-      setS('saving');
-      save('map.locations', next).then(() => { setS('saved'); setTimeout(() => setS('idle'), 1500); }).catch(() => setS('error'));
-    };
-
-    return (
-      <div>
-        <div className="flex items-center justify-between mb-3">
-          <p className="font-body text-xs text-on-surface-variant">Coordenadas e postcode de cada pin. Campo vazio usa o valor padrão.</p>
-          <Status s={s} />
-        </div>
-        <div className="space-y-4">
-          {mapLocationDefaults.map((pin) => {
-            const o = draft[String(pin.id)] || {};
-            return (
-              <div key={pin.id} className="border border-outline-variant/25 rounded-lg p-4">
-                <p className="font-display text-headline-sm text-primary">{pin.name}</p>
-                <p className="font-body text-[11px] text-on-surface-variant/60 mb-3">{pin.collectionSlug} · {pin.area}</p>
-                <div className="flex gap-3 flex-wrap">
-                  <div style={{ flex: 1, minWidth: 120 }}>
-                    <label className={label}>Latitude</label>
-                    <input type="number" step="0.0001" defaultValue={o.lat ?? pin.coordinates.lat}
-                      onBlur={(e) => setField(pin.id, 'lat', e.target.value)} className={field} />
-                  </div>
-                  <div style={{ flex: 1, minWidth: 120 }}>
-                    <label className={label}>Longitude</label>
-                    <input type="number" step="0.0001" defaultValue={o.lng ?? pin.coordinates.lng}
-                      onBlur={(e) => setField(pin.id, 'lng', e.target.value)} className={field} />
-                  </div>
-                  <div style={{ flex: 1, minWidth: 120 }}>
-                    <label className={label}>Postcode</label>
-                    <input defaultValue={o.postcode ?? pin.postcode}
-                      onBlur={(e) => setField(pin.id, 'postcode', e.target.value)} className={field} />
-                  </div>
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      </div>
-    );
-  }
-
-  return (
-    <div className="max-w-3xl">
-      <Section title="Home" subtitle="Conteúdo da página inicial.">
-        <Group title="Hero">
-          <StringField k="home.hero.title" title="Título do hero" />
-          <StringField k="home.hero.subtitle" title="Subtítulo do hero" textarea />
-          <div className="grid grid-cols-2 gap-4">
-            <StringField k="home.hero.ctaLabel" title="Botão — texto" />
-            <StringField k="home.hero.ctaHref" title="Botão — link" />
-          </div>
-        </Group>
-        <Group title="Mapa & Números">
-          <StringField k="home.map.title" title="Título da seção do mapa" />
-          <ListEditor k="home.stats" title="Números / estatísticas" blank={{ value: '', label: '' }} cols={[{ key: 'value', label: 'Ex.: 30+' }, { key: 'label', label: 'Rótulo', wide: true }]} />
-        </Group>
-        <Group title="Depoimentos">
-          <div className="grid grid-cols-2 gap-4">
-            <StringField k="home.testimonials.eyebrow" title="Sobretítulo" />
-            <StringField k="home.testimonials.title" title="Título" />
-          </div>
-        </Group>
-      </Section>
-
-      <Section title="Página — Properties" subtitle="Página /properties.">
-        <Group title="Cabeçalho">
-          <StringField k="properties.title" title="Título 'Find Property'" />
-        </Group>
-      </Section>
-
-      <Section title="Mapa — pins">
-        <MapPinsEditor />
-      </Section>
-
-      <Section title="Home — Blocos de propriedade">
-        {(['chambers','john-dalton-st','wood-street','ancoats','old-trafford','the-collective'] as const).map((slug) => (
-          <div key={slug} className="border border-outline-variant/30 rounded-lg p-4 space-y-3">
-            <p className="font-body text-label-caps text-secondary tracking-widest uppercase text-xs">{slug}</p>
-            <div className="grid grid-cols-2 gap-3">
-              <StringField k={`home.block.${slug}.eyebrow`} title="Eyebrow" />
-              <StringField k={`home.block.${slug}.name`} title="Nome" />
-            </div>
-            <StringField k={`home.block.${slug}.description`} title="Descrição" textarea />
-            <div className="grid grid-cols-2 gap-3">
-              <StringField k={`home.block.${slug}.cta`} title="Botão" />
-              <StringField k={`home.block.${slug}.quote`} title="Citação (opcional)" />
-            </div>
-          </div>
-        ))}
-      </Section>
-
-      <Section title="Navegação (menu)">
-        <StringField k="brand.name" title="Nome da marca (logo)" />
-        <ListEditor k="nav.links" title="Links do menu" blank={{ label: '', to: '' }} cols={[{ key: 'label', label: 'Texto' }, { key: 'to', label: 'Caminho (ex.: /about)', wide: true }]} />
-        <div className="grid grid-cols-2 gap-6">
-          <StringField k="nav.cta.label" title="Botão — texto (ex.: Book Now)" />
-          <StringField k="nav.cta.href" title="Botão — link" />
-        </div>
-      </Section>
-
-      <Section title="Contato">
-        <StringField k="contact.email" title="E-mail" />
-        <StringField k="contact.phone" title="Telefone" />
-        <StringField k="contact.whatsapp" title="WhatsApp (só números, com DDI)" />
-        <StringField k="contact.address" title="Endereço" textarea />
-        <StringField k="contact.intro" title="Texto de introdução" textarea />
-      </Section>
-
-      <Section title="Rodapé">
-        <ListEditor k="footer.links" title="Links do rodapé" blank={{ label: '', href: '' }} cols={[{ key: 'label', label: 'Texto' }, { key: 'href', label: 'Link (URL)', wide: true }]} />
-        <ListEditor k="footer.social" title="Redes sociais" blank={{ label: '', href: '' }} cols={[{ key: 'label', label: 'Rede (ex.: Instagram)' }, { key: 'href', label: 'Link (URL)', wide: true }]} />
-        <StringField k="footer.copyright" title="Texto de copyright (o ano é automático)" />
-      </Section>
-
-      <Section title="Página — Design Services" subtitle="Textos da página /design-services, agrupados por seção.">
-        <Group title="Hero">
-          <StringField k="design.hero.eyebrow" title="Sobretítulo (eyebrow)" />
-          <StringField k="design.hero.title" title="Título" />
-          <StringField k="design.hero.paragraph" title="Parágrafo" textarea />
-        </Group>
-        <Group title="Our Approach">
-          <StringField k="design.approach.eyebrow" title="Sobretítulo" />
-          <StringField k="design.approach.title" title="Título" />
-          <StringField k="design.approach.p1" title="Parágrafo 1" textarea />
-          <StringField k="design.approach.p2" title="Parágrafo 2" textarea />
-          <ListEditor k="design.approach.bullets" title="Bullets" blank={{ item: '' }} cols={[{ key: 'item', label: 'Bullet', wide: true }]} />
-        </Group>
-        <Group title="Our Design Services">
-          <StringField k="design.comparison.eyebrow" title="Sobretítulo" />
-          <StringField k="design.comparison.paragraph" title="Parágrafo" textarea />
-        </Group>
-        <Group title="CTA final">
-          <StringField k="design.cta.title" title="Título" />
-          <StringField k="design.cta.paragraph" title="Parágrafo" textarea />
-          <div className="grid grid-cols-2 gap-4">
-            <StringField k="design.cta.ctaLabel" title="Botão — texto" />
-            <StringField k="design.cta.ctaHref" title="Botão — link" />
-          </div>
-        </Group>
-      </Section>
-
-      <Section title="Página — Management Services" subtitle="Textos da página /management-services, agrupados por seção.">
-        <Group title="Hero">
-          <StringField k="management.hero.eyebrow" title="Sobretítulo (eyebrow)" />
-          <StringField k="management.hero.title" title="Título" />
-          <StringField k="management.hero.paragraph" title="Parágrafo" textarea />
-        </Group>
-        <Group title="Service Architecture">
-          <StringField k="management.services.eyebrow" title="Sobretítulo" />
-          <StringField k="management.services.title" title="Título" />
-          <ListEditor k="management.services.cards" title="Cards de serviço (6)" blank={{ title: '', desc: '' }} cols={[{ key: 'title', label: 'Título' }, { key: 'desc', label: 'Descrição', wide: true }]} />
-        </Group>
-      </Section>
-
-      <Section title="Página — About" subtitle="Textos da página /about.">
-        <Group title="Hero">
-          <StringField k="about.hero.eyebrow" title="Sobretítulo (eyebrow)" />
-          <StringField k="about.hero.title" title="Título" />
-        </Group>
-        <Group title="Who We Are">
-          <StringField k="about.philosophy.title" title="Título" />
-          <StringField k="about.philosophy.p1" title="Parágrafo 1 (destaque)" textarea />
-          <StringField k="about.philosophy.p2" title="Parágrafo 2" textarea />
-          <StringField k="about.philosophy.p3" title="Parágrafo 3" textarea />
-        </Group>
-        <Group title="Exquisite short-stay apartments">
-          <StringField k="about.stays.title" title="Título" />
-          <StringField k="about.stays.p1" title="Parágrafo 1" textarea />
-          <StringField k="about.stays.p2" title="Parágrafo 2" textarea />
-          <StringField k="about.stays.p3" title="Parágrafo 3" textarea />
-        </Group>
-        <Group title="Experts in property management">
-          <StringField k="about.management.title" title="Título" />
-          <StringField k="about.management.intro" title="Introdução" textarea />
-          <ListEditor k="about.management.services" title="Serviços" blank={{ item: '' }} cols={[{ key: 'item', label: 'Serviço', wide: true }]} />
-          <StringField k="about.management.closing" title="Parágrafo final" textarea />
-        </Group>
-      </Section>
-
-      <Section title="SEO — Metatags por página">
-        {([
-          { page: 'home', label: 'Home', hasOg: true },
-          { page: 'properties', label: 'Properties', hasOg: false },
-          { page: 'about', label: 'About', hasOg: true },
-          { page: 'design', label: 'Design Services', hasOg: true },
-          { page: 'management', label: 'Management Services', hasOg: true },
-          { page: 'contact', label: 'Contact', hasOg: false },
-        ] as { page: string; label: string; hasOg: boolean }[]).map(({ page, label, hasOg }) => (
-          <div key={page} className="border border-outline-variant/30 rounded-lg p-4 space-y-3">
-            <p className="font-body text-label-caps text-secondary tracking-widest uppercase text-xs">{label}</p>
-            <StringField k={`seo.${page}.title`} title="Title tag" />
-            <StringField k={`seo.${page}.description`} title="Meta description" textarea />
-            {hasOg && <StringField k={`seo.${page}.ogTitle`} title="OG title (opcional)" />}
-            {hasOg && page === 'home' && <StringField k={`seo.${page}.ogDescription`} title="OG description" textarea />}
-          </div>
-        ))}
-      </Section>
     </div>
   );
 }
@@ -464,74 +195,86 @@ function PropertyField({
   );
 }
 
+// Collection-level SiteContent fields (property.<slug>.*). Module-level so
+// they keep their state across parent renders.
+type SiteSave = SaveContent;
+
+function useFieldStatus() {
+  const [s, setS] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
+  const run = (p: Promise<unknown>) => {
+    setS('saving');
+    p.then(() => { setS('saved'); setTimeout(() => setS('idle'), 1500); }).catch(() => setS('error'));
+  };
+  return [s, run] as const;
+}
+
+function SF({ k, title, textarea, site, save }: { k: string; title: string; textarea?: boolean; site: SiteData; save: SiteSave }) {
+  const [v, setV] = useState(String(site.content[k] ?? ''));
+  const [s, run] = useFieldStatus();
+  const commit = () => { if (v !== String(site.content[k] ?? '')) run(save(k, v)); };
+  return (
+    <div>
+      <div className="flex items-center justify-between"><label className={label}>{title}</label><Status s={s} /></div>
+      {textarea ? <textarea value={v} onChange={(e) => setV(e.target.value)} onBlur={commit} rows={3} className={`${field} resize-none`} /> : <input value={v} onChange={(e) => setV(e.target.value)} onBlur={commit} className={field} />}
+    </div>
+  );
+}
+
+function SpecsField({ slug, site, save }: { slug: string; site: SiteData; save: SiteSave }) {
+  const k = `property.${slug}.specs`;
+  const init = (site.content[k] as { maxGuests?: number; bedrooms?: number; beds?: number; bathrooms?: number }) ?? {};
+  const [v, setV] = useState({ maxGuests: String(init.maxGuests ?? ''), bedrooms: String(init.bedrooms ?? ''), beds: String(init.beds ?? ''), bathrooms: String(init.bathrooms ?? '') });
+  const [s, run] = useFieldStatus();
+  const commit = () => run(save(k, { maxGuests: Number(v.maxGuests), bedrooms: Number(v.bedrooms), beds: Number(v.beds), bathrooms: Number(v.bathrooms) }));
+  const inp = (fld: keyof typeof v, pl: string) => (
+    <div key={fld}><label className={label}>{pl}</label><input type="number" value={v[fld]} onChange={(e) => setV({ ...v, [fld]: e.target.value })} onBlur={commit} className={field} /></div>
+  );
+  return (
+    <div>
+      <div className="flex items-center justify-between mb-2"><label className={label}>Specs (números)</label><Status s={s} /></div>
+      <div className="grid grid-cols-4 gap-3">{inp('maxGuests','Hóspedes')}{inp('bedrooms','Quartos')}{inp('beds','Camas')}{inp('bathrooms','Banheiros')}</div>
+    </div>
+  );
+}
+
+function LE({ k, title, cols, blank, site, save }: { k: string; title: string; cols: { key: string; label: string; wide?: boolean }[]; blank: Record<string, string>; site: SiteData; save: SiteSave }) {
+  const [rows, setRows] = useState<Record<string, string>[]>(Array.isArray(site.content[k]) ? (site.content[k] as Record<string, string>[]) : []);
+  const [s, run] = useFieldStatus();
+  const commit = (next: Record<string, string>[]) => { setRows(next); run(save(k, next)); };
+  return (
+    <div>
+      <div className="flex items-center justify-between mb-2"><label className={label}>{title}</label><Status s={s} /></div>
+      <div className="space-y-2">
+        {rows.map((row, i) => (
+          <div key={i} className="flex gap-2 items-end">
+            {cols.map((c) => <div key={c.key} style={{ flex: c.wide ? 3 : 1 }}><input value={row[c.key] ?? ''} placeholder={c.label} onChange={(e) => setRows(rows.map((r, j) => j === i ? { ...r, [c.key]: e.target.value } : r))} onBlur={() => commit(rows)} className={field} /></div>)}
+            <button onClick={() => commit(rows.filter((_, j) => j !== i))} className="text-on-surface-variant/50 hover:text-red-500 pb-1.5 text-sm">✕</button>
+          </div>
+        ))}
+        <button onClick={() => setRows([...rows, { ...blank }])} className="font-body text-[10px] uppercase tracking-[0.15em] text-[#C5A059] mt-1">+ Adicionar</button>
+      </div>
+    </div>
+  );
+}
+
 function PropertiesTab({
   properties,
   site,
   api,
-  onSiteChanged,
+  saveContent,
   onPropertyChanged,
 }: {
   properties: AdminProperty[];
   site: SiteData;
   api: ReturnType<typeof useApi>;
-  onSiteChanged: () => void;
+  saveContent: SaveContent;
   onPropertyChanged: (property: AdminProperty) => void;
 }) {
-  const save = useCallback((key: string, value: unknown) => api(`/admin/content/${key}`, { method: 'PUT', body: JSON.stringify({ value }) }).then(onSiteChanged), [api, onSiteChanged]);
   const [open, setOpen] = useState<string>(properties[0]?.slug || '');
 
   useEffect(() => {
     if (!open && properties[0]) setOpen(properties[0].slug);
   }, [open, properties]);
-
-  function SF({ k, title, textarea }: { k: string; title: string; textarea?: boolean }) {
-    const [v, setV] = useState(String(site.content[k] ?? ''));
-    const [s, setS] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
-    const commit = () => { if (v !== String(site.content[k] ?? '')) { setS('saving'); save(k, v).then(() => { setS('saved'); setTimeout(() => setS('idle'), 1500); }).catch(() => setS('error')); } };
-    return (
-      <div>
-        <div className="flex items-center justify-between"><label className={label}>{title}</label><Status s={s} /></div>
-        {textarea ? <textarea value={v} onChange={(e) => setV(e.target.value)} onBlur={commit} rows={3} className={`${field} resize-none`} /> : <input value={v} onChange={(e) => setV(e.target.value)} onBlur={commit} className={field} />}
-      </div>
-    );
-  }
-
-  function SpecsField({ slug }: { slug: string }) {
-    const k = `property.${slug}.specs`;
-    const init = (site.content[k] as { maxGuests?: number; bedrooms?: number; beds?: number; bathrooms?: number }) ?? {};
-    const [v, setV] = useState({ maxGuests: String(init.maxGuests ?? ''), bedrooms: String(init.bedrooms ?? ''), beds: String(init.beds ?? ''), bathrooms: String(init.bathrooms ?? '') });
-    const [s, setS] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
-    const commit = () => { setS('saving'); save(k, { maxGuests: Number(v.maxGuests), bedrooms: Number(v.bedrooms), beds: Number(v.beds), bathrooms: Number(v.bathrooms) }).then(() => { setS('saved'); setTimeout(() => setS('idle'), 1500); }).catch(() => setS('error')); };
-    const inp = (fld: keyof typeof v, pl: string) => (
-      <div key={fld}><label className={label}>{pl}</label><input type="number" value={v[fld]} onChange={(e) => setV({ ...v, [fld]: e.target.value })} onBlur={commit} className={field} /></div>
-    );
-    return (
-      <div>
-        <div className="flex items-center justify-between mb-2"><label className={label}>Specs (números)</label><Status s={s} /></div>
-        <div className="grid grid-cols-4 gap-3">{inp('maxGuests','Hóspedes')}{inp('bedrooms','Quartos')}{inp('beds','Camas')}{inp('bathrooms','Banheiros')}</div>
-      </div>
-    );
-  }
-
-  function LE<T extends Record<string, string>>({ k, title, cols, blank }: { k: string; title: string; cols: { key: keyof T; label: string; wide?: boolean }[]; blank: T }) {
-    const [rows, setRows] = useState<T[]>(Array.isArray(site.content[k]) ? (site.content[k] as T[]) : []);
-    const [s, setS] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
-    const commit = (next: T[]) => { setRows(next); setS('saving'); save(k, next).then(() => { setS('saved'); setTimeout(() => setS('idle'), 1500); }).catch(() => setS('error')); };
-    return (
-      <div>
-        <div className="flex items-center justify-between mb-2"><label className={label}>{title}</label><Status s={s} /></div>
-        <div className="space-y-2">
-          {rows.map((row, i) => (
-            <div key={i} className="flex gap-2 items-end">
-              {cols.map((c) => <div key={String(c.key)} style={{ flex: c.wide ? 3 : 1 }}><input value={row[c.key]} placeholder={c.label} onChange={(e) => setRows(rows.map((r, j) => j === i ? { ...r, [c.key]: e.target.value } : r))} onBlur={() => commit(rows)} className={field} /></div>)}
-              <button onClick={() => commit(rows.filter((_, j) => j !== i))} className="text-on-surface-variant/50 hover:text-red-500 pb-1.5 text-sm">✕</button>
-            </div>
-          ))}
-          <button onClick={() => setRows([...rows, { ...blank }])} className="font-body text-[10px] uppercase tracking-[0.15em] text-[#C5A059] mt-1">+ Adicionar</button>
-        </div>
-      </div>
-    );
-  }
 
   return (
     <div className="max-w-3xl">
@@ -557,14 +300,17 @@ function PropertiesTab({
                   <PropertyField property={property} propertyField="eyebrow" title="Sobretítulo (eyebrow)" api={api} onChanged={onPropertyChanged} />
                   <PropertyField property={property} propertyField="neighborhoodTitle" title="Título do bairro" api={api} onChanged={onPropertyChanged} />
                 </div>
-                <SF k={`property.${property.slug}.headline`} title="Headline" />
+                <p className="font-body text-[11px] px-3 py-2 rounded-md" style={{ background: '#fff7e6', color: '#8a5a00' }}>
+                  Headline, citação, specs, amenidades e distâncias abaixo ainda não aparecem no site — serão ligados na próxima fase.
+                </p>
+                <SF k={`property.${property.slug}.headline`} title="Headline" site={site} save={saveContent} />
                 <PropertyField property={property} propertyField="description" title="Descrição" textarea api={api} onChanged={onPropertyChanged} />
-                <SF k={`property.${property.slug}.quote`} title="Citação" textarea />
-                <SpecsField slug={property.slug} />
-                <LE k={`property.${property.slug}.amenities`} title="Amenidades" blank={{ item: '' } as unknown as Record<string,string>}
-                  cols={[{ key: 'item' as never, label: 'Amenidade', wide: true }]} />
-                <LE k={`property.${property.slug}.nearby`} title="Distâncias / Nearby" blank={{ location: '', time: '' } as Record<string,string>}
-                  cols={[{ key: 'location', label: 'Local', wide: true }, { key: 'time', label: 'Tempo' }]} />
+                <SF k={`property.${property.slug}.quote`} title="Citação" textarea site={site} save={saveContent} />
+                <SpecsField slug={property.slug} site={site} save={saveContent} />
+                <LE k={`property.${property.slug}.amenities`} title="Amenidades" blank={{ item: '' }}
+                  cols={[{ key: 'item', label: 'Amenidade', wide: true }]} site={site} save={saveContent} />
+                <LE k={`property.${property.slug}.nearby`} title="Distâncias / Nearby" blank={{ location: '', time: '' }}
+                  cols={[{ key: 'location', label: 'Local', wide: true }, { key: 'time', label: 'Tempo' }]} site={site} save={saveContent} />
                 <UnitOrderEditor propertySlug={property.slug} api={api} />
                 <PropertyGalleryEditor slug={property.slug} api={api} />
                 <div className="border-t border-outline-variant/20 pt-5">
@@ -1658,6 +1404,27 @@ export default function Admin() {
 
   useEffect(() => { load(); }, [load]);
 
+  // Saves one content key and patches local state — no reload, so the screen
+  // (and whatever the admin is typing in other fields) stays put.
+  const saveContent = useCallback<SaveContent>(async (key, value) => {
+    const path = `/admin/content/${encodeURIComponent(key)}`;
+    if (value === undefined) await api(path, { method: 'DELETE' });
+    else await api(path, { method: 'PUT', body: JSON.stringify({ value }) });
+    setSite((prev) => {
+      const content = { ...prev.content };
+      if (value === undefined) delete content[key]; else content[key] = value;
+      return { ...prev, content };
+    });
+  }, [api]);
+
+  const onImageChanged = useCallback((slot: string, url: string | null) => {
+    setSite((prev) => {
+      const images = { ...prev.images };
+      if (url) images[slot] = { url, alt: images[slot]?.alt ?? null }; else delete images[slot];
+      return { ...prev, images };
+    });
+  }, []);
+
   const propertyOptions = [...new Set(units.map((u) => u.propertySlug))]
     .map((slug) => ({ slug, name: units.find((u) => u.propertySlug === slug)?.propertyName || slug }));
 
@@ -1684,8 +1451,7 @@ export default function Admin() {
 
   const visibleCount = units.filter((u) => u.visible).length;
   const featured = Array.isArray(site.content['home.featured']) ? (site.content['home.featured'] as string[]) : [];
-  const saveFeatured = (next: string[]) =>
-    api('/admin/content/home.featured', { method: 'PUT', body: JSON.stringify({ value: next }) }).then(load).catch(() => {});
+  const saveFeatured = (next: string[]) => saveContent('home.featured', next).catch(() => {});
 
   return (
     <AdminShell
@@ -1800,7 +1566,7 @@ export default function Admin() {
                           </td>
                           <td className="py-3 px-4 font-body text-sm text-on-surface-variant/70">{u.propertyName}</td>
                           <td className="py-3 px-4 text-center">
-                            <button type="button" onClick={() => api(`/admin/units/${u.unitSlug}`, { method: 'PATCH', body: JSON.stringify({ visible: !u.visible }) }).then(load).catch(() => {})}
+                            <button type="button" onClick={() => api(`/admin/units/${u.unitSlug}`, { method: 'PATCH', body: JSON.stringify({ visible: !u.visible }) }).then(() => load(false)).catch(() => {})}
                               aria-pressed={u.visible} aria-label={u.visible ? 'Ocultar apartamento' : 'Tornar apartamento visível'}
                               className="relative inline-block w-9 h-5 rounded-full transition-colors align-middle" style={{ background: u.visible ? GOLD : '#c5c6cd' }}>
                               <span className="absolute top-0.5 w-4 h-4 rounded-full bg-white transition-all" style={{ left: u.visible ? 18 : 2 }} />
@@ -1843,14 +1609,14 @@ export default function Admin() {
         )}
 
         {tab === 'photos' && !loading && <PhotosTab units={units} api={api} onChanged={() => load(false)} />}
-        {tab === 'images' && !loading && <ImagesTab site={site} api={api} onChanged={load} />}
-        {tab === 'content' && !loading && <ContentTab site={site} api={api} onChanged={load} />}
+        {tab === 'images' && !loading && <ImagesTab site={site} api={api} onImageChanged={onImageChanged} />}
+        {tab === 'content' && !loading && <ContentEditor content={site.content} onSave={saveContent} />}
         {tab === 'properties' && !loading && (
           <PropertiesTab
             properties={properties}
             site={site}
             api={api}
-            onSiteChanged={load}
+            saveContent={saveContent}
             onPropertyChanged={(updated) => setProperties((current) =>
               current.map((property) => property.slug === updated.slug ? updated : property)
             )}
