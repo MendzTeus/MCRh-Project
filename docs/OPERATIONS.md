@@ -147,3 +147,18 @@ Headline, amenidades, distâncias e specs de cada prédio vêm das colunas da ta
 3. Conferir `/properties/wood-street`: as amenidades não devem listar "Lift access".
 
 Auditoria só de leitura (código × banco): `npx tsx scripts/audit-static-vs-db.ts`.
+
+### Fase 7a — Fotos guardadas no site + organização por cômodo
+
+As fotos do Airbnb eram só links; quando o anfitrião troca uma foto, o link
+quebra (em 2026-09-30: todas as 6 fotos visíveis do Room 6 e fotos de outros 12
+apartamentos). O admin agora copia as fotos para o Storage (`property-media`).
+
+1. **Antes do deploy**, rodar `database/migrations/006_media_source_url.sql`
+   (1 coluna nova, `MediaAsset.sourceUrl`; nada é apagado). Sem ela o admin
+   continua funcionando, mas os botões de importar ficam desativados com aviso.
+2. Deploy.
+3. Em `/admin/photos` → **Buscar no Airbnb** (todos os apartamentos que ainda
+   dependem de links). Manter a aba aberta até terminar.
+4. Em cada apartamento → aba **Fotos**: arrastar as fotos para os cômodos
+   (salva sozinho). Fotos sem cômodo ficam no fim do Photo Tour ("Property").

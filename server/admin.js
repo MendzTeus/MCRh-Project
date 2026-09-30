@@ -103,6 +103,7 @@ router.post('/login', loginThrottle, (req, res) => {
 router.use(requireAdmin);
 
 const { ADMIN_SELECT, ADMIN_SELECT_LEGACY, selectWithFallback, validatePropertyPatch } = require('./propertyFields');
+const { importUnitPhotos, fetchListingPhotoUrls } = require('./photoImport');
 
 // ── Canonical building content ──────────────────────────────────────
 router.get('/properties', async (_req, res) => {
@@ -156,15 +157,18 @@ router.get('/units/:unitSlug', async (req, res) => {
   if (error || !unit) return res.status(404).json({ error: 'Unit not found' });
 
   // Photos — defensive against pre-migration missing roomCategory column
-  let mediaRes = await supabase.from('MediaAsset')
-    .select('id, url, alt, isPrimary, displayOrder, roomCategory, hidden')
+  // select('*') tolerates optional columns (roomCategory, hidden, sourceUrl)
+  // that older databases may not have yet.
+  const mediaRes = await supabase.from('MediaAsset')
+    .select('*')
     .eq('ownerType', 'unit').eq('ownerSlug', unitSlug).order('displayOrder');
-  if (mediaRes.error?.message?.includes('column')) {
-    mediaRes = await supabase.from('MediaAsset')
-      .select('id, url, alt, isPrimary, displayOrder')
-      .eq('ownerType', 'unit').eq('ownerSlug', unitSlug).order('displayOrder');
-  }
-  const photos = (mediaRes.data || []).map((p) => ({ ...p, roomCategory: p.roomCategory || null, hidden: p.hidden ?? false }));
+  const photos = (mediaRes.data || []).map((p) => ({
+    id: p.id, url: p.url, alt: p.alt, isPrimary: p.isPrimary, displayOrder: p.displayOrder,
+    roomCategory: p.roomCategory || null, hidden: p.hidden ?? false,
+    // stored = a copy lives in our storage; sourceUrl = the Airbnb photo it came from
+    stored: Boolean(p.storagePath), sourceUrl: p.sourceUrl ?? null,
+  }));
+  const supportsImport = !mediaRes.data?.length || 'sourceUrl' in mediaRes.data[0];
 
   // Review stats
   const { data: reviews } = await supabase.from('Review')
@@ -173,7 +177,7 @@ router.get('/units/:unitSlug', async (req, res) => {
   const ratings = (reviews || []).map((r) => r.rating).filter((n) => n > 0);
   const avgRating = ratings.length ? ratings.reduce((s, n) => s + n, 0) / ratings.length : null;
 
-  res.json({ unit: { ...unit, photos, reviewsCount, avgRating } });
+  res.json({ unit: { ...unit, photos, reviewsCount, avgRating }, supportsImport });
 });
 
 // ── Edit a unit (name, specs, airbnb link, visible toggle, ...) ─────
@@ -239,6 +243,59 @@ router.post('/units/:unitSlug/photos', async (req, res) => {
   const { unitSlug } = req.params;
   const { dataBase64, contentType, alt } = req.body || {};
   await uploadMediaAsset({ ownerType: 'unit', ownerSlug: unitSlug, dataBase64, contentType, alt, res });
+});
+
+// ── Copy Airbnb photos into our storage (see server/photoImport.js) ──
+router.post('/units/:unitSlug/photos/import', async (req, res) => {
+  try {
+    const result = await importUnitPhotos({
+      supabase, unitSlug: req.params.unitSlug, urls: req.body?.urls, alt: req.body?.alt,
+    });
+    res.json(result);
+  } catch (err) {
+    res.status(err.status || 500).json({ error: err.message });
+  }
+});
+
+// ── Fetch the listing's current photos on Airbnb and import them ────
+router.post('/units/:unitSlug/photos/import-from-airbnb', async (req, res) => {
+  const { data: unit } = await supabase.from('Unit').select('unitName, airbnbUrl').eq('unitSlug', req.params.unitSlug).maybeSingle();
+  if (!unit) return res.status(404).json({ error: 'Unit not found' });
+  if (!unit.airbnbUrl) return res.status(400).json({ error: 'o apartamento não tem link do Airbnb cadastrado' });
+  try {
+    const urls = await fetchListingPhotoUrls(unit.airbnbUrl);
+    if (!urls.length) return res.status(502).json({ error: 'nenhuma foto encontrada no anúncio do Airbnb' });
+    const result = await importUnitPhotos({ supabase, unitSlug: req.params.unitSlug, urls, alt: unit.unitName });
+    res.json({ found: urls.length, ...result });
+  } catch (err) {
+    res.status(err.status || 500).json({ error: err.message });
+  }
+});
+
+// ── Save the whole arrangement of a unit's photos in one call ───────
+// items: [{ id, roomCategory, displayOrder, hidden }] — used by drag & drop.
+router.post('/units/:unitSlug/photos/arrange', async (req, res) => {
+  const items = req.body?.items;
+  if (!Array.isArray(items) || !items.length || items.length > 300) return res.status(400).json({ error: 'items array required' });
+  for (const it of items) {
+    if (!it || typeof it.id !== 'string' || !Number.isInteger(it.displayOrder)) return res.status(400).json({ error: 'each item needs id and displayOrder' });
+    if (it.roomCategory != null && (typeof it.roomCategory !== 'string' || it.roomCategory.length > 60)) return res.status(400).json({ error: 'invalid roomCategory' });
+  }
+  const { data: owned, error: ownErr } = await supabase.from('MediaAsset').select('id')
+    .eq('ownerType', 'unit').eq('ownerSlug', req.params.unitSlug);
+  if (ownErr) return res.status(500).json({ error: ownErr.message });
+  const ownedIds = new Set((owned || []).map((r) => r.id));
+  if (items.some((it) => !ownedIds.has(it.id))) return res.status(400).json({ error: 'photo does not belong to this apartment' });
+
+  const now = new Date().toISOString();
+  const results = await Promise.all(items.map((it) => {
+    const patch = { displayOrder: it.displayOrder, roomCategory: it.roomCategory || null, updatedAt: now };
+    if (typeof it.hidden === 'boolean') patch.hidden = it.hidden;
+    return supabase.from('MediaAsset').update(patch).eq('id', it.id);
+  }));
+  const err = results.find((r) => r.error)?.error;
+  if (err) return res.status(500).json({ error: err.message });
+  res.json({ ok: true, updated: items.length });
 });
 
 // ── Edit a photo's metadata / primary flag ──────────────────────────

@@ -5,7 +5,10 @@ import { useApi, useUnsavedChangesGuard } from '../hooks/useAdminApi';
 import { AdminShell } from '../components/admin/AdminShell';
 import { ADMIN_NAV_ITEMS } from '../components/admin/adminNavigation';
 import { useAdminAuth } from '../components/admin/AdminAuthContext';
-import { UnitMediaWorkspace, UnitPhotoTourPreview } from '../components/admin/media';
+import { PhotoTourPreview } from '../components/admin/photos/PhotoTourPreview';
+import { PhotoManager } from '../components/admin/photos/PhotoManager';
+import { Badge } from '../components/admin/ui';
+import { ExternalLink } from 'lucide-react';
 
 // ── Design tokens (same as the rest of the admin) ───────────────────────────
 const GOLD = '#C5A059';
@@ -720,16 +723,19 @@ export default function AdminApartment() {
   const api = useApi(token, logout);
 
   const [unit, setUnit] = useState<FullUnit | null>(null);
+  const [supportsImport, setSupportsImport] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
+  // Only the first load shows "Carregando…"; later refreshes (after a save)
+  // update in place so the tab never unmounts under the user.
   const loadUnit = useCallback(async () => {
     if (!unitSlug) return;
-    setLoading(true);
     setError('');
     try {
       const data = await api(`/admin/units/${unitSlug}`);
       setUnit(data.unit as FullUnit);
+      setSupportsImport(Boolean(data.supportsImport));
     } catch (e: unknown) {
       setError(e instanceof Error ? e.message : 'Falha ao carregar apartamento');
     } finally { setLoading(false); }
@@ -762,55 +768,46 @@ export default function AdminApartment() {
       ]}
       rightSlot={
         unit && (
-          <>
-            <span className="shrink-0 px-2 py-0.5 rounded-full font-body text-[8px] uppercase tracking-widest text-white"
-              style={{ background: unit.visible ? '#3f7d5b' : '#6b7280' }}>
-              {unit.visible ? 'Visível' : 'Oculto'}
-            </span>
-            <a href={publicUrl} target="_blank" rel="noopener noreferrer"
-              className="shrink-0 font-body text-[10px] uppercase tracking-[0.12em] text-white/50 hover:text-white border border-white/20 px-3 py-1.5 hover:bg-white/10 transition-colors rounded">
-              Ver público →
-            </a>
-          </>
+          <a href={publicUrl} target="_blank" rel="noopener noreferrer"
+            className="inline-flex items-center gap-1.5 h-8 px-3 rounded-lg border border-ad-line-strong bg-ad-panel text-[13px] text-ad-ink hover:border-ad-ink/40 transition-colors">
+            Ver no site <ExternalLink size={13} aria-hidden="true" />
+          </a>
         )
       }
     >
-      {/* Page header + horizontal tab bar */}
-      <div className="-mx-4 md:-mx-10 -mt-10 px-4 md:px-8 pt-8 pb-0 mb-0"
-        style={{ background: '#f9f7f2', borderBottom: '1px solid rgba(16,28,45,0.07)' }}>
-        {unit && (
-          <div className="mb-4">
-            <h2 className="font-display text-4xl font-bold" style={{ color: NAVY }}>
+      {/* Page header + tabs */}
+      {unit && (
+        <div className="mb-2">
+          <div className="flex flex-wrap items-center gap-3">
+            <h1 className="font-display text-[32px] leading-tight font-semibold tracking-[-0.01em] text-ad-ink">
               {unit.displayTitle || unit.unitName}
-            </h2>
-            {unit.updatedAt && (
-              <p className="font-body text-[10px] uppercase tracking-widest mt-1" style={{ color: 'rgba(16,28,45,0.4)' }}>
-                Atualizado em {new Date(unit.updatedAt).toLocaleString('pt-BR', { dateStyle: 'medium', timeStyle: 'short' })}
-              </p>
-            )}
+            </h1>
+            <Badge tone={unit.visible ? 'ok' : 'neutral'}>{unit.visible ? 'Visível no site' : 'Oculto do site'}</Badge>
           </div>
-        )}
-        {/* Tab row */}
-        <div className="flex gap-8 border-b border-navy/10 -mb-px">
-          {tabs.map((t) => (
-            <button
-              key={t.id}
-              onClick={() => setTab(t.id)}
-              className="px-1 py-4 font-body font-semibold text-sm transition-colors border-b-2 whitespace-nowrap"
-              style={{
-                borderColor: tab === t.id ? GOLD : 'transparent',
-                color: tab === t.id ? GOLD : 'rgba(16,28,45,0.5)',
-              }}
-            >
-              {t.label}
-            </button>
-          ))}
+          <p className="text-sm text-ad-muted mt-1">
+            {unit.propertyName}
+            {unit.updatedAt && <> · atualizado em {new Date(unit.updatedAt).toLocaleString('pt-BR', { dateStyle: 'medium', timeStyle: 'short' })}</>}
+          </p>
         </div>
+      )}
+      <div role="tablist" aria-label="Seções do apartamento" className="flex gap-1 overflow-x-auto border-b border-ad-line -mx-1 px-1 mt-4">
+        {tabs.map((t) => (
+          <button
+            key={t.id}
+            role="tab"
+            aria-selected={tab === t.id}
+            onClick={() => setTab(t.id)}
+            className={`relative px-3 py-3 text-sm whitespace-nowrap transition-colors
+              ${tab === t.id ? 'text-ad-ink font-semibold after:absolute after:inset-x-3 after:-bottom-px after:h-0.5 after:bg-ad-ink' : 'text-ad-muted hover:text-ad-ink'}`}
+          >
+            {t.label}
+          </button>
+        ))}
       </div>
 
       {/* Content area */}
       <div className="pt-8">
-        {loading && <p className="font-body text-on-surface-variant">Carregando apartamento…</p>}
+        {loading && <p className="text-sm text-ad-muted">Carregando apartamento…</p>}
         {error && (
           <div className="border border-red-200 bg-red-50/60 rounded-lg p-4">
             <p className="font-body text-sm text-red-700">{error}</p>
@@ -823,8 +820,8 @@ export default function AdminApartment() {
             {tab === 'overview' && <OverviewTab unit={unit} />}
             {tab === 'content' && <ContentTab unit={unit} api={api} onChanged={loadUnit} />}
             {tab === 'rooms' && <RoomsTab unit={unit} api={api} onChanged={loadUnit} />}
-            {tab === 'photos' && <UnitMediaWorkspace unit={unit} api={api} onChanged={loadUnit} />}
-            {tab === 'photo-tour' && <UnitPhotoTourPreview unit={unit} />}
+            {tab === 'photos' && <PhotoManager unit={unit} api={api} supportsImport={supportsImport} onReload={loadUnit} />}
+            {tab === 'photo-tour' && <PhotoTourPreview photos={unit.photos} />}
             {tab === 'reviews' && <ReviewsCanonicalLink unit={unit} />}
             {tab === 'booking' && <BookingTab unit={unit} api={api} />}
             {tab === 'settings' && <SettingsTab unit={unit} api={api} onChanged={loadUnit} />}

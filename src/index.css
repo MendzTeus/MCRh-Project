@@ -50,7 +50,38 @@
   --color-admin-navy: #101c2d;
   --color-admin-gold: #c5a059;
   --color-admin-gold-text: #826927;
+
+  /* Admin v2 (redesign): one warm neutral family + the gold accent.
+     ad-muted on ad-bg ≈ 5.3:1, ad-ink ≈ 15:1 (WCAG AA). */
+  --color-ad-bg: #f6f4ef;
+  --color-ad-panel: #ffffff;
+  --color-ad-sunken: #efece5;
+  --color-ad-line: #e4dfd4;
+  --color-ad-line-strong: #d3ccbd;
+  --color-ad-ink: #17202c;
+  --color-ad-muted: #625c50;
+  --color-ad-faint: #8f8878;
+  --color-ad-accent: #8a6a24;
+  --color-ad-accent-soft: #f3ead6;
+  --color-ad-ok: #2f6b4f;
+  --color-ad-ok-soft: #e4f0e8;
+  --color-ad-warn: #8a5a00;
+  --color-ad-warn-soft: #fbf0d9;
+  --color-ad-danger: #b42318;
+  --color-ad-danger-soft: #fbe9e7;
+  --font-ui: "Geist", "Hanken Grotesk", system-ui, sans-serif;
+  --shadow-ad-card: 0 1px 2px rgb(23 32 44 / 0.04), 0 10px 28px -18px rgb(23 32 44 / 0.25);
+  --shadow-ad-lift: 0 2px 4px rgb(23 32 44 / 0.06), 0 18px 40px -16px rgb(23 32 44 / 0.35);
 }
+
+/* Admin screens use the UI font with tabular numbers; the public site keeps its fonts. */
+.admin-root {
+  font-family: var(--font-ui);
+  font-variant-numeric: tabular-nums;
+  color: var(--color-ad-ink);
+  -webkit-font-smoothing: antialiased;
+}
+.admin-root :where(h1, h2, h3) { text-wrap: balance; }
 
 @utility font-display-lg {
   font-family: var(--font-display);

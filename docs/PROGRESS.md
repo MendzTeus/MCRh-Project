@@ -22,16 +22,20 @@ aprovada antes da próxima. Regras combinadas:
 | 3 | Edição de textos no admin sem recarregar; campos mostram o texto do site; "Restaurar padrão" | 3ebcf42 |
 | 4 | Mapa do apartamento usa coordenadas salvas e só o pin do prédio; campos da coleção (headline, amenidades, distâncias, specs) ligados ao site | cb49879 |
 | 5 | Admin unificado (uma rota por seção), todo em português, código morto removido | 6c558df, 4e41ed3 |
-| 6a | Conteúdo dos prédios (headline, amenidades, distâncias, specs) com fonte única na tabela `Property`; migration 005 | ver log |
+| 6a | Conteúdo dos prédios (headline, amenidades, distâncias, specs) com fonte única na tabela `Property`; migration 005 (já rodada) | ver log |
+| 7a | Fotos: cópia do Airbnb para o Storage (por apartamento e em massa), gerenciador com arrastar/soltar por cômodo, seleção em lote, capa, ocultar, salvar automático; novo visual do admin (base de componentes); migration 006 | ver log |
 
 SQL já rodado em produção: diagnóstico da tabela `Enquiry` (estava vazia) e a
 migration 004 (sem efeito, tabela vazia). Pendente opcional:
 `ALTER TABLE "Enquiry" ALTER COLUMN status SET DEFAULT 'new';`
 
-Antes do deploy: rodar a migration 005 (ver OPERATIONS.md, "Fases 4 e 6").
+Antes do deploy: rodar a migration 006 e, depois do deploy, "Buscar no Airbnb"
+em /admin/photos (ver OPERATIONS.md, "Fase 7a").
 
 ## Próximas
 
+- **7b — Redesenho das demais páginas do admin** com a nova base visual
+  (Prédios, Textos do site, Imagens, Leads, Avaliações, Painel, Apartamentos).
 - **6b — Criar prédios/apartamentos novos pelo admin** (páginas públicas passam a
   renderizar itens que não existem no código). Sem banco de teste (opção B):
   backup + scripts rodados pelo dono do site.
@@ -41,5 +45,5 @@ Antes do deploy: rodar a migration 005 (ver OPERATIONS.md, "Fases 4 e 6").
 
 ## Em aberto com o dono do site
 
-- Print/página/aparelho do problema do mapa ("pedindo API"), se ainda ocorrer após o deploy.
+- Mapa "pedindo API": resolvido pelo commit 3c9eb19 (CARTO passou a exigir chave).
 - Backup do Supabase de produção (Database → Backups) ainda não confirmado.

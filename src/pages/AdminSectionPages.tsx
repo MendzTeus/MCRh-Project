@@ -6,7 +6,7 @@ import { ContentEditor } from '../components/admin/content/ContentEditor';
 import { AvailabilityTab } from '../components/admin/sections/AvailabilitySection';
 import { CollectorTab } from '../components/admin/sections/CollectorSection';
 import { ImagesTab } from '../components/admin/sections/ImagesSection';
-import { PhotosTab } from '../components/admin/sections/PhotosSection';
+import { PhotosOverview } from '../components/admin/photos/PhotosOverview';
 import { PropertiesTab } from '../components/admin/sections/PropertiesSection';
 import { useApi } from '../hooks/useAdminApi';
 import { useAdminProperties, useAdminSite, useAdminUnits } from '../hooks/useAdminData';
@@ -70,9 +70,10 @@ export function AdminPhotosPage() {
   const api = useAdminPageApi();
   const { units, loaded, error, reload } = useAdminUnits(api);
   return (
-    <SectionPage id="photos" title="Fotos dos apartamentos" description="Envie, ordene, categorize e esconda as fotos de cada apartamento.">
+    <SectionPage id="photos" title="Fotos dos apartamentos"
+      description="Situação das fotos de cada apartamento. Clique num apartamento para organizar as fotos por cômodo.">
       <AdminLoadState loaded={loaded} error={error} onRetry={reload}>
-        <PhotosTab units={units} api={api} onChanged={reload} />
+        <PhotosOverview units={units} api={api} onReload={reload} />
       </AdminLoadState>
     </SectionPage>
   );

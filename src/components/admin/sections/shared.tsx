@@ -6,7 +6,7 @@ export const GOLD = '#C5A059';
 export const NAVY = '#101c2d';
 
 // ── Types ───────────────────────────────────────────────────────────
-export type Photo = { id: string; url: string; alt: string | null; isPrimary: boolean; displayOrder: number; roomCategory: string | null; hidden?: boolean };
+export type Photo = { id: string; url: string; alt: string | null; isPrimary: boolean; displayOrder: number; roomCategory: string | null; hidden?: boolean; storagePath?: string | null; sourceUrl?: string | null };
 export type Unit = {
   unitSlug: string; unitName: string; propertySlug: string; propertyName: string;
   suppliedSpecs: string | null; postcode: string | null; airbnbUrl: string | null;
