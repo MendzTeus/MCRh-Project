@@ -7,7 +7,7 @@ import { Badge, Button, Card, Notice, SectionHeading, fieldInput } from '../ui';
 
 type Api = ReturnType<typeof useApi>;
 type Row = Unit;
-type RunState = { done: number; total: number; current: string; copied: number; failed: string[] } | null;
+type RunState = { done: number; total: number; current: string; copied: number; retired: number; failed: string[] } | null;
 
 /**
  * Photo health of every apartment + one-click refresh from Airbnb. Editing
@@ -26,17 +26,20 @@ export function PhotosOverview({ units, api, onReload }: { units: Row[]; api: Ap
         unit: u,
         cover: photos.find((p) => p.isPrimary) || visible[0] || photos[0],
         total: photos.length,
-        links: photos.filter((p) => !p.storagePath).length,
+        links: visible.filter((p) => !p.storagePath).length,
         noRoom: visible.filter((p) => !p.roomCategory).length,
       };
     })
     .filter(({ unit }) => `${unit.unitName} ${unit.propertyName} ${unit.unitSlug}`.toLowerCase().includes(query.toLowerCase()))
     .sort((a, b) => a.unit.propertyName.localeCompare(b.unit.propertyName) || a.unit.unitName.localeCompare(b.unit.unitName)), [units, query]);
 
-  const needsRefresh = units.filter((u) => (u.photos || []).length === 0 || (u.photos || []).some((p) => !p.storagePath));
+  const needsRefresh = units.filter((u) => {
+    const visible = (u.photos || []).filter((p) => !p.hidden);
+    return visible.length === 0 || visible.some((p) => !p.storagePath);
+  });
 
   async function refreshAll(list: Row[]) {
-    const state = { done: 0, total: list.length, current: '', copied: 0, failed: [] as string[] };
+    const state = { done: 0, total: list.length, current: '', copied: 0, retired: 0, failed: [] as string[] };
     setFinished(null);
     for (const u of list) {
       state.current = u.unitName;
@@ -44,6 +47,7 @@ export function PhotosOverview({ units, api, onReload }: { units: Row[]; api: Ap
       try {
         const res = await api(`/admin/units/${u.unitSlug}/photos/import-from-airbnb`, { method: 'POST' });
         state.copied += res.imported || 0;
+        state.retired += res.retired || 0;
         if (res.failed?.length) state.failed.push(`${u.unitName}: ${res.failed.length} foto(s) não copiada(s)`);
       } catch (err) {
         state.failed.push(`${u.unitName}: ${(err as Error).message}`);
@@ -76,7 +80,7 @@ export function PhotosOverview({ units, api, onReload }: { units: Row[]; api: Ap
           </div>
         )}
         {finished && (
-          <Notice tone={finished.failed.length ? 'warn' : 'ok'} title={`${finished.copied} fotos copiadas em ${finished.total} apartamento(s).`}>
+          <Notice tone={finished.failed.length ? 'warn' : 'ok'} title={`${finished.copied} fotos copiadas em ${finished.total} apartamento(s)${finished.retired ? ` · ${finished.retired} fotos antigas quebradas ocultadas` : ''}.`}>
             {finished.failed.length > 0 && <ul className="list-disc pl-5 mt-1">{finished.failed.slice(0, 8).map((f) => <li key={f}>{f}</li>)}</ul>}
             {!finished.failed.length && 'Depois, organize as fotos por cômodo em cada apartamento.'}
           </Notice>

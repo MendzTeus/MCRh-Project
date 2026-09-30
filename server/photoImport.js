@@ -110,6 +110,26 @@ async function importUnitPhotos({ supabase, unitSlug, urls, alt, fetchImpl = fet
   };
 }
 
+/**
+ * After a refresh from the Airbnb listing: link-only photos that are no longer
+ * in the listing are outdated (Airbnb replaced them, the link is dead), so
+ * they are hidden — not deleted — and stop showing on the site.
+ */
+async function hideOutdatedLinks({ supabase, unitSlug, currentUrls }) {
+  const current = new Set(currentUrls);
+  const { data, error } = await supabase.from('MediaAsset')
+    .select('id, url, storagePath, hidden')
+    .eq('ownerType', 'unit').eq('ownerSlug', unitSlug);
+  if (error) throw error;
+  const outdated = (data || []).filter((r) => !r.storagePath && !r.hidden && !current.has(r.url));
+  if (!outdated.length) return 0;
+  const { error: upErr } = await supabase.from('MediaAsset')
+    .update({ hidden: true, isPrimary: false, updatedAt: new Date().toISOString() })
+    .in('id', outdated.map((r) => r.id));
+  if (upErr) throw upErr;
+  return outdated.length;
+}
+
 function isAirbnbListingUrl(value) {
   try {
     const u = new URL(value);
@@ -144,4 +164,4 @@ async function fetchListingPhotoUrls(listingUrl, fetchImpl = fetch) {
   return own.length ? own : all;
 }
 
-module.exports = { importUnitPhotos, isAirbnbImageUrl, isAirbnbListingUrl, fetchListingPhotoUrls };
+module.exports = { importUnitPhotos, hideOutdatedLinks, isAirbnbImageUrl, isAirbnbListingUrl, fetchListingPhotoUrls };

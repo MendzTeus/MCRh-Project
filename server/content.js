@@ -51,7 +51,10 @@ router.get('/units', async (_req, res) => {
 
   const result = (unitsResult.data || []).map((u) => {
     const photos = byUnit[u.unitSlug] || [];
-    const primary = photos.find((p) => p.isPrimary) || photos[0];
+    // Cover = the chosen cover if it's shown, else the first shown photo.
+    // A hidden photo (often a dead Airbnb link) must never be the card image.
+    const shown = photos.filter((p) => !p.hidden);
+    const primary = shown.find((p) => p.isPrimary) || shown[0];
     const ratings = ratingsBySlug[u.unitSlug] || [];
     const avgRating = ratings.length
       ? (ratings.reduce((s, n) => s + n, 0) / ratings.length).toFixed(2)

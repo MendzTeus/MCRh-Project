@@ -78,7 +78,8 @@ export function PhotoManager({ unit, api, supportsImport, onReload }: {
     const known = new Set(photos.flatMap((p) => [p.url, p.sourceUrl].filter(Boolean) as string[]));
     return (getListingMedia(unit.unitSlug)?.gallery || []).filter((url) => !known.has(url));
   }, [photos, unit.unitSlug]);
-  const linkOnly = photos.filter((p) => p.stored === false);
+  // Hidden links are usually dead Airbnb photos — nothing left to copy.
+  const linkOnly = photos.filter((p) => p.stored === false && !p.hidden);
 
   // ── persistence ────────────────────────────────────────────────────
   const persist = useCallback((next: ManagedPhoto[]) => {
@@ -167,6 +168,7 @@ export function PhotoManager({ unit, api, supportsImport, onReload }: {
       await onReload();
       const parts = [`${res.imported} foto(s) copiada(s) para o site`];
       if (res.alreadyImported) parts.push(`${res.alreadyImported} já estavam salvas`);
+      if (res.retired) parts.push(`${res.retired} foto(s) antiga(s), que não existem mais no Airbnb, foram ocultadas`);
       if (res.failed?.length) parts.push(`${res.failed.length} não puderam ser copiadas (${res.failed[0].error})`);
       setNotice({ tone: res.failed?.length ? 'warn' : 'ok', text: `${parts.join(' · ')}.` });
     } catch (err) {

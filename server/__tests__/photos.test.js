@@ -6,7 +6,7 @@ import { signToken } from '../auth.js';
 
 const require = createRequire(import.meta.url);
 const { supabase } = require('../db.js');
-const { importUnitPhotos, isAirbnbImageUrl } = require('../photoImport.js');
+const { importUnitPhotos, hideOutdatedLinks, isAirbnbImageUrl } = require('../photoImport.js');
 
 // In-memory MediaAsset table + storage, enough for the import/arrange flows.
 function fakeSupabase(rows) {
@@ -17,10 +17,11 @@ function fakeSupabase(rows) {
     const q = {
       select(cols) { if (state.op === 'select') state.cols = cols; return q; },
       eq(col, val) { state.filters.push([col, val]); return q; },
+      in(col, vals) { state.filters.push([col, vals, 'in']); return q; },
       update(p) { state.op = 'update'; state.payload = p; return q; },
       insert(p) { state.op = 'insert'; state.payload = p; return q; },
       then(resolve) {
-        const match = (r) => state.filters.every(([c, v]) => r[c] === v);
+        const match = (r) => state.filters.every(([c, v, op]) => (op === 'in' ? v.includes(r[c]) : r[c] === v));
         if (state.op === 'select') {
           if (state.cols.includes('sourceUrl') && rows.noSourceUrl) return resolve({ data: null, error: { message: 'column MediaAsset.sourceUrl does not exist' } });
           return resolve({ data: rows.filter(match).map((r) => ({ ...r })), error: null });
@@ -117,5 +118,49 @@ describe('POST /api/admin/units/:slug/photos/arrange', () => {
     const res = await request(app).post('/api/admin/units/u1/photos/arrange').set('Authorization', auth())
       .send({ items: [{ id: 'p9', displayOrder: 0 }] });
     expect(res.status).toBe(400);
+  });
+});
+
+describe('hideOutdatedLinks', () => {
+  it('hides link-only photos no longer in the listing, keeps stored copies and current links', async () => {
+    const rows = [
+      { id: 'old', ownerType: 'unit', ownerSlug: 'u', url: A, storagePath: null, hidden: false, isPrimary: true },
+      { id: 'cur', ownerType: 'unit', ownerSlug: 'u', url: B, storagePath: null, hidden: false, isPrimary: false },
+      { id: 'copy', ownerType: 'unit', ownerSlug: 'u', url: 'https://store.example/x.jpg', storagePath: 'x.jpg', hidden: false, isPrimary: false },
+    ];
+    const fake = fakeSupabase(rows);
+    const n = await hideOutdatedLinks({ supabase: fake.client, unitSlug: 'u', currentUrls: [B, C] });
+    expect(n).toBe(1);
+    expect(rows.find((r) => r.id === 'old')).toMatchObject({ hidden: true, isPrimary: false });
+    expect(rows.find((r) => r.id === 'cur').hidden).toBe(false);
+    expect(rows.find((r) => r.id === 'copy').hidden).toBe(false);
+  });
+});
+
+describe('GET /api/content/units cover image', () => {
+  let original;
+  beforeEach(() => { original = supabase.from; });
+  afterEach(() => { supabase.from = original; });
+
+  it('never uses a hidden photo as the card cover', async () => {
+    const data = {
+      Unit: [{ unitSlug: 'u', unitName: 'Room 3' }],
+      MediaAsset: [
+        { ownerSlug: 'u', url: 'dead.jpg', isPrimary: true, hidden: true, displayOrder: 0 },
+        { ownerSlug: 'u', url: 'good.jpg', isPrimary: false, hidden: false, displayOrder: 1 },
+      ],
+      Review: [],
+    };
+    supabase.from = (name) => {
+      const q = new Proxy({}, {
+        get: (_t, prop) => (prop === 'then'
+          ? (resolve) => resolve({ data: data[name], error: null })
+          : () => q),
+      });
+      return q;
+    };
+    const res = await request(app).get('/api/content/units');
+    expect(res.status).toBe(200);
+    expect(res.body.units[0].primaryImage).toBe('good.jpg');
   });
 });

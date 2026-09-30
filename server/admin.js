@@ -103,7 +103,7 @@ router.post('/login', loginThrottle, (req, res) => {
 router.use(requireAdmin);
 
 const { ADMIN_SELECT, ADMIN_SELECT_LEGACY, selectWithFallback, validatePropertyPatch } = require('./propertyFields');
-const { importUnitPhotos, fetchListingPhotoUrls } = require('./photoImport');
+const { importUnitPhotos, hideOutdatedLinks, fetchListingPhotoUrls } = require('./photoImport');
 
 // ── Canonical building content ──────────────────────────────────────
 router.get('/properties', async (_req, res) => {
@@ -266,7 +266,11 @@ router.post('/units/:unitSlug/photos/import-from-airbnb', async (req, res) => {
     const urls = await fetchListingPhotoUrls(unit.airbnbUrl);
     if (!urls.length) return res.status(502).json({ error: 'nenhuma foto encontrada no anúncio do Airbnb' });
     const result = await importUnitPhotos({ supabase, unitSlug: req.params.unitSlug, urls, alt: unit.unitName });
-    res.json({ found: urls.length, ...result });
+    // Only retire old links once the current photos are safely stored.
+    const retired = result.imported + result.alreadyImported > 0
+      ? await hideOutdatedLinks({ supabase, unitSlug: req.params.unitSlug, currentUrls: urls })
+      : 0;
+    res.json({ found: urls.length, ...result, retired });
   } catch (err) {
     res.status(err.status || 500).json({ error: err.message });
   }
